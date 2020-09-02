@@ -19,4 +19,4 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Check netCDF-Java documentation for deprecations warnings
-        run: ./gradlew :docs:testClasses | ( ! grep -c "warning. [deprecation]" )
+        run: ./gradlew :docs:testClasses | ( ! grep -q "warning. [deprecation]" )
