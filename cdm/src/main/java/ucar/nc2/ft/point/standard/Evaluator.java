@@ -13,7 +13,6 @@ import ucar.nc2.Dimension;
 import ucar.nc2.Structure;
 import ucar.nc2.Attribute;
 import ucar.ma2.DataType;
-
 import java.util.Formatter;
 
 /**
@@ -33,12 +32,14 @@ public abstract class Evaluator {
     }
   }
 
-  static public String findNameVariableWithStandardNameAndDimension(NetcdfDataset ds, String standard_name, Dimension outer, Formatter errlog) {
+  public static String findNameVariableWithStandardNameAndDimension(NetcdfDataset ds, String standard_name,
+      Dimension outer, Formatter errlog) {
     Variable v = findVariableWithAttributeAndDimension(ds, CF.STANDARD_NAME, standard_name, outer, errlog);
     return (v == null) ? null : v.getShortName();
   }
 
-  static public Variable findVariableWithAttributeAndDimension(NetcdfDataset ds, String att_name, String att_value, Dimension outer, Formatter errlog) {
+  public static Variable findVariableWithAttributeAndDimension(NetcdfDataset ds, String att_name, String att_value,
+      Dimension outer, Formatter errlog) {
     for (Variable v : ds.getVariables()) {
       String attValue = ds.findAttValueIgnoreCase(v, att_name, null);
       if ((attValue != null) && attValue.equalsIgnoreCase(att_value)) {
@@ -49,7 +50,7 @@ public abstract class Evaluator {
       }
     }
 
-     // descend into structures
+    // descend into structures
     for (Variable v : ds.getVariables()) {
       if (v instanceof Structure) {
         Structure s = (Structure) v;
@@ -67,21 +68,22 @@ public abstract class Evaluator {
     return null;
   }
 
-  static public boolean isEffectivelyScaler(Variable v) {
+  public static boolean isEffectivelyScaler(Variable v) {
     return (v.getRank() == 0) || (v.getRank() == 1 && v.getDataType() == DataType.CHAR);
   }
 
   /**
    * Find first variable with given attribute name
    *
-   * @param ds      in this dataset
+   * @param ds in this dataset
    * @param attName attribute name, case insensitive
    * @return first variable with given attribute name, or null
    */
-  static public VarAtt findVariableWithAttribute(NetcdfDataset ds, String attName) {
+  public static VarAtt findVariableWithAttribute(NetcdfDataset ds, String attName) {
     for (Variable v : ds.getVariables()) {
       Attribute att = v.findAttributeIgnoreCase(attName);
-      if (att != null) return new VarAtt(v, att);
+      if (att != null)
+        return new VarAtt(v, att);
     }
 
     // descend into structures
@@ -90,7 +92,8 @@ public abstract class Evaluator {
         Structure s = (Structure) v;
         for (Variable vs : s.getVariables()) {
           Attribute att = vs.findAttributeIgnoreCase(attName);
-          if (att != null) return new VarAtt(vs, att);
+          if (att != null)
+            return new VarAtt(vs, att);
         }
       }
     }
@@ -101,12 +104,12 @@ public abstract class Evaluator {
    * Find first variable with given attribute name and value.
    * If not found, search one level into structures.
    *
-   * @param ds       in this dataset
-   * @param attName  attribute name, case insensitive
+   * @param ds in this dataset
+   * @param attName attribute name, case insensitive
    * @param attValue attribute value, case sensitive
    * @return first variable with given attribute name and value, or null
    */
-  static public Variable findVariableWithAttributeValue(NetcdfDataset ds, String attName, String attValue) {
+  public static Variable findVariableWithAttributeValue(NetcdfDataset ds, String attName, String attValue) {
     for (Variable v : ds.getVariables()) {
       String haveValue = ds.findAttValueIgnoreCase(v, attName, null);
       if ((haveValue != null) && haveValue.equals(attValue))
@@ -117,7 +120,8 @@ public abstract class Evaluator {
     for (Variable v : ds.getVariables()) {
       if (v instanceof Structure) {
         Variable vn = findVariableWithAttributeValue((Structure) v, attName, attValue);
-        if (null != vn) return vn;
+        if (null != vn)
+          return vn;
       }
     }
     return null;
@@ -126,12 +130,12 @@ public abstract class Evaluator {
   /**
    * Find first variable with given attribute name and value
    *
-   * @param ds       in this dataset
-   * @param attName  attribute name, case insensitive
+   * @param ds in this dataset
+   * @param attName attribute name, case insensitive
    * @param attValue attribute value, case sensitive
    * @return name of first variable with given attribute name and value, or null
    */
-  static public String findNameOfVariableWithAttributeValue(NetcdfDataset ds, String attName, String attValue) {
+  public static String findNameOfVariableWithAttributeValue(NetcdfDataset ds, String attName, String attValue) {
     Variable v = findVariableWithAttributeValue(ds, attName, attValue);
     return (v == null) ? null : v.getShortName();
   }
@@ -139,12 +143,12 @@ public abstract class Evaluator {
   /**
    * Find first member variable in this struct with given attribute name and value
    *
-   * @param struct   in this structure
-   * @param attName  attribute name, case insensitive
+   * @param struct in this structure
+   * @param attName attribute name, case insensitive
    * @param attValue attribute value, case sensitive
    * @return first member variable with given attribute name and value, or null
    */
-  static public Variable findVariableWithAttributeValue(Structure struct, String attName, String attValue) {
+  public static Variable findVariableWithAttributeValue(Structure struct, String attName, String attValue) {
     for (Variable v : struct.getVariables()) {
       Attribute att = v.findAttributeIgnoreCase(attName);
       if ((att != null) && att.getStringValue().equals(attValue))
@@ -156,30 +160,33 @@ public abstract class Evaluator {
   /**
    * Find structure variable of rank 2 with the 2 given dimensions
    * (or) Find structure variable of rank 1 with the 1 given dimension
-   * @param ds  in this dataset
+   * 
+   * @param ds in this dataset
    * @param dim0 first dimension
-   * @param dim1 second dimension  (ok to be null)
+   * @param dim1 second dimension (ok to be null)
    * @return structure variable or null
    */
-  static public Structure findStructureWithDimensions(NetcdfDataset ds, Dimension dim0, Dimension dim1) {
+  public static Structure findStructureWithDimensions(NetcdfDataset ds, Dimension dim0, Dimension dim1) {
     for (Variable v : ds.getVariables()) {
-      if (!(v instanceof Structure)) continue;
+      if (!(v instanceof Structure))
+        continue;
 
       if (dim1 != null && v.getRank() == 2 && v.getDimension(0).equals(dim0) && v.getDimension(1).equals(dim1))
         return (Structure) v;
 
       if (dim1 == null && v.getRank() == 1 && v.getDimension(0).equals(dim0))
-         return (Structure) v;
-      }
-  return null;
+        return (Structure) v;
+    }
+    return null;
   }
 
   /**
    * Find first nested structure
+   * 
    * @param s in this structure
    * @return first nested structure or null
    */
-  static public Structure findNestedStructure(Structure s) {
+  public static Structure findNestedStructure(Structure s) {
     for (Variable v : s.getVariables()) {
       if ((v instanceof Structure))
         return (Structure) v;
@@ -189,10 +196,11 @@ public abstract class Evaluator {
 
   /**
    * Does this dataset have a record structure? netcdf-3 specific
+   * 
    * @param ds in this dataset
    * @return true if record structure exists
    */
-  static public boolean hasNetcdf3RecordStructure(NetcdfDataset ds) {
+  public static boolean hasNetcdf3RecordStructure(NetcdfDataset ds) {
     Variable v = ds.findVariable("record");
     return (v != null) && (v.getDataType() == DataType.STRUCTURE);
   }
@@ -203,12 +211,12 @@ public abstract class Evaluator {
   /**
    * Translate key to value
    *
-   * @param ds     search in this dataset
-   * @param key    if starts with ":", search for global attribute
+   * @param ds search in this dataset
+   * @param key if starts with ":", search for global attribute
    * @param errlog error messages here
    * @return return global attribute value or the key itself
    */
-  static public String getLiteral(NetcdfDataset ds, String key, Formatter errlog) {
+  public static String getLiteral(NetcdfDataset ds, String key, Formatter errlog) {
     if (key.startsWith(":")) {
       String val = ds.findAttValueIgnoreCase(null, key.substring(1), null);
       if ((val == null) && (errlog != null))
@@ -222,12 +230,12 @@ public abstract class Evaluator {
   /**
    * Turn the key into a String and return the corresponding featureType, if any.
    *
-   * @param ds     look in this datset
-   * @param key    if starts with ":", replace with value of global attribute
+   * @param ds look in this datset
+   * @param key if starts with ":", replace with value of global attribute
    * @param errlog error messages here
    * @return featureType, or null
    */
-  static public FeatureType getFeatureType(NetcdfDataset ds, String key, Formatter errlog) {
+  public static FeatureType getFeatureType(NetcdfDataset ds, String key, Formatter errlog) {
     FeatureType ft = null;
     String fts = getLiteral(ds, key, errlog);
     if (fts != null) {
@@ -241,12 +249,12 @@ public abstract class Evaluator {
   /**
    * Find the variable pointed to by key
    *
-   * @param ds     in this dataset
-   * @param key    may be variable name or ":gatt" where gatt is local attribute whose value is the variable name
+   * @param ds in this dataset
+   * @param key may be variable name or ":gatt" where gatt is local attribute whose value is the variable name
    * @param errlog error messages here
    * @return name of variable or null if not exist
    */
-  static public String getVariableName(NetcdfDataset ds, String key, Formatter errlog) {
+  public static String getVariableName(NetcdfDataset ds, String key, Formatter errlog) {
     Variable v = null;
     String vs = getLiteral(ds, key, errlog);
     if (vs != null) {
@@ -260,12 +268,12 @@ public abstract class Evaluator {
   /**
    * Find the dimension pointed to by key
    *
-   * @param ds     in this dataset
-   * @param key    may be dimension name or ":gatt" where gatt is local attribute whose value is the dimension name
+   * @param ds in this dataset
+   * @param key may be dimension name or ":gatt" where gatt is local attribute whose value is the dimension name
    * @param errlog error messages here
    * @return dimension or null if not exist
    */
-  static public Dimension getDimension(NetcdfDataset ds, String key, Formatter errlog) {
+  public static Dimension getDimension(NetcdfDataset ds, String key, Formatter errlog) {
     Dimension d = null;
     String s = getLiteral(ds, key, errlog);
     if (s != null) {
@@ -279,16 +287,16 @@ public abstract class Evaluator {
   /**
    * Find the dimension pointed to by key
    *
-   * @param ds     in this dataset
-   * @param key    may be dimension name or ":gatt" where gatt is local attribute whose value is the dimension name
+   * @param ds in this dataset
+   * @param key may be dimension name or ":gatt" where gatt is local attribute whose value is the dimension name
    * @param errlog error messages here
    * @return name of dimension or null if not exist
    */
-  static public String getDimensionName(NetcdfDataset ds, String key, Formatter errlog) {
+  public static String getDimensionName(NetcdfDataset ds, String key, Formatter errlog) {
     Dimension d = getDimension(ds, key, errlog);
     return (d == null) ? null : d.getShortName();
   }
 
 
-  private Evaluator() { }  // Private ctor to ensure non-instantiability.
+  private Evaluator() {} // Private ctor to ensure non-instantiability.
 }

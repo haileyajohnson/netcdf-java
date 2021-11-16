@@ -7,9 +7,7 @@ package ucar.nc2.ft;
 import ucar.ma2.StructureData;
 import ucar.nc2.time.CalendarDate;
 import ucar.unidata.geoloc.LatLonPoint;
-
 import javax.annotation.Nonnull;
-import java.io.IOException;
 
 /**
  * A set of observations along the vertical (z) axis.
@@ -36,14 +34,16 @@ public interface ProfileFeature extends PointFeatureCollection, Iterable<PointFe
 
   /**
    * The number of points along the z axis. May not be known until after iterating through the collection.
+   * 
    * @return number of points along the z axis, or -1 if not known.
    */
   int size();
 
   /**
    * The data associated with the profile feature.
+   * 
    * @return the actual data of this profile. may be empty, not null.
    */
   @Nonnull
-  StructureData getFeatureData() throws IOException;
+  StructureData getFeatureData() throws java.io.IOException;
 }

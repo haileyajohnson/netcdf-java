@@ -6,8 +6,6 @@ package ucar.nc2.ft;
 
 import ucar.unidata.geoloc.LatLonRect;
 import ucar.unidata.geoloc.Station;
-
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -22,26 +20,24 @@ public interface StationCollection {
    * Get all the Stations in the collection.
    *
    * @return List of Station
-   * @throws java.io.IOException on i/o error
    */
-  List<Station> getStations() throws IOException;
+  List<Station> getStations();
 
   /**
    * Get all the Stations within a bounding box.
    *
    * @param boundingBox spatial subset
    * @return List of Station
-   * @throws java.io.IOException on i/o error
    */
-  List<Station> getStations(ucar.unidata.geoloc.LatLonRect boundingBox) throws IOException;
+  List<Station> getStations(ucar.unidata.geoloc.LatLonRect boundingBox);
 
   /**
    * Translate list of station names to list of Stations. Skip any not found
    *
    * @param stnNames list of stnNames
-   * @return  corresponding list of Stations
+   * @return corresponding list of Stations
    */
-  List<Station> getStations( List<String> stnNames);
+  List<Station> getStations(List<String> stnNames);
 
   /**
    * Find a Station by name.
@@ -53,6 +49,7 @@ public interface StationCollection {
 
   /**
    * Get the bounding box including all the stations.
+   * 
    * @return bounding box as a LatLonRect
    */
   LatLonRect getBoundingBox();

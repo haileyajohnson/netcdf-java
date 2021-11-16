@@ -5,16 +5,14 @@
 
 package ucar.atd.dorade;
 
-import ucar.nc2.constants.CDM;
+import java.nio.charset.StandardCharsets;
 import ucar.nc2.time.CalendarDateFormatter;
-
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.util.Date;
 import java.util.TimeZone;
-import java.util.HashMap;
 
 abstract class DoradeDescriptor {
 
@@ -22,12 +20,8 @@ abstract class DoradeDescriptor {
   protected String expectedName;
   protected RandomAccessFile file;
   protected boolean littleEndianData;
-  protected boolean verbose;
 
   protected static final TimeZone TZ_UTC = TimeZone.getTimeZone("UTC");
-  private static boolean defaultVerboseState = false;
-  // map from descriptor names to per-class default verbose states
-  private static HashMap<String, Boolean> classVerboseStates = new HashMap<>();
 
   static class DescriptorException extends Exception {
     protected DescriptorException(String message) {
@@ -42,52 +36,40 @@ abstract class DoradeDescriptor {
   /**
    * Read and set the descriptor name, size, and endianness, and return the
    * entire contents of the descriptor (including the name and size) as a
-   * byte array.  The file position will be left at the beginning of the next
+   * byte array. The file position will be left at the beginning of the next
    * descriptor (or at the end of file).
    *
-   * @param file             the DORADE sweepfile, positioned at the beginning of a
-   *                         descriptor
+   * @param file the DORADE sweepfile, positioned at the beginning of a
+   *        descriptor
    * @param littleEndianData set to true iff the file contains little-endian
-   *                         data
-   * @param expectedName     the expected name for the descriptor being read
+   *        data
+   * @param expectedName the expected name for the descriptor being read
    * @throws DescriptorException for file read errors, descriptor name
-   *                             mismatch, etc.
+   *         mismatch, etc.
    */
-  protected byte[] readDescriptor(RandomAccessFile file,
-                                  boolean littleEndianData,
-                                  String expectedName)
-          throws DescriptorException {
+  protected byte[] readDescriptor(RandomAccessFile file, boolean littleEndianData, String expectedName)
+      throws DescriptorException {
 
     this.file = file;
     this.littleEndianData = littleEndianData;
     this.expectedName = expectedName;
-    verbose = getDefaultVerboseState(expectedName);
 
     byte[] data;
 
     try {
-      //
       // find the next descriptor with our expected name
-      //
       findNext(file);
 
-      //
       // keep track of the start of this descriptor
-      //
       long startpos = file.getFilePointer();
 
-      //
       // get the name and descriptor size
-      //
       byte[] header = new byte[8];
       file.readFully(header);
-      descName = new String(header, 0, 4, CDM.utf8Charset);
+      descName = new String(header, 0, 4, StandardCharsets.UTF_8);
       int size = grabInt(header, 4);
 
-      //
-      // now back up to the start of the descriptor and read the entire
-      // thing into a byte array
-      //
+      // now back up to the start of the descriptor and read the entire thing into a byte array
       file.seek(startpos);
 
       data = new byte[size];
@@ -96,13 +78,10 @@ abstract class DoradeDescriptor {
       throw new DescriptorException(ex);
     }
 
-    //
     // now check the name we got against the expected name
-    //
     if (!descName.equals(expectedName))
-      throw new DescriptorException("Got descriptor name '" + descName +
-              "' when expecting name '" +
-              expectedName + "'");
+      throw new DescriptorException(
+          "Got descriptor name '" + descName + "' when expecting name '" + expectedName + "'");
 
     return data;
   }
@@ -112,12 +91,9 @@ abstract class DoradeDescriptor {
    * at the beginning of the next descriptor (or at the end of file).
    *
    * @param file the DORADE sweepfile, positioned at the beginning of a
-   *             descriptor
-   * @throws java.io.IOException
+   *        descriptor
    */
-  protected static void skipDescriptor(RandomAccessFile file,
-                                       boolean littleEndianData)
-          throws DescriptorException, java.io.IOException {
+  protected static void skipDescriptor(RandomAccessFile file, boolean littleEndianData) throws DescriptorException {
     try {
       file.readFully(new byte[4]); // skip name
       byte[] lenBytes = new byte[4];
@@ -125,7 +101,7 @@ abstract class DoradeDescriptor {
       int descLen = grabInt(lenBytes, 0, littleEndianData);
       file.readFully(new byte[descLen - 8]);
     } catch (java.io.EOFException eofex) {
-      return; // just leave the file at EOF
+      // just leave the file at EOF
     } catch (Exception ex) {
       throw new DescriptorException(ex);
     }
@@ -133,23 +109,21 @@ abstract class DoradeDescriptor {
 
   /**
    * Return the name of the DORADE descriptor at the current location
-   * in the file.  The current location will not be changed.
+   * in the file. The current location will not be changed.
    *
    * @param file the DORADE sweep file, positioned at the beginning of a
-   *             descriptor
+   *        descriptor
    * @return the name of the DORADE descriptor starting at the current
-   * file position, or null if no descriptor name is available
-   * @throws DescriptorException
+   *         file position, or null if no descriptor name is available
    */
-  protected static String peekName(RandomAccessFile file)
-          throws DescriptorException {
+  protected static String peekName(RandomAccessFile file) throws DescriptorException {
     try {
       long filepos = file.getFilePointer();
       byte[] nameBytes = new byte[4];
       if (file.read(nameBytes) == -1)
-        return null;  // EOF
+        return null; // EOF
       file.seek(filepos);
-      return new String(nameBytes, CDM.utf8Charset);
+      return new String(nameBytes, StandardCharsets.UTF_8);
 
     } catch (IOException ex) {
       throw new DescriptorException(ex);
@@ -162,10 +136,8 @@ abstract class DoradeDescriptor {
    *
    * @param file the DORADE sweepfile,
    * @return <code>true</code> iff the file contains little-endian data
-   * @throws DescriptorException
    */
-  public static boolean sweepfileIsLittleEndian(RandomAccessFile file)
-          throws DescriptorException {
+  public static boolean sweepfileIsLittleEndian(RandomAccessFile file) throws DescriptorException {
     int descLen;
     try {
       file.seek(0);
@@ -188,7 +160,7 @@ abstract class DoradeDescriptor {
   /**
    * Unpack a two-byte integer from the given byte array.
    *
-   * @param bytes  byte array to be read
+   * @param bytes byte array to be read
    * @param offset number of bytes to skip in the byte array before reading
    * @return the unpacked short value
    */
@@ -202,30 +174,26 @@ abstract class DoradeDescriptor {
   /**
    * Unpack a four-byte integer from the given byte array.
    *
-   * @param bytes            byte array to be read
-   * @param offset           number of bytes to skip in the byte array before reading
+   * @param bytes byte array to be read
+   * @param offset number of bytes to skip in the byte array before reading
    * @param littleEndianData true iff the byte array contains little-endian
-   *                         data
+   *        data
    * @return the unpacked integer value
    */
-  protected static int grabInt(byte[] bytes, int offset,
-                               boolean littleEndianData) {
+  protected static int grabInt(byte[] bytes, int offset, boolean littleEndianData) {
     int ndx0 = offset + (littleEndianData ? 3 : 0);
     int ndx1 = offset + (littleEndianData ? 2 : 1);
     int ndx2 = offset + (littleEndianData ? 1 : 2);
     int ndx3 = offset + (littleEndianData ? 0 : 3);
 
     // careful that we only allow sign extension on the highest order byte
-    return (bytes[ndx0] << 24 |
-            (bytes[ndx1] & 0xff) << 16 |
-            (bytes[ndx2] & 0xff) << 8 |
-            (bytes[ndx3] & 0xff));
+    return (bytes[ndx0] << 24 | (bytes[ndx1] & 0xff) << 16 | (bytes[ndx2] & 0xff) << 8 | (bytes[ndx3] & 0xff));
   }
 
   /**
    * Unpack a four-byte integer from the given byte array.
    *
-   * @param bytes  byte array to be read
+   * @param bytes byte array to be read
    * @param offset number of bytes to skip in the byte array before reading
    * @return the unpacked integer value
    */
@@ -236,12 +204,11 @@ abstract class DoradeDescriptor {
   /**
    * Unpack a four-byte IEEE float from the given byte array.
    *
-   * @param bytes  byte array to be read
+   * @param bytes byte array to be read
    * @param offset number of bytes to skip in the byte array before reading
    * @return the unpacked float value
    */
-  protected float grabFloat(byte[] bytes, int offset)
-          throws DescriptorException {
+  protected float grabFloat(byte[] bytes, int offset) throws DescriptorException {
     try {
       byte[] src;
       if (littleEndianData) {
@@ -254,8 +221,7 @@ abstract class DoradeDescriptor {
       } else {
         src = bytes;
       }
-      DataInputStream stream =
-              new DataInputStream(new ByteArrayInputStream(src, offset, 4));
+      DataInputStream stream = new DataInputStream(new ByteArrayInputStream(src, offset, 4));
       return stream.readFloat();
     } catch (Exception ex) {
       throw new DescriptorException(ex);
@@ -265,12 +231,11 @@ abstract class DoradeDescriptor {
   /**
    * Unpack an eight-byte IEEE float from the given byte array.
    *
-   * @param bytes  byte array to be read
+   * @param bytes byte array to be read
    * @param offset number of bytes to skip in the byte array before reading
    * @return the unpacked double value
    */
-  protected double grabDouble(byte[] bytes, int offset)
-          throws DescriptorException {
+  protected double grabDouble(byte[] bytes, int offset) throws DescriptorException {
     try {
       byte[] src;
       if (littleEndianData) {
@@ -287,8 +252,7 @@ abstract class DoradeDescriptor {
       } else {
         src = bytes;
       }
-      DataInputStream stream =
-              new DataInputStream(new ByteArrayInputStream(src, offset, 8));
+      DataInputStream stream = new DataInputStream(new ByteArrayInputStream(src, offset, 8));
       return stream.readDouble();
     } catch (Exception ex) {
       throw new DescriptorException(ex);
@@ -296,10 +260,8 @@ abstract class DoradeDescriptor {
   }
 
 
-  protected static long findNextWithName(String expectedName,
-                                         RandomAccessFile file,
-                                         boolean littleEndianData)
-          throws DescriptorException, java.io.IOException {
+  protected static long findNextWithName(String expectedName, RandomAccessFile file, boolean littleEndianData)
+      throws DescriptorException {
 
     //
     // Skip forward through the file until we find a descriptor with
@@ -316,15 +278,12 @@ abstract class DoradeDescriptor {
       }
       skipDescriptor(file, littleEndianData);
     }
-    throw new DescriptorException("Expected " + expectedName +
-            " descriptor not found!");
+    throw new DescriptorException("Expected " + expectedName + " descriptor not found!");
   }
 
-  protected long findNext(RandomAccessFile file)
-          throws DescriptorException, java.io.IOException {
+  protected long findNext(RandomAccessFile file) throws DescriptorException {
     return findNextWithName(expectedName, file, littleEndianData);
   }
-
 
   /**
    * Return a string with a reasonable and complete representation of the
@@ -337,48 +296,4 @@ abstract class DoradeDescriptor {
     return CalendarDateFormatter.toDateTimeString(date);
   }
 
-  /**
-   * Get the default verbose state for new <code>DoradeDescriptor</code>-s.
-   */
-  public static boolean getDefaultVerboseState() {
-    return defaultVerboseState;
-  }
-
-  /**
-   * Set the default verbose state for new <code>DoradeDescriptor</code>-s.
-   *
-   * @param verbose the new default verbose state
-   */
-  public static void setDefaultVerboseState(boolean verbose) {
-    defaultVerboseState = verbose;
-    classVerboseStates.clear();
-  }
-
-  /**
-   * Get the default verbose state for new <code>DoradeDescriptor</code>-s
-   * of the given name.
-   *
-   * @param descriptorName the descriptor name for which the new default
-   *                       verbose state will apply
-   */
-  public static boolean getDefaultVerboseState(String descriptorName) {
-    Boolean classVerboseState = classVerboseStates.get(descriptorName.toUpperCase());
-    if (classVerboseState != null)
-      return classVerboseState;
-    else
-      return defaultVerboseState;
-  }
-
-  /**
-   * Set the default verbose state for new <code>DoradeDescriptor</code>-s
-   * of the given name.
-   *
-   * @param descriptorName the descriptor name for which the new default
-   *                       verbose state will apply
-   * @param verbose        the new default verbose state
-   */
-  public static void setDefaultVerboseState(String descriptorName,
-                                            boolean verbose) {
-    classVerboseStates.put(descriptorName.toUpperCase(), verbose);
-  }
 }

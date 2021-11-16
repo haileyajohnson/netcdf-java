@@ -12,7 +12,6 @@ import ucar.nc2.constants.AxisType;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.Dimension;
 import ucar.nc2.Variable;
-
 import java.util.Formatter;
 
 /**
@@ -21,12 +20,10 @@ import java.util.Formatter;
  * @author caron
  * @since Dec 18, 2008
  */
-public class Iridl extends TableConfigurerImpl  {
+public class Iridl extends TableConfigurerImpl {
 
   public boolean isMine(FeatureType wantFeatureType, NetcdfDataset ds) {
-    if (!ds.findAttValueIgnoreCase(null, CDM.CONVENTIONS, "").equalsIgnoreCase("IRIDL"))
-      return false;
-    return true;
+    return ds.findAttValueIgnoreCase(null, CDM.CONVENTIONS, "").equalsIgnoreCase("IRIDL");
   }
 
   public TableConfig getConfig(FeatureType wantFeatureType, NetcdfDataset ds, Formatter errlog) {

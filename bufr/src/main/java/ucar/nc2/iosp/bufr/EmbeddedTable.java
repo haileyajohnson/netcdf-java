@@ -12,7 +12,6 @@ import ucar.nc2.iosp.bufr.tables.TableD;
 import ucar.nc2.iosp.bufr.tables.WmoXmlReader;
 import ucar.nc2.wmo.Util;
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +32,7 @@ public class EmbeddedTable {
   private final BufrIdentificationSection ids;
 
   private List<Message> messages = new ArrayList<>();
-  private boolean tableRead = false;
+  private boolean tableRead;
   private TableB b;
   private TableD d;
   private Structure seq2, seq3, seq4;
@@ -70,7 +69,7 @@ public class EmbeddedTable {
         MessageCompressedDataReader reader = new MessageCompressedDataReader();
         data = reader.readEntireMessage(obs, proto, m, raf, null);
       }
-      while ( data.hasNext()) {
+      while (data.hasNext()) {
         StructureData sdata = (StructureData) data.next();
         add(sdata);
       }
@@ -79,7 +78,8 @@ public class EmbeddedTable {
 
   private void add(StructureData data) throws IOException {
     for (StructureMembers.Member m : data.getMembers()) {
-      if (showB) System.out.printf("%s%n", m);
+      if (showB)
+        System.out.printf("%s%n", m);
       if (m.getDataType() == DataType.SEQUENCE) {
         if (m.getName().equals("seq2")) {
           ArraySequence seq = data.getArraySequence(m);
@@ -96,50 +96,65 @@ public class EmbeddedTable {
     }
   }
 
-  private void addTableEntryB(StructureData sdata) throws IOException {
+  private void addTableEntryB(StructureData sdata) {
     String name = "", units = "", signScale = null, signRef = null;
     int scale = 0, refVal = 0, width = 0;
     short x1 = 0, y1 = 0;
     List<StructureMembers.Member> members = sdata.getMembers();
     List<Variable> vars = seq2.getVariables();
-    for (int i=0; i<vars.size(); i++) {
+    for (int i = 0; i < vars.size(); i++) {
       Variable v = vars.get(i);
       StructureMembers.Member m = members.get(i);
       String data = sdata.getScalarString(m);
-      if (showB) System.out.printf("%s == %s%n" ,v, data);
+      if (showB)
+        System.out.printf("%s == %s%n", v, data);
 
       Attribute att = v.findAttribute(BufrIosp2.fxyAttName);
-      if (att.getStringValue().equals("0-0-10")) {
-        sdata.getScalarString(m);
-      } else if (att.getStringValue().equals("0-0-11")) {
-        String x = sdata.getScalarString(m);
-        x1 = Short.parseShort(x.trim());
-      } else if (att.getStringValue().equals("0-0-12")) {
-        String y = sdata.getScalarString(m);
-        y1 = Short.parseShort(y.trim());
-      } else if (att.getStringValue().equals("0-0-13")) {
-        name = sdata.getScalarString(m);
-      } else if (att.getStringValue().equals("0-0-14")) {
-        name += sdata.getScalarString(m);  // append both lines
-      } else if (att.getStringValue().equals("0-0-15")) {
-        units = sdata.getScalarString(m);
-        units = WmoXmlReader.cleanUnit(units.trim());
-      } else if (att.getStringValue().equals("0-0-16")) {
-        signScale = sdata.getScalarString(m).trim();
-      } else if (att.getStringValue().equals("0-0-17")) {
-        String scaleS = sdata.getScalarString(m);
-        scale = Integer.parseInt(scaleS.trim());
-      } else if (att.getStringValue().equals("0-0-18")) {
-        signRef = sdata.getScalarString(m).trim();
-      } else if (att.getStringValue().equals("0-0-19")) {
-        String refS = sdata.getScalarString(m);
-        refVal = Integer.parseInt(refS.trim());
-      } else if (att.getStringValue().equals("0-0-20")) {
-        String widthS = sdata.getScalarString(m);
-        width = Integer.parseInt(widthS.trim());
+      switch (att.getStringValue()) {
+        case "0-0-10":
+          sdata.getScalarString(m);
+          break;
+        case "0-0-11":
+          String x = sdata.getScalarString(m);
+          x1 = Short.parseShort(x.trim());
+          break;
+        case "0-0-12":
+          String y = sdata.getScalarString(m);
+          y1 = Short.parseShort(y.trim());
+          break;
+        case "0-0-13":
+          name = sdata.getScalarString(m);
+          break;
+        case "0-0-14":
+          name += sdata.getScalarString(m); // append both lines
+
+          break;
+        case "0-0-15":
+          units = sdata.getScalarString(m);
+          units = WmoXmlReader.cleanUnit(units.trim());
+          break;
+        case "0-0-16":
+          signScale = sdata.getScalarString(m).trim();
+          break;
+        case "0-0-17":
+          String scaleS = sdata.getScalarString(m);
+          scale = Integer.parseInt(scaleS.trim());
+          break;
+        case "0-0-18":
+          signRef = sdata.getScalarString(m).trim();
+          break;
+        case "0-0-19":
+          String refS = sdata.getScalarString(m);
+          refVal = Integer.parseInt(refS.trim());
+          break;
+        case "0-0-20":
+          String widthS = sdata.getScalarString(m);
+          width = Integer.parseInt(widthS.trim());
+          break;
       }
     }
-    if (showB) System.out.printf("%n");
+    if (showB)
+      System.out.printf("%n");
 
     // split name and description from appended line 1 and 2
     String desc = null;
@@ -151,8 +166,10 @@ public class EmbeddedTable {
       name = Util.cleanName(name);
     }
 
-    if ("-".equals(signScale)) scale = -1 * scale;
-    if ("-".equals(signRef)) refVal = -1 * refVal;
+    if ("-".equals(signScale))
+      scale = -1 * scale;
+    if ("-".equals(signRef))
+      refVal = -1 * refVal;
 
     b.addDescriptor(x1, y1, scale, refVal, width, name, units, desc);
   }
@@ -164,7 +181,7 @@ public class EmbeddedTable {
 
     List<StructureMembers.Member> members = sdata.getMembers();
     List<Variable> vars = seq3.getVariables();
-    for (int i=0; i<vars.size(); i++) {
+    for (int i = 0; i < vars.size(); i++) {
       Variable v = vars.get(i);
       StructureMembers.Member m = members.get(i);
       if (m.getName().equals("seq4")) {
@@ -174,21 +191,28 @@ public class EmbeddedTable {
 
       Attribute att = v.findAttribute(BufrIosp2.fxyAttName);
       if (att != null) {
-        if (showD) System.out.printf("%s == %s%n" ,v, sdata.getScalarString(m));
-        if (att.getStringValue().equals("0-0-10")) {
-          sdata.getScalarString(m);
-        } else if (att.getStringValue().equals("0-0-11")) {
-          String x = sdata.getScalarString(m);
-          x1 = Short.parseShort(x.trim());
-        } else if (att.getStringValue().equals("0-0-12")) {
-          String y = sdata.getScalarString(m);
-          y1 = Short.parseShort(y.trim());
-        } else if (att.getStringValue().equals("2-5-64")) {
-          name = sdata.getScalarString(m);
+        if (showD)
+          System.out.printf("%s == %s%n", v, sdata.getScalarString(m));
+        switch (att.getStringValue()) {
+          case "0-0-10":
+            sdata.getScalarString(m);
+            break;
+          case "0-0-11":
+            String x = sdata.getScalarString(m);
+            x1 = Short.parseShort(x.trim());
+            break;
+          case "0-0-12":
+            String y = sdata.getScalarString(m);
+            y1 = Short.parseShort(y.trim());
+            break;
+          case "2-5-64":
+            name = sdata.getScalarString(m);
+            break;
         }
       }
     }
-    if (showD) System.out.printf("%n");
+    if (showD)
+      System.out.printf("%n");
 
     name = Util.cleanName(name);
 
@@ -205,21 +229,23 @@ public class EmbeddedTable {
       StructureData sdata = iter.next();
 
       List<StructureMembers.Member> members = sdata.getMembers();
-      for (int i=0; i<vars.size(); i++) {
+      for (int i = 0; i < vars.size(); i++) {
         Variable v = vars.get(i);
         StructureMembers.Member m = members.get(i);
         String data = sdata.getScalarString(m);
-        if (showD) System.out.printf("%s == %s%n" ,v, data);
+        if (showD)
+          System.out.printf("%s == %s%n", v, data);
 
         Attribute att = v.findAttribute(BufrIosp2.fxyAttName);
         if (att != null && att.getStringValue().equals("0-0-30"))
           fxyS = sdata.getScalarString(m);
       }
-      if (showD) System.out.printf("%n");
+      if (showD)
+        System.out.printf("%n");
 
       if (fxyS != null) {
-          short id = Descriptor.getFxy2(fxyS);
-          list.add(id);
+        short id = Descriptor.getFxy2(fxyS);
+        list.add(id);
       }
     }
     return list;

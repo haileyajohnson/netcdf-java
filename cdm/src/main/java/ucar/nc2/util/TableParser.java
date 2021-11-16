@@ -5,9 +5,10 @@
 
 package ucar.nc2.util;
 
-import ucar.nc2.constants.CDM;
+import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ucar.unidata.util.StringUtil2;
-
 import java.io.*;
 import java.util.*;
 import java.net.URL;
@@ -16,6 +17,7 @@ import java.net.URL;
  * Utility class to read and parse a fixed length table.
  * Each line of the table becomes a "Record". Each Record has a set of Fields described by the format string.
  * <p/>
+ * 
  * <pre>
  * List<TableParser.Record> recs = TableParser.readTable(is, "3,15,46,54,60d,67d,73d", 50000);
  * for (TableParser.Record record : recs) {
@@ -52,41 +54,43 @@ import java.net.URL;
  * @author caron
  */
 /*
-    ClassLoader cl = Level2VolumeScan.class.getClassLoader();
-    InputStream is = cl.getResourceAsStream("resources/nj22/tables/nexrad.tbl");
-
-    List<TableParser.Record> recs = TableParser.readTable(is, "3,15,46, 54,60d,67d,73d", 50000);
-    for (TableParser.Record record : recs) {
-      Station s = new Station();
-      s.id = "K" + record.get(0);
-      s.name = record.get(2) + " " + record.get(3);
-      s.lat = (Double) record.get(4) * .01;
-      s.lon = (Double) record.get(5) * .01;
-      s.elev = (Double) record.get(6);
-
-      stationTableHash.put(s.id, s);
-      if (showStations) System.out.println(" station= " + s);
-    }
-
-          1         2         3         4         5         6         7         8         9         10        11        12
-0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-
+ * ClassLoader cl = Level2VolumeScan.class.getClassLoader();
+ * InputStream is = cl.getResourceAsStream("resources/nj22/tables/nexrad.tbl");
+ * 
+ * List<TableParser.Record> recs = TableParser.readTable(is, "3,15,46, 54,60d,67d,73d", 50000);
+ * for (TableParser.Record record : recs) {
+ * Station s = new Station();
+ * s.id = "K" + record.get(0);
+ * s.name = record.get(2) + " " + record.get(3);
+ * s.lat = (Double) record.get(4) * .01;
+ * s.lon = (Double) record.get(5) * .01;
+ * s.elev = (Double) record.get(6);
+ * 
+ * stationTableHash.put(s.id, s);
+ * if (showStations) System.out.println(" station= " + s);
+ * }
+ * 
+ * 1 2 3 4 5 6 7 8 9 10 11 12
+ * 0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+ * 
  */
 public class TableParser {
-  static private final boolean debug = false;
+  private static Logger logger = LoggerFactory.getLogger(TableParser.class);
+  private static final boolean debug = false;
 
   /**
    * Reads a URL or file in as a table.
    *
    * @param urlString starts with http, read URL contenets, else read file.
-   * @param format    describe format of each line.
-   * @param maxLines  maximum number of lines to parse, set to < 0 to read all
+   * @param format describe format of each line.
+   * @param maxLines maximum number of lines to parse, set to < 0 to read all
    * @return List of TableParser.Record
-   * @throws IOException           on read error
+   * @throws IOException on read error
    * @throws NumberFormatException on parse number error
    * @see #readTable(InputStream ios, String format, int maxLines)
    */
-  static public List<Record> readTable(String urlString, String format, int maxLines) throws IOException, NumberFormatException {
+  public static List<Record> readTable(String urlString, String format, int maxLines)
+      throws IOException, NumberFormatException {
 
     InputStream ios;
     if (urlString.startsWith("http:")) {
@@ -103,14 +107,15 @@ public class TableParser {
    * Reads an input stream, containing lines of ascii in fixed width format.
    * Breaks each line into a set of Fields (space or comma delimited) which may be String, integer or double.
    *
-   * @param ios      the input stream, will be closed
-   * @param format   describe format of each line.
+   * @param ios the input stream, will be closed
+   * @param format describe format of each line.
    * @param maxLines maximum number of lines to parse, set to < 0 to read all
    * @return List of TableParser.Record
-   * @throws IOException           on read error
+   * @throws IOException on read error
    * @throws NumberFormatException on parse number error
    */
-  static public List<Record> readTable(InputStream ios, String format, int maxLines) throws IOException, NumberFormatException {
+  public static List<Record> readTable(InputStream ios, String format, int maxLines)
+      throws IOException, NumberFormatException {
     List<Record> result;
     try {
       TableParser parser = new TableParser(format);
@@ -125,7 +130,8 @@ public class TableParser {
   /////////////////////////////////////////////////////////////////////////////////////////////////
 
   private List<Field> fields = new ArrayList<>();
-  public TableParser(String format) throws IOException, NumberFormatException {
+
+  public TableParser(String format) throws NumberFormatException {
     int start = 0;
     StringTokenizer stoker = new StringTokenizer(format, " ,");
     while (stoker.hasMoreTokens()) {
@@ -133,10 +139,14 @@ public class TableParser {
       // see what type
       Class type = String.class;
       char last = tok.charAt(tok.length() - 1);
-      if (last == 'i') type = int.class;
-      if (last == 'd') type = double.class;
-      if (last == 'L') type = long.class;
-      if (type != String.class) tok = tok.substring(0, tok.length() - 1);
+      if (last == 'i')
+        type = int.class;
+      if (last == 'd')
+        type = double.class;
+      if (last == 'L')
+        type = long.class;
+      if (type != String.class)
+        tok = tok.substring(0, tok.length() - 1);
 
       int end = Integer.parseInt(tok);
       fields.add(new Field(start, end, type));
@@ -145,6 +155,7 @@ public class TableParser {
   }
 
   private String comment = "#";
+
   public void setComment(String comment) {
     this.comment = comment;
   }
@@ -153,14 +164,18 @@ public class TableParser {
 
     List<Record> records = new ArrayList<>();
 
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
     int count = 0;
     while ((maxLines < 0) || (count < maxLines)) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.startsWith(comment)) continue;
-      if (line.trim().length() == 0) continue;
-      if (debug) System.out.printf("%s%n", line);
+      if (line == null)
+        break;
+      if (line.startsWith(comment))
+        continue;
+      if (line.trim().isEmpty())
+        continue;
+      if (debug)
+        System.out.printf("%s%n", line);
       Record r = Record.make(line, fields);
       if (r != null)
         records.add(r);
@@ -186,7 +201,7 @@ public class TableParser {
     int start, end;
     Class type;
 
-    boolean hasScale = false;
+    boolean hasScale;
     float scale;
 
     Field(int start, int end, Class type) {
@@ -202,7 +217,7 @@ public class TableParser {
     }
 
     public Object parse(String line, int offset) throws NumberFormatException {
-      return parse(line, this.start+offset, this.end+offset);      
+      return parse(line, this.start + offset, this.end + offset);
     }
 
     protected Object parse(String line, int start, int end) throws NumberFormatException {
@@ -213,14 +228,13 @@ public class TableParser {
         svalue = line.substring(start);
       else
         svalue = line.substring(start, end);
-      //System.out.printf("  [%d,%d) = %s %n",start, end, svalue);
 
       if (type == String.class)
         return svalue;
 
       try {
         svalue = StringUtil2.remove(svalue, ' ');
-        boolean isBlank = (svalue.trim().length() == 0);
+        boolean isBlank = (svalue.trim().isEmpty());
         if (type == double.class)
           return isBlank ? 0.0 : new Double(svalue);
         if (type == int.class) {
@@ -234,7 +248,7 @@ public class TableParser {
           return isBlank ? 0L : new Long(svalue);
 
       } catch (NumberFormatException e) {
-        System.out.printf("  [%d,%d) = <%s> %n", start, end, svalue);
+        logger.warn("Bad line={} ", String.format("  [%d,%d) = <%s> %n", start, end, svalue));
         throw e;
       }
 
@@ -248,8 +262,8 @@ public class TableParser {
 
   }
 
-  public DerivedField addDerivedField(Field from, Transform transform, Class type ) {
-    DerivedField fld =  new DerivedField(from, transform, type);
+  public DerivedField addDerivedField(Field from, Transform transform, Class type) {
+    DerivedField fld = new DerivedField(from, transform, type);
     fields.add(fld);
     return fld;
   }
@@ -277,7 +291,7 @@ public class TableParser {
   /**
    * A set of values for one line.
    */
-  static public class Record {
+  public static class Record {
     List<Object> values = new ArrayList<>();
 
     static Record make(String line, List fields) {
@@ -289,7 +303,7 @@ public class TableParser {
         }
         return r;
       } catch (NumberFormatException e) {
-        System.out.printf("Bad line=%s %n", line);
+        logger.warn("Bad line={}", line);
         return null;
       }
     }

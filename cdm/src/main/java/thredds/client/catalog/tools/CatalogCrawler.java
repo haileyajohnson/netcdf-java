@@ -15,14 +15,11 @@ import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.NCdumpW;
 import ucar.nc2.Variable;
-import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.ft2.coverage.*;
-import ucar.nc2.time.CalendarDate;
 import ucar.nc2.util.CancelTask;
 import ucar.nc2.util.Indent;
 import ucar.nc2.util.Misc;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
@@ -39,7 +36,7 @@ public class CatalogCrawler {
     /**
      * Gets called for each dataset found.
      *
-     * @param dd      the dataset
+     * @param dd the dataset
      * @param context object passed into crawl() by the caller
      */
     void getDataset(Dataset dd, Object context);
@@ -54,12 +51,12 @@ public class CatalogCrawler {
   }
 
   public enum Type {
-    all,                         // return all datasets
-    all_direct,                  // return all direct datasets, ie that have an access URL
-    first_direct,                // return first dataset in each collection of direct datasets
-    random_direct,               // return one random dataset in each collection of direct datasets
-    random_direct_middle,        // return one random dataset in each collection of direct datasets
-    random_direct_max            // return max random datasets in entire catalog
+    all, // return all datasets
+    all_direct, // return all direct datasets, ie that have an access URL
+    first_direct, // return first dataset in each collection of direct datasets
+    random_direct, // return one random dataset in each collection of direct datasets
+    random_direct_middle, // return one random dataset in each collection of direct datasets
+    random_direct_max // return max random datasets in entire catalog
   }
 
   private final Type type;
@@ -71,22 +68,23 @@ public class CatalogCrawler {
   private final Object context;
 
   private Random random;
-  private int countCatrefs = 0;
+  private int countCatrefs;
 
-  private int numReadFailures = 0;
+  private int numReadFailures;
 
   /**
    * Constructor.
    *
-   * @param type   CatalogCrawler.Type
-   * @param max    if > 0, only process max datasets, then exit (random_direct_max only)
+   * @param type CatalogCrawler.Type
+   * @param max if > 0, only process max datasets, then exit (random_direct_max only)
    * @param filter dont process this dataset or its descendants. may be null
    * @param listen each dataset gets passed to the listener. if null, send the dataset name to standard out
-   * @param task    user can cancel the task (may be null)
-   * @param out     send status messages to here (may be null)
+   * @param task user can cancel the task (may be null)
+   * @param out send status messages to here (may be null)
    * @param context caller can pass this object to Listener (eg used for thread safety)
    */
-  public CatalogCrawler(Type type, int max, Filter filter, Listener listen, CancelTask task, PrintWriter out, Object context) {
+  public CatalogCrawler(Type type, int max, Filter filter, Listener listen, CancelTask task, PrintWriter out,
+      Object context) {
     this.type = type == null ? Type.all : type;
     this.max = max;
     this.filter = filter;
@@ -104,7 +102,7 @@ public class CatalogCrawler {
    * Any that pass the filter are sent to the Listener
    * Close catalogs and release their resources as you.
    *
-   * @param catUrl  url of catalog to open (xml, not html)
+   * @param catUrl url of catalog to open (xml, not html)
    * @return number of catalogs (this + catrefs) opened and crawled
    */
   public int crawl(String catUrl) throws IOException {
@@ -129,7 +127,7 @@ public class CatalogCrawler {
   /**
    * Crawl a catalog thats already been opened.
    *
-   * @param cat     the catalog
+   * @param cat the catalog
    * @return number of catalog references opened and crawled
    */
   public int crawl(Catalog cat) throws IOException {
@@ -141,7 +139,8 @@ public class CatalogCrawler {
   private int crawl(Catalog cat, int level, Indent indent) throws IOException {
     for (Dataset ds : cat.getDatasetsLocal()) {
       crawlDataset(ds, level, indent);
-      if ((task != null) && task.isCancel()) break;
+      if ((task != null) && task.isCancel())
+        break;
     }
     return 1 + countCatrefs;
   }
@@ -149,9 +148,9 @@ public class CatalogCrawler {
   /**
    * Crawl this dataset recursively.
    *
-   * @param ds      the dataset
-   * @param level   is the top dataset
-   * @param indent  print indentation
+   * @param ds the dataset
+   * @param level is the top dataset
+   * @param indent print indentation
    */
   private void crawlDataset(Dataset ds, int level, Indent indent) throws IOException {
     if (filter != null && filter.skipAll(ds))
@@ -160,10 +159,11 @@ public class CatalogCrawler {
     if (ds instanceof CatalogRef) {
       CatalogRef catref = (CatalogRef) ds;
 
-      if (filter != null && filter.skipCatref(catref, level+1))
+      if (filter != null && filter.skipCatref(catref, level + 1))
         return;
 
-      if (out != null) out.printf("%n%sCatalogRef %s (%s)%n", indent, catref.getURI(), ds.getName());
+      if (out != null)
+        out.printf("%n%sCatalogRef %s (%s)%n", indent, catref.getURI(), ds.getName());
       countCatrefs++;
 
       Catalog cat = readCatref(catref, out, indent);
@@ -172,7 +172,7 @@ public class CatalogCrawler {
         return;
       }
 
-      crawl(cat, level+1, indent.incr());
+      crawl(cat, level + 1, indent.incr());
       indent.decr();
       return;
     }
@@ -191,7 +191,8 @@ public class CatalogCrawler {
           listen.getDataset(dds, context);
         crawlDataset(dds, level, indent.incr());
         indent.decr();
-        if ((task != null) && task.isCancel()) break;
+        if ((task != null) && task.isCancel())
+          break;
       }
 
     } else {
@@ -204,7 +205,7 @@ public class CatalogCrawler {
           leaves.add(dds);
       }
 
-      if (leaves.size() > 0) {
+      if (!leaves.isEmpty()) {
         if (type == Type.first_direct) {
           Dataset dds = leaves.get(0);
           listen.getDataset(dds, context);
@@ -218,7 +219,8 @@ public class CatalogCrawler {
         } else { // do all of them
           for (Dataset dds : leaves) {
             listen.getDataset(dds, context);
-            if ((task != null) && task.isCancel()) break;
+            if ((task != null) && task.isCancel())
+              break;
           }
         }
       }
@@ -227,7 +229,8 @@ public class CatalogCrawler {
         if (dds.hasNestedDatasets() || (dds instanceof CatalogRef)) {
           crawlDataset(dds, level, indent.incr());
           indent.decr();
-          if ((task != null) && task.isCancel()) break;
+          if ((task != null) && task.isCancel())
+            break;
         }
       }
     }
@@ -235,19 +238,14 @@ public class CatalogCrawler {
 
   private Catalog readCatref(CatalogRef catref, PrintWriter out, Indent indent) {
     CatalogBuilder builder = new CatalogBuilder();
-    try {
-      Catalog cat = builder.buildFromCatref(catref);
-      if (builder.hasFatalError() || cat == null) {
-        if (out != null) out.printf("%sError reading catref %s err=%s%n", indent, catref.getName(), builder.getErrorMessage());
-        return null;
-      }
-      return cat;
-    } catch (IOException e) {
-      if (out != null) out.printf("%sError reading catref %s err=%s%n", indent, catref.getName(), e.getMessage());
+    Catalog cat = builder.buildFromCatref(catref);
+    if (builder.hasFatalError() || cat == null) {
+      if (out != null)
+        out.printf("%sError reading catref %s err=%s%n", indent, catref.getName(), builder.getErrorMessage());
+      return null;
     }
-    return null;
+    return cat;
   }
-
 
   private Dataset chooseRandom(List datasets) {
     int index = random.nextInt(datasets.size());
@@ -265,14 +263,8 @@ public class CatalogCrawler {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-            .add("filter", filter)
-            .add("max", max)
-            .add("type", type)
-            .add("listen", listen)
-            .add("random", random)
-            .add("countCatrefs", countCatrefs)
-            .toString();
+    return MoreObjects.toStringHelper(this).add("filter", filter).add("max", max).add("type", type)
+        .add("listen", listen).add("random", random).add("countCatrefs", countCatrefs).toString();
   }
 
   public int getNumReadFailures() {
@@ -280,33 +272,35 @@ public class CatalogCrawler {
   }
 
 
-  /* public int crawlAllInDirectory(Path directory, boolean recurse, CancelTask task, PrintWriter out, Object context) throws IOException {
-    int count = 0;
-    try (DirectoryStream<Path> ds = Files.newDirectoryStream(directory)) {
-      for (Path p : ds) {
-        if (Files.isDirectory(p)) {
-          if (recurse)
-            crawlAllInDirectory(p, recurse, task, out, context);
-        } else {
-          count += crawl("file:" + p.toString(), null, null, null);
-        }
-        if ((task != null) && task.isCancel()) break;
-      }
-    }
-    return count;
-  } */
+  /*
+   * public int crawlAllInDirectory(Path directory, boolean recurse, CancelTask task, PrintWriter out, Object context)
+   * throws IOException {
+   * int count = 0;
+   * try (DirectoryStream<Path> ds = Files.newDirectoryStream(directory)) {
+   * for (Path p : ds) {
+   * if (Files.isDirectory(p)) {
+   * if (recurse)
+   * crawlAllInDirectory(p, recurse, task, out, context);
+   * } else {
+   * count += crawl("file:" + p.toString(), null, null, null);
+   * }
+   * if ((task != null) && task.isCancel()) break;
+   * }
+   * }
+   * return count;
+   * }
+   */
 
   //////////////////////////////////////////////////////////////////////////////
-
 
   private static class FilterDatasetScan implements Filter {
     PrintWriter out;
     boolean skipDatasetScan;
     int catrefLevel;
 
-    int count = 0;
-    int countSkip = 0;
-    int countCatrefs = 0;
+    int count;
+    int countSkip;
+    int countCatrefs;
 
     private FilterDatasetScan(PrintWriter pw, boolean skipDatasetScan, int catrefLevel) {
       this.out = pw;
@@ -329,7 +323,8 @@ public class CatalogCrawler {
     @Override
     public boolean skipCatref(CatalogRef dd, int level) {
       countCatrefs++;
-      if (catrefLevel <= 0) return false;
+      if (catrefLevel <= 0)
+        return false;
       return level > catrefLevel;
     }
   }
@@ -338,32 +333,32 @@ public class CatalogCrawler {
     @Parameter(names = {"-cat", "--catalog"}, description = "Top catalog URL", required = true)
     public String topCatalog;
 
-    @Parameter(names = {"-t", "--type"}, description = "type of crawl. Allowed values=" +
-            "[all, all_direct, first_direct, random_direct, random_direct_middle, random_direct_max]")
+    @Parameter(names = {"-t", "--type"}, description = "type of crawl. Allowed values="
+        + "[all, all_direct, first_direct, random_direct, random_direct_middle, random_direct_max]")
     public Type type = Type.all;
 
     @Parameter(names = {"-sh", "--showNames"}, description = "show dataset names ")
-    public boolean showNames = false;
+    public boolean showNames;
 
     @Parameter(names = {"-o", "--openDataset"}, description = "try to open the dataset ")
-    public boolean openDataset = false;
+    public boolean openDataset;
 
     @Parameter(names = {"-r", "--readRandom"}, description = "read some random data")
-    public boolean readRandom = false;
+    public boolean readRandom;
 
     @Parameter(names = {"-skipScans", "--skipScans"}, description = "skip DatasetScans ")
     public boolean skipDatasetScan = true;
 
     @Parameter(names = {"-catrefLevel", "--catrefLevel"}, description = "skip Catalog References > nested level")
-    public int catrefLevel = 0;
+    public int catrefLevel;
 
     @Parameter(names = {"-h", "--help"}, description = "Display this help and exit", help = true)
-    public boolean help = false;
+    public boolean help;
 
     private static class ParameterDescriptionComparator implements Comparator<ParameterDescription> {
       // Display parameters in this order in the usage information.
-      private final List<String> orderedParamNames = Arrays.asList(
-              "--catalog", "--type", "--openDataset", "--skipScans",  "--readRandom", "--catrefLevel", "--showNames", "--help");
+      private final List<String> orderedParamNames = Arrays.asList("--catalog", "--type", "--openDataset",
+          "--skipScans", "--readRandom", "--catrefLevel", "--showNames", "--help");
 
       @Override
       public int compare(ParameterDescription p0, ParameterDescription p1) {
@@ -376,41 +371,38 @@ public class CatalogCrawler {
       }
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private final JCommander jc;
 
-    public CommandLine(String progName, String[] args) throws ParameterException {
-      this.jc = new JCommander(this, args);  // Parses args and uses them to initialize *this*.
-      jc.setProgramName(progName);           // Displayed in the usage information.
+    CommandLine(String progName, String[] args) throws ParameterException {
+      this.jc = new JCommander(this, args); // Parses args and uses them to initialize *this*.
+      jc.setProgramName(progName); // Displayed in the usage information.
 
       // Set the ordering of of parameters in the usage information.
       jc.setParameterDescriptionComparator(new ParameterDescriptionComparator());
     }
 
-    public void printUsage() {
+    void printUsage() {
       jc.usage();
     }
 
     @Override
     public String toString() {
-      return "topCatalog='" + topCatalog + '\'' +
-              "\n   type=" + type +
-              ", showNames=" + showNames +
-              ", skipDatasetScan=" + skipDatasetScan +
-              ", catrefLevel=" + catrefLevel +
-              ", openDataset=" + openDataset
-              ;
+      return "topCatalog='" + topCatalog + '\'' + "\n   type=" + type + ", showNames=" + showNames
+          + ", skipDatasetScan=" + skipDatasetScan + ", catrefLevel=" + catrefLevel + ", openDataset=" + openDataset;
     }
   }
 
   private static class Counter {
-    int datasets = 0;
-    int openFc = 0;
-    int failFc = 0;
-    int failException = 0;
-    int openOdap = 0;
-    int failOdap = 0;
-    int openCdmr = 0;
-    int failCdmr = 0;
+    int datasets;
+    int openFc;
+    int failFc;
+    int failException;
+    int openOdap;
+    int failOdap;
+    int openCdmr;
+    int failCdmr;
   }
 
   public static void main(String[] args) throws Exception {
@@ -430,66 +422,60 @@ public class CatalogCrawler {
       FilterDatasetScan filter = new FilterDatasetScan(pw, cmdLine.skipDatasetScan, cmdLine.catrefLevel);
       CancelTask task = null;
 
-      CatalogCrawler crawler = new CatalogCrawler(cmdLine.type, -1, filter, new Listener() {
+      CatalogCrawler crawler = new CatalogCrawler(cmdLine.type, -1, filter, (dd, context) -> {
+        c.datasets++;
 
-        public void getDataset(Dataset dd, Object context) {
-          c.datasets++;
-
-          if (cmdLine.showNames) {
-            Service s = dd.getServiceDefault();
-            String sname = (s == null) ? "none" : s.getName();
-            pw.format("  Dataset '%s' service=%s%n", dd.getName(), sname);
-          }
-
-          if (cmdLine.openDataset && dd.hasAccess()) {
-            Service s = dd.getServiceDefault();
-            if (s == null || s.getServiceTypeName().equalsIgnoreCase(ServiceType.HTTPServer.name())) // skip files
-              return;
-
-            DataFactory fac = new DataFactory();
-            try ( DataFactory.Result result = fac.openFeatureDataset(dd, task)) {
-              if (result.fatalError) {
-                pw.format("  Dataset fatalError=%s%n", result.errLog);
-                c.failFc++;
-              } else {
-                pw.format("  Dataset '%s' opened as type=%s%n", dd.getName(), result.featureDataset.getFeatureType());
-                c.openFc++;
-                if (cmdLine.readRandom && result.featureDataset instanceof FeatureDatasetCoverage) {
-                  readRandom((FeatureDatasetCoverage) result.featureDataset, pw);
-                }
-              }
-            } catch (IOException e) {
-              e.printStackTrace(pw);
-              c.failException++;
-
-            } catch (InvalidRangeException e) {
-              e.printStackTrace();
-              c.failException++;
-            }
-
-            // opendap
-            Access opendap = dd.getAccess(ServiceType.OPENDAP);
-            if (opendap != null) {
-              if (readAccess(opendap, fac, pw))
-                c.openOdap++;
-              else
-                c.failOdap++;
-            } else {
-              // System.out.printf("HEY%n");
-            }
-
-            // cdmremote
-            Access cdmremote = dd.getAccess(ServiceType.CdmRemote);
-            if (cdmremote != null) {
-              if (readAccess(cdmremote, fac, pw))
-                c.openCdmr++;
-              else
-                c.failCdmr++;
-            }
-
-          }
+        if (cmdLine.showNames) {
+          Service s = dd.getServiceDefault();
+          String sname = (s == null) ? "none" : s.getName();
+          pw.format("  Dataset '%s' service=%s%n", dd.getName(), sname);
         }
 
+        if (cmdLine.openDataset && dd.hasAccess()) {
+          Service s = dd.getServiceDefault();
+          if (s == null || s.getServiceTypeName().equalsIgnoreCase(ServiceType.HTTPServer.name())) // skip files
+            return;
+
+          DataFactory fac = new DataFactory();
+          try (DataFactory.Result result = fac.openFeatureDataset(dd, task)) {
+            if (result.fatalError) {
+              pw.format("  Dataset fatalError=%s%n", result.errLog);
+              c.failFc++;
+            } else {
+              pw.format("  Dataset '%s' opened as type=%s%n", dd.getName(), result.featureDataset.getFeatureType());
+              c.openFc++;
+              if (cmdLine.readRandom && result.featureDataset instanceof FeatureDatasetCoverage) {
+                readRandom((FeatureDatasetCoverage) result.featureDataset, pw);
+              }
+            }
+          } catch (IOException e) {
+            e.printStackTrace(pw);
+            c.failException++;
+
+          } catch (InvalidRangeException e) {
+            e.printStackTrace();
+            c.failException++;
+          }
+
+          // opendap
+          Access opendap = dd.getAccess(ServiceType.OPENDAP);
+          if (opendap != null) {
+            if (readAccess(opendap, fac, pw))
+              c.openOdap++;
+            else
+              c.failOdap++;
+          }
+
+          // cdmremote
+          Access cdmremote = dd.getAccess(ServiceType.CdmRemote);
+          if (cdmremote != null) {
+            if (readAccess(cdmremote, fac, pw))
+              c.openCdmr++;
+            else
+              c.failCdmr++;
+          }
+
+        }
       }, task, pw, null);
 
       int count = 0;
@@ -519,7 +505,8 @@ public class CatalogCrawler {
     }
   }
 
-  private static boolean readRandom(FeatureDatasetCoverage covDataset, PrintWriter pw ) throws IOException, InvalidRangeException {
+  private static boolean readRandom(FeatureDatasetCoverage covDataset, PrintWriter pw)
+      throws IOException, InvalidRangeException {
     CoverageCollection cc = covDataset.getCoverageCollections().get(0);
     int ncov = cc.getCoverageCount();
     Random r = new Random(System.currentTimeMillis());
@@ -546,23 +533,23 @@ public class CatalogCrawler {
   }
 
   private static boolean readAccess(Access access, DataFactory fac, PrintWriter pw) {
-      Formatter log = new Formatter();
-      try (NetcdfDataset ncd = fac.openDataset(access, false, null, log)) {
-        if (ncd == null) {
-          pw.format("  Dataset opendap fatalError=%s%n", log);
-          return false;
-
-        } else {
-          pw.format("  Dataset '%s' opened as %s%n", access.getDataset().getName(), access.getService());
-          return readRandom(ncd, pw);
-        }
-      } catch (InvalidRangeException | IOException e) {
-        e.printStackTrace(pw);
+    Formatter log = new Formatter();
+    try (NetcdfDataset ncd = fac.openDataset(access, false, null, log)) {
+      if (ncd == null) {
+        pw.format("  Dataset opendap fatalError=%s%n", log);
         return false;
+
+      } else {
+        pw.format("  Dataset '%s' opened as %s%n", access.getDataset().getName(), access.getService());
+        return readRandom(ncd, pw);
       }
+    } catch (InvalidRangeException | IOException e) {
+      e.printStackTrace(pw);
+      return false;
+    }
   }
 
-  private static boolean readRandom(NetcdfDataset ncd, PrintWriter pw ) throws IOException, InvalidRangeException {
+  private static boolean readRandom(NetcdfDataset ncd, PrintWriter pw) throws IOException, InvalidRangeException {
     int ncov = ncd.getVariables().size();
     Random r = new Random(System.currentTimeMillis());
     int randomIdx = r.nextInt(ncov);
@@ -571,14 +558,14 @@ public class CatalogCrawler {
     int[] shape = randomVariable.getShape();
     int[] origin = new int[shape.length];
     int[] size = new int[shape.length];
-    for (int i=0; i< shape.length; i++) {
+    for (int i = 0; i < shape.length; i++) {
       origin[i] = r.nextInt(shape[i]);
       size[i] = 1;
     }
 
     Array data = randomVariable.read(origin, size);
-    pw.format(" read data from %s origin = %s return = %s%n", randomVariable.getNameAndDimensions(), Misc.showInts(origin),
-            NCdumpW.toString(data));
+    pw.format(" read data from %s origin = %s return = %s%n", randomVariable.getNameAndDimensions(),
+        Misc.showInts(origin), NCdumpW.toString(data));
     return true;
 
   }

@@ -7,8 +7,6 @@ package thredds.client.catalog;
 import thredds.client.catalog.builder.AccessBuilder;
 import thredds.client.catalog.builder.CatalogBuilder;
 import thredds.client.catalog.builder.DatasetBuilder;
-
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +21,8 @@ public class CatalogRef extends Dataset {
   private final String xlink;
   private boolean isRead;
 
-  public CatalogRef(DatasetNode parent, String name, String xlink, Map<String, Object> flds, List<AccessBuilder> accessBuilders, List<DatasetBuilder> datasetBuilders) {
+  public CatalogRef(DatasetNode parent, String name, String xlink, Map<String, Object> flds,
+      List<AccessBuilder> accessBuilders, List<DatasetBuilder> datasetBuilders) {
     super(parent, name, flds, accessBuilders, datasetBuilders);
     this.xlink = xlink;
   }
@@ -64,8 +63,10 @@ public class CatalogRef extends Dataset {
   /////////////////////////////////////////////////
 
   protected String translatePathToReletiveLocation(String dsPath, String configPath) {
-    if (dsPath == null) return null;
-    if (dsPath.length() == 0) return null;
+    if (dsPath == null)
+      return null;
+    if (dsPath.isEmpty())
+      return null;
 
     if (dsPath.startsWith("/"))
       dsPath = dsPath.substring(1);
@@ -82,7 +83,7 @@ public class CatalogRef extends Dataset {
   }
 
   //////////////////////////////////////////////////////////////////
-  private Catalog proxy = null;
+  private Catalog proxy;
 
   @Override
   public boolean hasNestedDatasets() {
@@ -98,20 +99,15 @@ public class CatalogRef extends Dataset {
 
   @Override
   public List<Dataset> getDatasetsLogical() {
-    try {
-      ucar.nc2.util.Optional<DatasetNode> opt = readCatref();
-      if (!opt.isPresent())
-        throw new RuntimeException(opt.getErrorMessage());
+    ucar.nc2.util.Optional<DatasetNode> opt = readCatref();
+    if (!opt.isPresent())
+      throw new RuntimeException(opt.getErrorMessage());
 
-      DatasetNode proxy = opt.get();
-      return proxy.getDatasets();
-
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    DatasetNode proxy = opt.get();
+    return proxy.getDatasets();
   }
 
-  public synchronized ucar.nc2.util.Optional<DatasetNode> readCatref() throws IOException {
+  public synchronized ucar.nc2.util.Optional<DatasetNode> readCatref() {
     if (proxy != null)
       return ucar.nc2.util.Optional.of(proxy);
 

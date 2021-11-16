@@ -12,7 +12,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.unidata.util.test.Diff;
-
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 
@@ -70,7 +69,8 @@ public class TestClone extends TestFiles {
           }
         }
       // Do not try xfail tests
-      if (isxfail) continue;
+      if (isxfail)
+        continue;
 
       FileInputStream teststream;
       String testfilepath = testdir + "/" + test + extension;
@@ -143,7 +143,8 @@ public class TestClone extends TestFiles {
     System.out.flush();
   }
 
-  public static void main(String args[]) throws Exception {
+  @Test
+  public void testStuff() throws Exception {
     new TestClone().test();
   }
 

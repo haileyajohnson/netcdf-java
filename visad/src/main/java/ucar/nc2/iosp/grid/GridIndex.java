@@ -18,28 +18,29 @@ public final class GridIndex {
   /**
    * used to check versions of already created indexes.
    */
-  static public final String current_index_version = "8.0";
+  public static final String current_index_version = "8.0";
 
   public final String filename;
 
   /**
    * Contains GridRecords
    */
-  private final List<GridRecord> index = new ArrayList<GridRecord>();
+  private final List<GridRecord> index = new ArrayList<>();
 
   /**
    * Contains list of grid definitions (mostly projection info)
    */
-  private final List<GridDefRecord> gcs = new ArrayList<GridDefRecord>();
+  private final List<GridDefRecord> gcs = new ArrayList<>();
 
   /**
    * contains global attributes of the Index.
    */
-  private final Map<String, String> atts = new HashMap<String, String>();
+  private final Map<String, String> atts = new HashMap<>();
 
   /**
    * Constructor for creating an Index from the Grid file.
    * Use the addXXX() methods.
+   * 
    * @param filename name of data file, for debugging
    */
   public GridIndex(String filename) {
@@ -94,7 +95,7 @@ public final class GridIndex {
   /**
    * adds a GlobalAttribute to the index.
    *
-   * @param name  GlobalAttribute
+   * @param name GlobalAttribute
    * @param value String
    */
   public final void addGlobalAttribute(String name, String value) {

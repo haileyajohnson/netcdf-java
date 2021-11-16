@@ -4,8 +4,8 @@
  */
 package ucar.nc2.iosp.grid;
 
+import java.util.Objects;
 import ucar.nc2.wmo.Util;
-import ucar.unidata.util.StringUtil2;
 
 /**
  * Class which represents a grid parameter.
@@ -40,7 +40,7 @@ public class GridParameter {
   public GridParameter(int center, int subcenter, int version, int number) {
     this.number = number;
     name = "undefined";
-    description = "Unknown-C"+ center + "-S"+ subcenter + "-V"+ version + ":"+number;
+    description = "Unknown-C" + center + "-S" + subcenter + "-V" + version + ":" + number;
     unit = "undefined";
   }
 
@@ -125,28 +125,29 @@ public class GridParameter {
    */
   @Override
   public String toString() {
-    return "GridParameter{" +
-            "number=" + number +
-            ", name='" + name + '\'' +
-            ", description='" + description + '\'' +
-            ", unit='" + unit + '\'' +
-            '}';
+    return "GridParameter{" + "number=" + number + ", name='" + name + '\'' + ", description='" + description + '\''
+        + ", unit='" + unit + '\'' + '}';
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
 
     GridParameter that = (GridParameter) o;
 
-    if (number != that.number) return false;
-    if (cf_name != null ? !cf_name.equals(that.cf_name) : that.cf_name != null) return false;
-    if (description != null ? !description.equals(that.description) : that.description != null) return false;
-    if (name != null ? !name.equals(that.name) : that.name != null) return false;
-    if (unit != null ? !unit.equals(that.unit) : that.unit != null) return false;
+    if (number != that.number)
+      return false;
+    if (!Objects.equals(cf_name, that.cf_name))
+      return false;
+    if (!Objects.equals(description, that.description))
+      return false;
+    if (!Objects.equals(name, that.name))
+      return false;
+    return Objects.equals(unit, that.unit);
 
-    return true;
   }
 
   @Override

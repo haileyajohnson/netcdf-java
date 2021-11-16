@@ -6,14 +6,11 @@
 package ucar.nc2.iosp.grid;
 
 import ucar.ma2.*;
-
 import ucar.nc2.*;
-//import ucar.nc2.dt.fmr.FmrcCoordSys;
+// import ucar.nc2.dt.fmr.FmrcCoordSys;
 import ucar.nc2.iosp.AbstractIOServiceProvider;
 import ucar.nc2.util.CancelTask;
-
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.IOException;
 
 /**
@@ -41,38 +38,34 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
   }
 
   // these defaults are for clients, TDS sets these explicitly
-  static protected IndexExtendMode indexFileModeOnOpen = IndexExtendMode.rewrite; // default is to rewrite
-  static protected IndexExtendMode indexFileModeOnSync = IndexExtendMode.extendwrite; // default is to extend
+  protected static IndexExtendMode indexFileModeOnOpen = IndexExtendMode.rewrite; // default is to rewrite
+  protected static IndexExtendMode indexFileModeOnSync = IndexExtendMode.extendwrite; // default is to extend
 
-  static protected boolean addLatLon = false; // add lat/lon coordinates for strict CF compliance LOOK should not be static !
-  static protected boolean forceNewIndex = false; // force that a new index file is written - for debugging
-  static protected boolean alwaysInCache = false;
+  protected static boolean addLatLon; // add lat/lon coordinates for strict CF compliance LOOK should not be
+                                      // static !
+  protected static boolean forceNewIndex; // force that a new index file is written - for debugging
+  protected static boolean alwaysInCache;
 
   /**
    * debug flags
    */
-  public static boolean debugOpen = false,
-          debugMissing = false,
-          debugMissingDetails = false,
-          debugProj = false,
-          debugTiming = false,
-          debugVert = false;
+  public static boolean debugOpen, debugMissing, debugMissingDetails, debugProj, debugTiming, debugVert;
 
   /**
    * Set whether to force new index or not
    *
    * @param b true to use
    */
-  static public void forceNewIndex(boolean b) {
+  public static void forceNewIndex(boolean b) {
     forceNewIndex = b;
   }
-  
+
   /**
    * Set the debug flags
    *
    * @param debugFlag debug flags
    */
-  static public void setDebugFlags(ucar.nc2.util.DebugFlags debugFlag) {
+  public static void setDebugFlags(ucar.nc2.util.DebugFlags debugFlag) {
     debugOpen = debugFlag.isSet("Grid/open");
     debugMissing = debugFlag.isSet("Grid/missing");
     debugMissingDetails = debugFlag.isSet("Grid/missingDetails");
@@ -88,35 +81,32 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
    * is being appended to, as new data arrives.
    * <li>IndexExtendMode.rewrite: when GRIB file length changes, rewrite the index. This is the safest thing to do,
    * at the expense of performance.
-   * <li>IndexExtendMode.readonly: never modify an existing index, just use it. However, if there is no index, created one
+   * <li>IndexExtendMode.readonly: never modify an existing index, just use it. However, if there is no index, created
+   * one
    * </ol>
    *
    * @param mode IndexExtendMode when file is opened
    */
-  static public void setIndexFileModeOnOpen(IndexExtendMode mode) {
+  public static void setIndexFileModeOnOpen(IndexExtendMode mode) {
     indexFileModeOnOpen = mode;
   }
 
   /**
-   * This controls what happens when sync() is called on a GRIB file. The main use of sync() is when you are using
-   * NetcdfFile object caching. Before NetcdfFile is returned from a cache hit, sync() is called on it.
-   * Default is IndexExtendMode.extend.
-   *
-   * @param mode IndexExtendMode when sync() is called. Same meaning as setIndexExtendMode(IndexExtendMode mode)
-   */
-  /**
-   * This controls what happens when a GRIB file is synced (usually from FileCache), and the data or index file has changed
-   *  since the file was placed in the cache.
+   * This controls what happens when a GRIB file is synced (usually from FileCache), and the data or index file has
+   * changed
+   * since the file was placed in the cache.
    * <ol>
-   * <li>IndexExtendMode.extendwrite: when GRIB file or index length increases, extend the index. If file or index length
-   *   decreases, rewrite it.
+   * <li>IndexExtendMode.extendwrite: when GRIB file or index length increases, extend the index. If file or index
+   * length
+   * decreases, rewrite it.
    * <li>IndexExtendMode.rewrite: when GRIB file length changes, rewrite the index.
-   * <li>IndexExtendMode.readonly: never modify an existing index, just use it. However, if there is no index, created one
+   * <li>IndexExtendMode.readonly: never modify an existing index, just use it. However, if there is no index, created
+   * one
    * </ol>
    *
    * @param mode IndexExtendMode when file is opened
    */
-  static public void setIndexFileModeOnSync(IndexExtendMode mode) {
+  public static void setIndexFileModeOnSync(IndexExtendMode mode) {
     indexFileModeOnSync = mode;
   }
 
@@ -127,7 +117,7 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
    * @param b if true, set modes to IndexExtendMode.extendwrite, else IndexExtendMode.readonly
    * @deprecated use setIndexFileModeOnSync and setIndexFileModeOnOpen
    */
-  static public void setExtendIndex(boolean b) {
+  public static void setExtendIndex(boolean b) {
     indexFileModeOnOpen = b ? IndexExtendMode.extendwrite : IndexExtendMode.readonly;
     indexFileModeOnSync = b ? IndexExtendMode.extendwrite : IndexExtendMode.readonly;
   }
@@ -139,7 +129,7 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
    *
    * @param b set to this value
    */
-  static public void setIndexAlwaysInCache(boolean b) {
+  public static void setIndexAlwaysInCache(boolean b) {
     alwaysInCache = b;
   }
 
@@ -148,7 +138,7 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
   /**
    * Use the given index to fill the NetcdfFile object with attributes and variables.
    *
-   * @param index      GridIndex to use
+   * @param index GridIndex to use
    * @param cancelTask cancel task
    * @throws IOException problem reading the file
    */
@@ -157,8 +147,8 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
   /**
    * Open the service provider for reading.
    *
-   * @param raf        file to read from
-   * @param ncfile     netCDF file we are writing to (memory)
+   * @param raf file to read from
+   * @param ncfile netCDF file we are writing to (memory)
    * @param cancelTask task for cancelling
    * @throws IOException problem reading file
    */
@@ -170,10 +160,10 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
   /**
    * Read the data for the variable
    *
-   * @param v2      Variable to read
+   * @param v2 Variable to read
    * @param section section infomation
    * @return Array of data
-   * @throws IOException           problem reading from file
+   * @throws IOException problem reading from file
    * @throws InvalidRangeException invalid Range
    */
   @Override
@@ -185,9 +175,9 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
 
     // Canonical ordering is ens, time, level, lat, lon
     int rangeIdx = 0;
-    Range ensRange = pv.hasEnsemble() ? section.getRange(rangeIdx++) : new Range( 0, 0 );
-    Range timeRange = (section.getRank() > 2) ? section.getRange(rangeIdx++) : new Range( 0, 0 );
-    Range levRange = pv.hasVert() ? section.getRange(rangeIdx++) : new Range( 0, 0 );
+    Range ensRange = pv.hasEnsemble() ? section.getRange(rangeIdx++) : new Range(0, 0);
+    Range timeRange = (section.getRank() > 2) ? section.getRange(rangeIdx++) : new Range(0, 0);
+    Range levRange = pv.hasVert() ? section.getRange(rangeIdx++) : new Range(0, 0);
     Range yRange = section.getRange(rangeIdx++);
     Range xRange = section.getRange(rangeIdx);
 
@@ -212,18 +202,18 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
   /**
    * read one YX array
    *
-   * @param v2      variable to put the data into
-   * @param ensIdx  ensemble index
+   * @param v2 variable to put the data into
+   * @param ensIdx ensemble index
    * @param timeIdx time index
-   * @param levIdx  level index
-   * @param yRange  x range
-   * @param xRange  y range
-   * @param ii      index iterator
-   * @throws IOException           problem reading the file
+   * @param levIdx level index
+   * @param yRange x range
+   * @param xRange y range
+   * @param ii index iterator
+   * @throws IOException problem reading the file
    * @throws InvalidRangeException invalid range
    */
   private void readXY(Variable v2, int ensIdx, int timeIdx, int levIdx, Range yRange, Range xRange, IndexIterator ii)
-          throws IOException, InvalidRangeException {
+      throws IOException, InvalidRangeException {
 
     GridVariable pv = (GridVariable) v2.getSPobject();
     GridHorizCoordSys hsys = pv.getHorizCoordSys();
@@ -260,10 +250,10 @@ public abstract class GridServiceProvider extends AbstractIOServiceProvider {
   /**
    * Is this XY level missing?
    *
-   * @param v2      Variable
+   * @param v2 Variable
    * @param timeIdx time index
-   * @param ensIdx  ensemble index
-   * @param levIdx  level index
+   * @param ensIdx ensemble index
+   * @param levIdx level index
    * @return true if missing
    * @throws InvalidRangeException invalid range
    */

@@ -8,7 +8,6 @@ import ucar.unidata.geoloc.LatLonRect;
 import ucar.unidata.geoloc.LatLonPointImpl;
 import ucar.nc2.ft.PointFeature;
 import ucar.nc2.ft.PointFeatureIterator;
-
 import java.util.Iterator;
 
 /**
@@ -19,26 +18,27 @@ import java.util.Iterator;
  * @since May 11, 2009
  */
 public abstract class PointIteratorAbstract implements PointFeatureIterator, Iterator<PointFeature> {
-  protected boolean calcBounds = false;
+  protected boolean calcBounds;
   protected CollectionInfo info;
 
-  private LatLonRect bb = null;
+  private LatLonRect bb;
   private double minTime = Double.MAX_VALUE;
   private double maxTime = -Double.MAX_VALUE;
-  private int count = 0;
+  private int count;
 
-  protected PointIteratorAbstract() {
-  }
+  protected PointIteratorAbstract() {}
 
-  public void setCalculateBounds( CollectionInfo info) {
+  public void setCalculateBounds(CollectionInfo info) {
     this.calcBounds = (info != null);
     this.info = info;
   }
 
   protected void calcBounds(PointFeature pf) {
     count++;
-    if (!calcBounds) return;
-    if (pf == null) return;
+    if (!calcBounds)
+      return;
+    if (pf == null)
+      return;
 
     if (bb == null)
       bb = new LatLonRect(pf.getLocation().getLatLon(), .001, .001);
@@ -51,7 +51,8 @@ public abstract class PointIteratorAbstract implements PointFeatureIterator, Ite
   }
 
   protected void finishCalcBounds() {
-    if (!calcBounds) return;
+    if (!calcBounds)
+      return;
 
     if ((bb != null) && bb.crossDateline() && (bb.getWidth() > 350.0)) { // call it global - less confusing
       double lat_min = bb.getLowerLeftPoint().getLatitude();

@@ -9,7 +9,7 @@
  * this software, and any derivative works thereof, and its supporting
  * documentation for any purpose whatsoever, provided that this entire
  * notice appears in all copies of the software, derivative works and
- * supporting documentation.  Further, UCAR requests that the user credit
+ * supporting documentation. Further, UCAR requests that the user credit
  * UCAR/Unidata in any publications that result from the use of this
  * software or in any product that includes this software. The names UCAR
  * and/or Unidata, however, may not be used in any advertising or publicity
@@ -32,12 +32,13 @@
 
 package thredds.featurecollection;
 
+import java.io.IOException;
 import org.jdom2.Element;
+import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
 import thredds.client.catalog.Catalog;
 import thredds.inventory.CollectionAbstract;
 import ucar.nc2.util.AliasTranslator;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Formatter;
@@ -58,20 +59,15 @@ public class FeatureCollectionConfigBuilder {
   }
 
   // input is xml file with just the <featureCollection>
-  public FeatureCollectionConfig readConfigFromFile(String filename) {
-
-    org.jdom2.Document doc;
+  public FeatureCollectionConfig readConfigFromFile(String filename) throws IOException {
+    SAXBuilder builder = new SAXBuilder();
     try {
-      SAXBuilder builder = new SAXBuilder();
-      doc = builder.build(filename);
-    } catch (Exception e) {
-      System.out.printf("Error parsing featureCollection %s err = %s", filename, e.getMessage());
-      return null;
+      org.jdom2.Document doc = builder.build(filename);
+      return readConfig(doc.getRootElement());
+    } catch (JDOMException e) {
+      throw new IOException(e);
     }
-
-    return readConfig(doc.getRootElement());
   }
-
 
   /**
    * Read a catalog and extract a FeatureCollectionConfig from it
@@ -104,7 +100,7 @@ public class FeatureCollectionConfigBuilder {
     try {
       List<Element> fcElems = new ArrayList<>();
       findFeatureCollection(doc.getRootElement(), fcName, fcElems);
-      if (fcElems.size() > 0)
+      if (!fcElems.isEmpty())
         return readConfig(fcElems.get(0));
 
     } catch (IllegalStateException e) {
@@ -135,7 +131,8 @@ public class FeatureCollectionConfigBuilder {
 
     FeatureCollectionType fcType = FeatureCollectionType.valueOf(fcTypeS);
     if (fcType == null) {
-      errlog.format("featureCollection %s must have a valid FeatureCollectionType attribute, found '%s'%n", name, fcTypeS);
+      errlog.format("featureCollection %s must have a valid FeatureCollectionType attribute, found '%s'%n", name,
+          fcTypeS);
       fatalError = true;
     }
 
@@ -150,7 +147,7 @@ public class FeatureCollectionConfigBuilder {
     collectionName = CollectionAbstract.cleanName(collectionName != null ? collectionName : name);
 
     String spec = collElem.getAttributeValue("spec");
-      spec = expandAliasForCollectionSpec(spec);
+    spec = expandAliasForCollectionSpec(spec);
     String timePartition = collElem.getAttributeValue("timePartition");
     String dateFormatMark = collElem.getAttributeValue("dateFormatMark");
     String olderThan = collElem.getAttributeValue("olderThan");
@@ -162,10 +159,10 @@ public class FeatureCollectionConfigBuilder {
       return null;
     }
     Element innerNcml = featureCollectionElement.getChild("netcdf", Catalog.ncmlNS);
-    FeatureCollectionConfig config = new FeatureCollectionConfig(name, path, fcType, spec, collectionName, dateFormatMark, olderThan,
-            timePartition, innerNcml);
+    FeatureCollectionConfig config = new FeatureCollectionConfig(name, path, fcType, spec, collectionName,
+        dateFormatMark, olderThan, timePartition, innerNcml);
     config.setFilter(rootDir, regExp);
-    config.setFilesSort( featureCollectionElement.getChild("filesSort", Catalog.defNS));
+    config.setFilesSort(featureCollectionElement.getChild("filesSort", Catalog.defNS));
 
     // tds and update elements
     Element tdmElem = featureCollectionElement.getChild("tdm", Catalog.defNS);
@@ -246,9 +243,10 @@ public class FeatureCollectionConfigBuilder {
 
   private String expandAliasForCollectionSpec(String location) {
     String result = AliasTranslator.translateAlias(location);
-    if (result != null) return result;
+    if (result != null)
+      return result;
     return location;
   }
 
 }
- 
+

@@ -4,16 +4,22 @@
  */
 package ucar.nc2.iosp.nexrad2;
 
-import ucar.nc2.constants.DataFormatType;
+import static ucar.nc2.iosp.nexrad2.Level2Record.BELOW_THRESHOLD;
+import static ucar.nc2.iosp.nexrad2.Level2Record.DIFF_PHASE;
+import static ucar.nc2.iosp.nexrad2.Level2Record.HORIZONTAL_BEAM_WIDTH;
+import static ucar.nc2.iosp.nexrad2.Level2Record.MISSING_DATA;
+import static ucar.nc2.iosp.nexrad2.Level2Record.REFLECTIVITY_HIGH;
+import static ucar.nc2.iosp.nexrad2.Level2Record.VELOCITY_HIGH;
+import static ucar.nc2.iosp.nexrad2.Level2Record.getDatatypeUnits;
+import static ucar.nc2.iosp.nexrad2.Level2Record.getDate;
+import static ucar.nc2.iosp.nexrad2.Level2Record.getVolumeCoveragePatternName;
 import ucar.ma2.*;
 import ucar.nc2.*;
 import ucar.nc2.constants.*;
 import ucar.nc2.iosp.AbstractIOServiceProvider;
-import static ucar.nc2.iosp.nexrad2.Level2Record.*;
 import ucar.nc2.units.DateFormatter;
 import ucar.nc2.util.CancelTask;
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
@@ -25,83 +31,91 @@ import java.util.Date;
  * @author caron
  */
 public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
-  static private org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Nexrad2IOServiceProvider.class);
-  static private final int MISSING_INT = -9999;
-  static private final float MISSING_FLOAT = Float.NaN;
+  private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Nexrad2IOServiceProvider.class);
+  private static final int MISSING_INT = -9999;
+  private static final float MISSING_FLOAT = Float.NaN;
 
 
-  public boolean isValidFile( RandomAccessFile raf) throws IOException {
+  public boolean isValidFile(RandomAccessFile raf) {
     try {
       raf.seek(0);
       String test = raf.readString(8);
-      return test.equals( Level2VolumeScan.ARCHIVE2) || test.equals( Level2VolumeScan.AR2V0001) ||
-             test.equals( Level2VolumeScan.AR2V0003)|| test.equals( Level2VolumeScan.AR2V0004) ||
-             test.equals( Level2VolumeScan.AR2V0002) || test.equals( Level2VolumeScan.AR2V0006) ||
-             test.equals( Level2VolumeScan.AR2V0007);
+      return test.equals(Level2VolumeScan.ARCHIVE2) || test.equals(Level2VolumeScan.AR2V0001)
+          || test.equals(Level2VolumeScan.AR2V0003) || test.equals(Level2VolumeScan.AR2V0004)
+          || test.equals(Level2VolumeScan.AR2V0002) || test.equals(Level2VolumeScan.AR2V0006)
+          || test.equals(Level2VolumeScan.AR2V0007);
     } catch (IOException ioe) {
       return false;
     }
   }
 
- // private Dimension radialDim;
+  // private Dimension radialDim;
   private double radarRadius;
   private Variable v0, v1;
   private DateFormatter formatter = new DateFormatter();
-  private boolean overMidNight = false;
+  private boolean overMidNight;
 
   public void open(RandomAccessFile raf, NetcdfFile ncfile, CancelTask cancelTask) throws IOException {
     super.open(raf, ncfile, cancelTask);
     NexradStationDB.init();
 
-    Level2VolumeScan volScan = new Level2VolumeScan( raf, cancelTask); // note raf may change when compressed
+    Level2VolumeScan volScan = new Level2VolumeScan(raf, cancelTask); // note raf may change when compressed
     this.raf = volScan.raf;
     this.location = volScan.raf.getLocation();
 
     if (volScan.hasDifferentDopplarResolutions())
       throw new IllegalStateException("volScan.hasDifferentDopplarResolutions");
 
-    if( volScan.hasHighResolutions(0)) {
+    if (volScan.hasHighResolutions(0)) {
 
-        if(volScan.getHighResReflectivityGroups() != null)
-            makeVariable2( ncfile, Level2Record.REFLECTIVITY_HIGH, "Reflectivity", "Reflectivity", "R", volScan);
-        if( volScan.getHighResVelocityGroups() != null)
-            makeVariable2( ncfile, Level2Record.VELOCITY_HIGH, "RadialVelocity", "Radial Velocity", "V", volScan);
+      if (volScan.getHighResReflectivityGroups() != null)
+        makeVariable2(ncfile, REFLECTIVITY_HIGH, "Reflectivity", "Reflectivity", "R", volScan);
+      if (volScan.getHighResVelocityGroups() != null)
+        makeVariable2(ncfile, VELOCITY_HIGH, "RadialVelocity", "Radial Velocity", "V", volScan);
 
-        if( volScan.getHighResSpectrumGroups() != null) {
-            List<List<Level2Record>> gps = volScan.getHighResSpectrumGroups();
-            List<Level2Record> gp = gps.get(0);
-            Level2Record record = gp.get(0);
-            if(v1 != null)
-                makeVariableNoCoords( ncfile, Level2Record.SPECTRUM_WIDTH_HIGH, "SpectrumWidth_HI", "Radial Spectrum_HI", v1, record);
-            if(v0 != null)
-                makeVariableNoCoords( ncfile, Level2Record.SPECTRUM_WIDTH_HIGH, "SpectrumWidth", "Radial Spectrum", v0, record);
-        }
+      if (volScan.getHighResSpectrumGroups() != null) {
+        List<List<Level2Record>> gps = volScan.getHighResSpectrumGroups();
+        List<Level2Record> gp = gps.get(0);
+        Level2Record record = gp.get(0);
+        if (v1 != null)
+          makeVariableNoCoords(ncfile, Level2Record.SPECTRUM_WIDTH_HIGH, "SpectrumWidth_HI", "Radial Spectrum_HI", v1,
+              record);
+        if (v0 != null)
+          makeVariableNoCoords(ncfile, Level2Record.SPECTRUM_WIDTH_HIGH, "SpectrumWidth", "Radial Spectrum", v0,
+              record);
+      }
     }
 
     List<List<Level2Record>> gps = volScan.getHighResDiffReflectGroups();
-    if( gps != null) {
-        makeVariable2( ncfile, Level2Record.DIFF_REFLECTIVITY_HIGH, "DifferentialReflectivity", "Differential Reflectivity", "D", volScan);
+    if (gps != null) {
+      makeVariable2(ncfile, Level2Record.DIFF_REFLECTIVITY_HIGH, "DifferentialReflectivity",
+          "Differential Reflectivity", "D", volScan);
     }
 
     gps = volScan.getHighResCoeffocientGroups();
-    if(gps != null) {
-        makeVariable2( ncfile, Level2Record.CORRELATION_COEFFICIENT, "CorrelationCoefficient", "Correlation Coefficient", "C", volScan);
+    if (gps != null) {
+      makeVariable2(ncfile, Level2Record.CORRELATION_COEFFICIENT, "CorrelationCoefficient", "Correlation Coefficient",
+          "C", volScan);
     }
 
     gps = volScan.getHighResDiffPhaseGroups();
-    if( gps != null) {
-        makeVariable2( ncfile, Level2Record.DIFF_PHASE, "DifferentialPhase", "Differential Phase", "P", volScan);
+    if (gps != null) {
+      makeVariable2(ncfile, DIFF_PHASE, "DifferentialPhase", "Differential Phase", "P", volScan);
     }
 
     gps = volScan.getReflectivityGroups();
-    if( gps != null) {
-        makeVariable( ncfile, Level2Record.REFLECTIVITY, "Reflectivity", "Reflectivity", "R", volScan.getReflectivityGroups(), 0, volScan);
-        int velocity_type =  (volScan.getDopplarResolution() == Level2Record.DOPPLER_RESOLUTION_HIGH_CODE) ? Level2Record.VELOCITY_HI : Level2Record.VELOCITY_LOW;
-        Variable v = makeVariable( ncfile, velocity_type, "RadialVelocity", "Radial Velocity", "V", volScan.getVelocityGroups(), 0, volScan);
-        gps = volScan.getVelocityGroups();
-        List<Level2Record> gp = gps.get(0);
-        Level2Record record = gp.get(0);
-        makeVariableNoCoords( ncfile, Level2Record.SPECTRUM_WIDTH, "SpectrumWidth", "Spectrum Width", v, record);
+    if (gps != null) {
+      makeVariable(ncfile, Level2Record.REFLECTIVITY, "Reflectivity", "Reflectivity", "R",
+          volScan.getReflectivityGroups(), 0, volScan);
+      int velocity_type =
+          (volScan.getDopplarResolution() == Level2Record.DOPPLER_RESOLUTION_HIGH_CODE) ? Level2Record.VELOCITY_HI
+              : Level2Record.VELOCITY_LOW;
+      Variable v = makeVariable(ncfile, velocity_type, "RadialVelocity", "Radial Velocity", "V",
+          volScan.getVelocityGroups(), 0, volScan);
+      gps = volScan.getVelocityGroups();
+      List<Level2Record> gp = gps.get(0);
+      Level2Record record = gp.get(0);
+      makeVariableNoCoords(ncfile, Level2Record.SPECTRUM_WIDTH, "SpectrumWidth", "Spectrum Width", v, record);
     }
     if (volScan.getStationId() != null) {
       ncfile.addAttribute(null, new Attribute("Station", volScan.getStationId()));
@@ -110,31 +124,31 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
       ncfile.addAttribute(null, new Attribute("StationLongitude", volScan.getStationLongitude()));
       ncfile.addAttribute(null, new Attribute("StationElevationInMeters", volScan.getStationElevation()));
 
-      double latRadiusDegrees = Math.toDegrees( radarRadius / ucar.unidata.geoloc.Earth.getRadius());
+      double latRadiusDegrees = Math.toDegrees(radarRadius / ucar.unidata.geoloc.Earth.getRadius());
       ncfile.addAttribute(null, new Attribute("geospatial_lat_min", volScan.getStationLatitude() - latRadiusDegrees));
       ncfile.addAttribute(null, new Attribute("geospatial_lat_max", volScan.getStationLatitude() + latRadiusDegrees));
-      double cosLat = Math.cos( Math.toRadians(volScan.getStationLatitude()));
-      double lonRadiusDegrees = Math.toDegrees( radarRadius / cosLat / ucar.unidata.geoloc.Earth.getRadius());
+      double cosLat = Math.cos(Math.toRadians(volScan.getStationLatitude()));
+      double lonRadiusDegrees = Math.toDegrees(radarRadius / cosLat / ucar.unidata.geoloc.Earth.getRadius());
       ncfile.addAttribute(null, new Attribute("geospatial_lon_min", volScan.getStationLongitude() - lonRadiusDegrees));
       ncfile.addAttribute(null, new Attribute("geospatial_lon_max", volScan.getStationLongitude() + lonRadiusDegrees));
 
 
-          // add a radial coordinate transform (experimental)
-        /*
-      Variable ct = new Variable(ncfile, null, null, "radialCoordinateTransform");
-      ct.setDataType(DataType.CHAR);
-      ct.setDimensions(""); // scalar
-      ct.addAttribute( new Attribute("transform_name", "Radial"));
-      ct.addAttribute( new Attribute("center_latitude", volScan.getStationLatitude()));
-      ct.addAttribute( new Attribute("center_longitude", volScan.getStationLongitude()));
-      ct.addAttribute( new Attribute("center_elevation", volScan.getStationElevation()));
-      ct.addAttribute( new Attribute(_Coordinate.TransformType, "Radial"));
-      ct.addAttribute( new Attribute(_Coordinate.AxisTypes, "RadialElevation RadialAzimuth RadialDistance"));
-
-      Array data = Array.factory(DataType.CHAR, new int[0], new char[] {' '});
-      ct.setCachedData(data, true);
-      ncfile.addVariable(null, ct);
-      */
+      // add a radial coordinate transform (experimental)
+      /*
+       * Variable ct = new Variable(ncfile, null, null, "radialCoordinateTransform");
+       * ct.setDataType(DataType.CHAR);
+       * ct.setDimensions(""); // scalar
+       * ct.addAttribute( new Attribute("transform_name", "Radial"));
+       * ct.addAttribute( new Attribute("center_latitude", volScan.getStationLatitude()));
+       * ct.addAttribute( new Attribute("center_longitude", volScan.getStationLongitude()));
+       * ct.addAttribute( new Attribute("center_elevation", volScan.getStationElevation()));
+       * ct.addAttribute( new Attribute(_Coordinate.TransformType, "Radial"));
+       * ct.addAttribute( new Attribute(_Coordinate.AxisTypes, "RadialElevation RadialAzimuth RadialDistance"));
+       * 
+       * Array data = Array.factory(DataType.CHAR, new int[0], new char[] {' '});
+       * ct.setCachedData(data, true);
+       * ncfile.addVariable(null, ct);
+       */
     }
 
     DateFormatter formatter = new DateFormatter();
@@ -151,92 +165,94 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     ncfile.addAttribute(null, new Attribute(CDM.HISTORY, "Direct read of Nexrad Level 2 file into CDM"));
     ncfile.addAttribute(null, new Attribute("DataType", "Radial"));
 
-    ncfile.addAttribute(null, new Attribute("Title", "Nexrad Level 2 Station "+volScan.getStationId()+" from "+
-        formatter.toDateTimeStringISO(volScan.getStartDate()) + " to " +
-        formatter.toDateTimeStringISO(volScan.getEndDate())));
+    ncfile.addAttribute(null,
+        new Attribute("Title",
+            "Nexrad Level 2 Station " + volScan.getStationId() + " from "
+                + formatter.toDateTimeStringISO(volScan.getStartDate()) + " to "
+                + formatter.toDateTimeStringISO(volScan.getEndDate())));
 
-    ncfile.addAttribute(null, new Attribute("Summary", "Weather Surveillance Radar-1988 Doppler (WSR-88D) "+
-        "Level II data are the three meteorological base data quantities: reflectivity, mean radial velocity, and "+
-        "spectrum width."));
+    ncfile.addAttribute(null, new Attribute("Summary", "Weather Surveillance Radar-1988 Doppler (WSR-88D) "
+        + "Level II data are the three meteorological base data quantities: reflectivity, mean radial velocity, and "
+        + "spectrum width."));
 
-    ncfile.addAttribute(null, new Attribute("keywords", "WSR-88D; NEXRAD; Radar Level II; reflectivity; mean radial velocity; spectrum width"));
+    ncfile.addAttribute(null, new Attribute("keywords",
+        "WSR-88D; NEXRAD; Radar Level II; reflectivity; mean radial velocity; spectrum width"));
 
-    ncfile.addAttribute(null, new Attribute("VolumeCoveragePatternName",
-      getVolumeCoveragePatternName(volScan.getVCP())));
+    ncfile.addAttribute(null,
+        new Attribute("VolumeCoveragePatternName", getVolumeCoveragePatternName(volScan.getVCP())));
     ncfile.addAttribute(null, new Attribute("VolumeCoveragePattern", volScan.getVCP()));
     ncfile.addAttribute(null, new Attribute("HorizontalBeamWidthInDegrees", (double) HORIZONTAL_BEAM_WIDTH));
 
     ncfile.finish();
   }
 
-  public void makeVariable2(NetcdfFile ncfile, int datatype, String shortName, String longName, String abbrev, Level2VolumeScan vScan) throws IOException {
-      List<List<Level2Record>> groups = null;
+  public void makeVariable2(NetcdfFile ncfile, int datatype, String shortName, String longName, String abbrev,
+      Level2VolumeScan vScan) {
+    List<List<Level2Record>> groups;
 
-      if( shortName.startsWith("Reflectivity"))
-        groups = vScan.getHighResReflectivityGroups();
-      else if( shortName.startsWith("RadialVelocity"))
-        groups = vScan.getHighResVelocityGroups();
-      else if( shortName.startsWith("DifferentialReflectivity"))
-        groups = vScan.getHighResDiffReflectGroups();
-      else if( shortName.startsWith("CorrelationCoefficient"))
-        groups = vScan.getHighResCoeffocientGroups();
-      else if( shortName.startsWith("DifferentialPhase"))
-        groups = vScan.getHighResDiffPhaseGroups();
-      else
-        throw new IllegalStateException("Bad group: " + shortName);
+    if (shortName.startsWith("Reflectivity"))
+      groups = vScan.getHighResReflectivityGroups();
+    else if (shortName.startsWith("RadialVelocity"))
+      groups = vScan.getHighResVelocityGroups();
+    else if (shortName.startsWith("DifferentialReflectivity"))
+      groups = vScan.getHighResDiffReflectGroups();
+    else if (shortName.startsWith("CorrelationCoefficient"))
+      groups = vScan.getHighResCoeffocientGroups();
+    else if (shortName.startsWith("DifferentialPhase"))
+      groups = vScan.getHighResDiffPhaseGroups();
+    else
+      throw new IllegalStateException("Bad group: " + shortName);
 
-      int nscans = groups.size();
+    int nscans = groups.size();
 
     if (nscans == 0) {
-      throw new IllegalStateException("No data for "+shortName);
+      throw new IllegalStateException("No data for " + shortName);
     }
 
-    List<List<Level2Record>> firstGroup = new ArrayList<List<Level2Record>>(groups.size());
-    List<List<Level2Record>> secondGroup = new ArrayList<List<Level2Record>>(groups.size());
+    List<List<Level2Record>> firstGroup = new ArrayList<>(groups.size());
+    List<List<Level2Record>> secondGroup = new ArrayList<>(groups.size());
 
-    for(int i = 0; i < nscans; i++) {
-        List<Level2Record> o = groups.get(i);
-        Level2Record firstRecord = (Level2Record) o.get(0);
-        int ol = o.size();
-        
-        if(ol >= 720 )
-            firstGroup.add(o);
-        else if(ol <= 360)
-            secondGroup.add(o);
-        else if( firstRecord.getGateCount(REFLECTIVITY_HIGH) > 500 || firstRecord.getGateCount(VELOCITY_HIGH) > 1000)
-            firstGroup.add(o);
-        else
-            secondGroup.add(o);
+    for (List<Level2Record> o : groups) {
+      Level2Record firstRecord = o.get(0);
+      int ol = o.size();
+
+      if (ol >= 720) {
+        firstGroup.add(o);
+      } else if (ol <= 360) {
+        secondGroup.add(o);
+      } else if (firstRecord.getGateCount(REFLECTIVITY_HIGH) > 500 || firstRecord.getGateCount(VELOCITY_HIGH) > 1000) {
+        firstGroup.add(o);
+      } else {
+        secondGroup.add(o);
+      }
     }
-    if(firstGroup != null && firstGroup.size() > 0)
-        v1 = makeVariable(ncfile, datatype, shortName + "_HI", longName + "_HI",  abbrev + "_HI", firstGroup, 1, vScan);
-    if(secondGroup != null && secondGroup.size() > 0)
-        v0 = makeVariable(ncfile, datatype, shortName, longName,  abbrev, secondGroup, 0, vScan);
+    if (firstGroup != null && !firstGroup.isEmpty())
+      v1 = makeVariable(ncfile, datatype, shortName + "_HI", longName + "_HI", abbrev + "_HI", firstGroup, 1, vScan);
+    if (secondGroup != null && !secondGroup.isEmpty())
+      v0 = makeVariable(ncfile, datatype, shortName, longName, abbrev, secondGroup, 0, vScan);
 
   }
 
   public int getMaxRadials(List groups) {
-      int maxRadials = 0;
-      for (int i = 0; i < groups.size(); i++) {
-        ArrayList group = (ArrayList) groups.get(i);
-        maxRadials = Math.max(maxRadials, group.size());
-      }
-      return maxRadials;
+    int maxRadials = 0;
+    for (Object o : groups) {
+      ArrayList group = (ArrayList) o;
+      maxRadials = Math.max(maxRadials, group.size());
+    }
+    return maxRadials;
   }
 
-  public Variable makeVariable(NetcdfFile ncfile, int datatype, String shortName,
-                               String longName, String abbrev, List<List<Level2Record>> groups,
-                               int rd) throws IOException {
-      return makeVariable(ncfile, datatype, shortName, longName, abbrev, groups, rd, null);
+  public Variable makeVariable(NetcdfFile ncfile, int datatype, String shortName, String longName, String abbrev,
+      List<List<Level2Record>> groups, int rd) {
+    return makeVariable(ncfile, datatype, shortName, longName, abbrev, groups, rd, null);
   }
 
-  public Variable makeVariable(NetcdfFile ncfile, int datatype, String shortName,
-                               String longName, String abbrev, List<List<Level2Record>> groups,
-                               int rd, Level2VolumeScan volScan) throws IOException {
+  public Variable makeVariable(NetcdfFile ncfile, int datatype, String shortName, String longName, String abbrev,
+      List<List<Level2Record>> groups, int rd, Level2VolumeScan volScan) {
     int nscans = groups.size();
 
     if (nscans == 0) {
-      throw new IllegalStateException("No data for "+shortName+" file= "+ncfile.getLocation());
+      throw new IllegalStateException("No data for " + shortName + " file= " + ncfile.getLocation());
     }
 
     // get representative record
@@ -244,33 +260,33 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     Level2Record firstRecord = firstGroup.get(0);
     int ngates = firstRecord.getGateCount(datatype);
 
-    String scanDimName = "scan"+abbrev;
-    String gateDimName = "gate"+abbrev;
-    String radialDimName = "radial"+abbrev;
+    String scanDimName = "scan" + abbrev;
+    String gateDimName = "gate" + abbrev;
+    String radialDimName = "radial" + abbrev;
     Dimension scanDim = new Dimension(scanDimName, nscans);
     Dimension gateDim = new Dimension(gateDimName, ngates);
     Dimension radialDim = new Dimension(radialDimName, volScan.getMaxRadials(rd), true);
-    ncfile.addDimension( null, scanDim);
-    ncfile.addDimension( null, gateDim);
-    ncfile.addDimension( null, radialDim);
+    ncfile.addDimension(null, scanDim);
+    ncfile.addDimension(null, gateDim);
+    ncfile.addDimension(null, radialDim);
 
-    List<Dimension> dims = new ArrayList<Dimension>();
-    dims.add( scanDim);
-    dims.add( radialDim);
-    dims.add( gateDim);
+    List<Dimension> dims = new ArrayList<>();
+    dims.add(scanDim);
+    dims.add(radialDim);
+    dims.add(gateDim);
 
     Variable v = new Variable(ncfile, null, null, shortName);
-    if(datatype == DIFF_PHASE){
-        v.setDataType(DataType.USHORT);
+    if (datatype == DIFF_PHASE) {
+      v.setDataType(DataType.USHORT);
     } else {
-        v.setDataType(DataType.UBYTE);
+      v.setDataType(DataType.UBYTE);
     }
 
     v.setDimensions(dims);
     ncfile.addVariable(null, v);
 
-    v.addAttribute( new Attribute(CDM.UNITS, getDatatypeUnits(datatype)));
-    v.addAttribute( new Attribute(CDM.LONG_NAME, longName));
+    v.addAttribute(new Attribute(CDM.UNITS, getDatatypeUnits(datatype)));
+    v.addAttribute(new Attribute(CDM.LONG_NAME, longName));
 
 
     byte[] b = new byte[2];
@@ -278,22 +294,22 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     b[1] = BELOW_THRESHOLD;
     Array missingArray = Array.factory(DataType.BYTE, new int[] {2}, b);
 
-    v.addAttribute( new Attribute(CDM.MISSING_VALUE, missingArray));
-    v.addAttribute( new Attribute("signal_below_threshold", BELOW_THRESHOLD));
-    v.addAttribute( new Attribute(CDM.SCALE_FACTOR, firstRecord.getDatatypeScaleFactor(datatype)));
-    v.addAttribute( new Attribute(CDM.ADD_OFFSET, firstRecord.getDatatypeAddOffset(datatype)));
+    v.addAttribute(new Attribute(CDM.MISSING_VALUE, missingArray));
+    v.addAttribute(new Attribute("signal_below_threshold", BELOW_THRESHOLD));
+    v.addAttribute(new Attribute(CDM.SCALE_FACTOR, firstRecord.getDatatypeScaleFactor(datatype)));
+    v.addAttribute(new Attribute(CDM.ADD_OFFSET, firstRecord.getDatatypeAddOffset(datatype)));
     // v.addAttribute( new Attribute(CDM.UNSIGNED, "true"));
-    if(rd == 1) {
-       v.addAttribute( new Attribute("SNR_threshold" ,firstRecord.getDatatypeSNRThreshhold(datatype)));
+    if (rd == 1) {
+      v.addAttribute(new Attribute("SNR_threshold", firstRecord.getDatatypeSNRThreshhold(datatype)));
     }
-    v.addAttribute( new Attribute("range_folding_threshold" ,firstRecord.getDatatypeRangeFoldingThreshhold(datatype)));
+    v.addAttribute(new Attribute("range_folding_threshold", firstRecord.getDatatypeRangeFoldingThreshhold(datatype)));
 
     List<Dimension> dim2 = new ArrayList<>();
-    dim2.add( scanDim);
-    dim2.add( radialDim);
+    dim2.add(scanDim);
+    dim2.add(radialDim);
 
     // add time coordinate variable
-    String timeCoordName = "time"+abbrev;
+    String timeCoordName = "time" + abbrev;
     Variable timeVar = new Variable(ncfile, null, null, timeCoordName);
     timeVar.setDataType(DataType.INT);
     timeVar.setDimensions(dim2);
@@ -302,74 +318,75 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     // int julianDays = volScan.getTitleJulianDays();
     // Date d = Level2Record.getDate( julianDays, 0);
     // Date d = getDate(volScan.getTitleJulianDays(), volScan.getTitleMsecs());
-    Date d = getDate(volScan.getTitleJulianDays(), 0);  // times are msecs from midnight
-    String units = "msecs since "+formatter.toDateTimeStringISO(d);
+    Date d = getDate(volScan.getTitleJulianDays(), 0); // times are msecs from midnight
+    String units = "msecs since " + formatter.toDateTimeStringISO(d);
 
-    timeVar.addAttribute( new Attribute(CDM.LONG_NAME, "time of each ray"));
-    timeVar.addAttribute( new Attribute(CDM.UNITS, units));
-    timeVar.addAttribute( new Attribute(CDM.MISSING_VALUE, MISSING_INT));
-    timeVar.addAttribute( new Attribute(_Coordinate.AxisType, AxisType.Time.toString()));
+    timeVar.addAttribute(new Attribute(CDM.LONG_NAME, "time of each ray"));
+    timeVar.addAttribute(new Attribute(CDM.UNITS, units));
+    timeVar.addAttribute(new Attribute(CDM.MISSING_VALUE, MISSING_INT));
+    timeVar.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Time.toString()));
 
     // add elevation coordinate variable
-    String elevCoordName = "elevation"+abbrev;
+    String elevCoordName = "elevation" + abbrev;
     Variable elevVar = new Variable(ncfile, null, null, elevCoordName);
     elevVar.setDataType(DataType.FLOAT);
     elevVar.setDimensions(dim2);
     ncfile.addVariable(null, elevVar);
 
-    elevVar.addAttribute( new Attribute(CDM.UNITS, "degrees"));
-    elevVar.addAttribute( new Attribute(CDM.LONG_NAME, "elevation angle in degres: 0 = parallel to pedestal base, 90 = perpendicular"));
-    elevVar.addAttribute( new Attribute(CDM.MISSING_VALUE, MISSING_FLOAT));
-    elevVar.addAttribute( new Attribute(_Coordinate.AxisType, AxisType.RadialElevation.toString()));
+    elevVar.addAttribute(new Attribute(CDM.UNITS, "degrees"));
+    elevVar.addAttribute(
+        new Attribute(CDM.LONG_NAME, "elevation angle in degres: 0 = parallel to pedestal base, 90 = perpendicular"));
+    elevVar.addAttribute(new Attribute(CDM.MISSING_VALUE, MISSING_FLOAT));
+    elevVar.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.RadialElevation.toString()));
 
     // add azimuth coordinate variable
-    String aziCoordName = "azimuth"+abbrev;
+    String aziCoordName = "azimuth" + abbrev;
     Variable aziVar = new Variable(ncfile, null, null, aziCoordName);
     aziVar.setDataType(DataType.FLOAT);
     aziVar.setDimensions(dim2);
     ncfile.addVariable(null, aziVar);
 
-    aziVar.addAttribute( new Attribute(CDM.UNITS, "degrees"));
-    aziVar.addAttribute( new Attribute(CDM.LONG_NAME, "azimuth angle in degrees: 0 = true north, 90 = east"));
-    aziVar.addAttribute( new Attribute(CDM.MISSING_VALUE, MISSING_FLOAT));
-    aziVar.addAttribute( new Attribute(_Coordinate.AxisType, AxisType.RadialAzimuth.toString()));
+    aziVar.addAttribute(new Attribute(CDM.UNITS, "degrees"));
+    aziVar.addAttribute(new Attribute(CDM.LONG_NAME, "azimuth angle in degrees: 0 = true north, 90 = east"));
+    aziVar.addAttribute(new Attribute(CDM.MISSING_VALUE, MISSING_FLOAT));
+    aziVar.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.RadialAzimuth.toString()));
 
     // add gate coordinate variable
-    String gateCoordName = "distance"+abbrev;
+    String gateCoordName = "distance" + abbrev;
     Variable gateVar = new Variable(ncfile, null, null, gateCoordName);
     gateVar.setDataType(DataType.FLOAT);
     gateVar.setDimensions(gateDimName);
-    Array data = Array.makeArray( DataType.FLOAT, ngates,
-        (double) firstRecord.getGateStart(datatype), (double) firstRecord.getGateSize(datatype));
-    gateVar.setCachedData( data, false);
+    Array data = Array.makeArray(DataType.FLOAT, ngates, (double) firstRecord.getGateStart(datatype),
+        (double) firstRecord.getGateSize(datatype));
+    gateVar.setCachedData(data, false);
     ncfile.addVariable(null, gateVar);
     radarRadius = firstRecord.getGateStart(datatype) + ngates * firstRecord.getGateSize(datatype);
 
-    gateVar.addAttribute( new Attribute(CDM.UNITS, "m"));
-    gateVar.addAttribute( new Attribute(CDM.LONG_NAME, "radial distance to start of gate"));
-    gateVar.addAttribute( new Attribute(_Coordinate.AxisType, AxisType.RadialDistance.toString()));
+    gateVar.addAttribute(new Attribute(CDM.UNITS, "m"));
+    gateVar.addAttribute(new Attribute(CDM.LONG_NAME, "radial distance to start of gate"));
+    gateVar.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.RadialDistance.toString()));
 
     // add number of radials variable
-    String nradialsName = "numRadials"+abbrev;
+    String nradialsName = "numRadials" + abbrev;
     Variable nradialsVar = new Variable(ncfile, null, null, nradialsName);
     nradialsVar.setDataType(DataType.INT);
     nradialsVar.setDimensions(scanDim.getShortName());
-    nradialsVar.addAttribute( new Attribute(CDM.LONG_NAME, "number of valid radials in this scan"));
+    nradialsVar.addAttribute(new Attribute(CDM.LONG_NAME, "number of valid radials in this scan"));
     ncfile.addVariable(null, nradialsVar);
 
     // add number of gates variable
-    String ngateName = "numGates"+abbrev;
+    String ngateName = "numGates" + abbrev;
     Variable ngateVar = new Variable(ncfile, null, null, ngateName);
     ngateVar.setDataType(DataType.INT);
     ngateVar.setDimensions(scanDim.getShortName());
-    ngateVar.addAttribute( new Attribute(CDM.LONG_NAME, "number of valid gates in this scan"));
+    ngateVar.addAttribute(new Attribute(CDM.LONG_NAME, "number of valid gates in this scan"));
     ncfile.addVariable(null, ngateVar);
 
-    makeCoordinateDataWithMissing( datatype, timeVar, elevVar, aziVar, nradialsVar, ngateVar, groups);
+    makeCoordinateDataWithMissing(datatype, timeVar, elevVar, aziVar, nradialsVar, ngateVar, groups);
 
     // back to the data variable
-    String coordinates = timeCoordName+" "+elevCoordName +" "+ aziCoordName+" "+gateCoordName;
-    v.addAttribute( new Attribute(_Coordinate.Axes, coordinates));
+    String coordinates = timeCoordName + " " + elevCoordName + " " + aziCoordName + " " + gateCoordName;
+    v.addAttribute(new Attribute(_Coordinate.Axes, coordinates));
 
     // make the record map
     int nradials = radialDim.getLength();
@@ -387,35 +404,35 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     }
 
     Vgroup vg = new Vgroup(datatype, map);
-    v.setSPobject( vg);
+    v.setSPobject(vg);
 
     return v;
-   }
+  }
 
   private void makeVariableNoCoords(NetcdfFile ncfile, int datatype, String shortName, String longName, Variable from,
-                                    Level2Record record) {
+      Level2Record record) {
 
     // get representative record
 
     Variable v = new Variable(ncfile, null, null, shortName);
     v.setDataType(DataType.UBYTE);
-    v.setDimensions( from.getDimensions());
+    v.setDimensions(from.getDimensions());
     ncfile.addVariable(null, v);
 
-    v.addAttribute( new Attribute(CDM.UNITS, getDatatypeUnits(datatype)));
-    v.addAttribute( new Attribute(CDM.LONG_NAME, longName));
+    v.addAttribute(new Attribute(CDM.UNITS, getDatatypeUnits(datatype)));
+    v.addAttribute(new Attribute(CDM.LONG_NAME, longName));
 
     byte[] b = new byte[2];
     b[0] = MISSING_DATA;
     b[1] = BELOW_THRESHOLD;
-    Array missingArray = Array.factory(DataType.BYTE, new int[]{2}, b);
-    v.addAttribute( new Attribute(CDM.MISSING_VALUE, missingArray));
-    v.addAttribute( new Attribute("signal_below_threshold", BELOW_THRESHOLD));
-    v.addAttribute( new Attribute(CDM.SCALE_FACTOR, record.getDatatypeScaleFactor(datatype)));
-    v.addAttribute( new Attribute(CDM.ADD_OFFSET, record.getDatatypeAddOffset(datatype)));
+    Array missingArray = Array.factory(DataType.BYTE, new int[] {2}, b);
+    v.addAttribute(new Attribute(CDM.MISSING_VALUE, missingArray));
+    v.addAttribute(new Attribute("signal_below_threshold", BELOW_THRESHOLD));
+    v.addAttribute(new Attribute(CDM.SCALE_FACTOR, record.getDatatypeScaleFactor(datatype)));
+    v.addAttribute(new Attribute(CDM.ADD_OFFSET, record.getDatatypeAddOffset(datatype)));
     // v.addAttribute( new Attribute(CDM.UNSIGNED, "true"));
-    if(datatype == Level2Record.SPECTRUM_WIDTH_HIGH){
-       v.addAttribute( new Attribute("SNR_threshold" ,record.getDatatypeSNRThreshhold(datatype)));
+    if (datatype == Level2Record.SPECTRUM_WIDTH_HIGH) {
+      v.addAttribute(new Attribute("SNR_threshold", record.getDatatypeSNRThreshhold(datatype)));
     }
     v.addAttribute(new Attribute("range_folding_threshold", record.getDatatypeRangeFoldingThreshhold(datatype)));
 
@@ -427,22 +444,22 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     v.setSPobject(vg);
   }
 
-  private void makeCoordinateDataWithMissing(int datatype, Variable time, Variable elev, Variable azi, Variable nradialsVar,
-                                  Variable ngatesVar, List groups) {
+  private void makeCoordinateDataWithMissing(int datatype, Variable time, Variable elev, Variable azi,
+      Variable nradialsVar, Variable ngatesVar, List groups) {
 
-    Array timeData = Array.factory( time.getDataType(), time.getShape());
+    Array timeData = Array.factory(time.getDataType(), time.getShape());
     Index timeIndex = timeData.getIndex();
 
-    Array elevData = Array.factory( elev.getDataType(), elev.getShape());
+    Array elevData = Array.factory(elev.getDataType(), elev.getShape());
     Index elevIndex = elevData.getIndex();
 
-    Array aziData = Array.factory( azi.getDataType(), azi.getShape());
+    Array aziData = Array.factory(azi.getDataType(), azi.getShape());
     Index aziIndex = aziData.getIndex();
 
-    Array nradialsData = Array.factory( nradialsVar.getDataType(), nradialsVar.getShape());
+    Array nradialsData = Array.factory(nradialsVar.getDataType(), nradialsVar.getShape());
     IndexIterator nradialsIter = nradialsData.getIndexIterator();
 
-    Array ngatesData = Array.factory( ngatesVar.getDataType(), ngatesVar.getShape());
+    Array ngatesData = Array.factory(ngatesVar.getDataType(), ngatesVar.getShape());
     IndexIterator ngatesIter = ngatesData.getIndexIterator();
 
     // first fill with missing data
@@ -458,7 +475,7 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     while (ii.hasNext())
       ii.setFloatNext(MISSING_FLOAT);
 
-        // now set the  coordinate variables from the Level2Record radial
+    // now set the coordinate variables from the Level2Record radial
     int last_msecs = Integer.MIN_VALUE;
     int nscans = groups.size();
 
@@ -467,44 +484,49 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
       int nradials = scanGroup.size();
 
       Level2Record first = null;
-      for (int j = 0; j < nradials; j++) {
-        Level2Record r =  (Level2Record) scanGroup.get(j);
-        if (first == null) first = r;
+      for (Object o : scanGroup) {
+        Level2Record r = (Level2Record) o;
+        if (first == null) {
+          first = r;
+        }
 
-        int radial = r.radial_num-1;
+        int radial = r.radial_num - 1;
         if (radial >= nradials) {
           radial %= nradials;
         }
-        if(last_msecs != Integer.MIN_VALUE && (last_msecs - r.data_msecs ) > 80000000 ) {
-             overMidNight = true;
+        if (last_msecs != Integer.MIN_VALUE && (last_msecs - r.data_msecs) > 80000000) {
+          overMidNight = true;
         }
-        if(overMidNight)
-            timeData.setInt( timeIndex.set(scan, radial), r.data_msecs + 24 * 3600 * 1000);
-        else
-            timeData.setInt( timeIndex.set(scan, radial), r.data_msecs);
-        elevData.setFloat( elevIndex.set(scan, radial), r.getElevation());
-        aziData.setFloat( aziIndex.set(scan, radial), r.getAzimuth());
+        if (overMidNight) {
+          timeData.setInt(timeIndex.set(scan, radial), r.data_msecs + 24 * 3600 * 1000);
+        } else {
+          timeData.setInt(timeIndex.set(scan, radial), r.data_msecs);
+        }
+        elevData.setFloat(elevIndex.set(scan, radial), r.getElevation());
+        aziData.setFloat(aziIndex.set(scan, radial), r.getAzimuth());
 
-        if (r.data_msecs < last_msecs && !overMidNight)
-            logger.warn("makeCoordinateData time out of order: " +
-                    r.data_msecs + " before " + last_msecs);
+        if (r.data_msecs < last_msecs && !overMidNight) {
+          logger.warn("makeCoordinateData time out of order: " + r.data_msecs + " before " + last_msecs);
+        }
 
         last_msecs = r.data_msecs;
       }
 
-      nradialsIter.setIntNext( nradials);
-      if (first != null) ngatesIter.setIntNext( first.getGateCount( datatype));
+      nradialsIter.setIntNext(nradials);
+      if (first != null)
+        ngatesIter.setIntNext(first.getGateCount(datatype));
     }
 
-    time.setCachedData( timeData, false);
-    elev.setCachedData( elevData, false);
-    azi.setCachedData( aziData, false);
-    nradialsVar.setCachedData( nradialsData, false);
-    ngatesVar.setCachedData( ngatesData, false);
+    time.setCachedData(timeData, false);
+    elev.setCachedData(elevData, false);
+    azi.setCachedData(aziData, false);
+    nradialsVar.setCachedData(nradialsData, false);
+    ngatesVar.setCachedData(ngatesData, false);
   }
 
-  public Array readData(Variable v2, Section section) throws IOException, InvalidRangeException {
-    Vgroup vgroup = (Vgroup) v2.getSPobject();    Range scanRange = section.getRange(0);
+  public Array readData(Variable v2, Section section) throws IOException {
+    Vgroup vgroup = (Vgroup) v2.getSPobject();
+    Range scanRange = section.getRange(0);
     Range radialRange = section.getRange(1);
     Range gateRange = section.getRange(2);
 
@@ -519,7 +541,8 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     return data;
   }
 
-  private void readOneScan(Level2Record[] mapScan, Range radialRange, Range gateRange, int datatype, IndexIterator ii) throws IOException {
+  private void readOneScan(Level2Record[] mapScan, Range radialRange, Range gateRange, int datatype, IndexIterator ii)
+      throws IOException {
     for (int radialIdx : radialRange) {
       Level2Record r = mapScan[radialIdx];
       readOneRadial(r, datatype, gateRange, ii);
@@ -528,8 +551,8 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
 
   private void readOneRadial(Level2Record r, int datatype, Range gateRange, IndexIterator ii) throws IOException {
     if (r == null) {
-      for (int i=0; i<gateRange.length(); i++)
-        ii.setByteNext( MISSING_DATA);
+      for (int i = 0; i < gateRange.length(); i++)
+        ii.setByteNext(MISSING_DATA);
       return;
     }
     r.readData(raf, datatype, gateRange, ii);
@@ -539,7 +562,7 @@ public class Nexrad2IOServiceProvider extends AbstractIOServiceProvider {
     Level2Record[][] map;
     int datatype;
 
-    Vgroup( int datatype, Level2Record[][] map) {
+    Vgroup(int datatype, Level2Record[][] map) {
       this.datatype = datatype;
       this.map = map;
     }

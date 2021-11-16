@@ -9,7 +9,6 @@ import ucar.nc2.Group;
 import ucar.ma2.StructureDataIterator;
 import ucar.ma2.StructureData;
 import ucar.ma2.Array;
-
 import java.io.IOException;
 
 /**
@@ -33,7 +32,7 @@ public class SequenceDS extends StructureDS {
   private static class StructureDataConverter implements StructureDataIterator {
     private StructureDataIterator orgIter;
     private SequenceDS newStruct;
-    private int count = 0;
+    private int count;
 
     StructureDataConverter(SequenceDS newStruct, StructureDataIterator orgIter) {
       this.newStruct = newStruct;
@@ -74,7 +73,7 @@ public class SequenceDS extends StructureDS {
   }
 
   @Override
-  public Array read(ucar.ma2.Section section) throws java.io.IOException, ucar.ma2.InvalidRangeException {
+  public Array read(ucar.ma2.Section section) throws java.io.IOException {
     return read();
   }
 

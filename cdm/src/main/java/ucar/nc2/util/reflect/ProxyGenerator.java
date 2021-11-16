@@ -23,17 +23,19 @@ public class ProxyGenerator {
 
     ArrayList allMethods = new ArrayList();
     addAllMethods(allMethods, c);
-    Collections.sort(allMethods, new MethodComparator());
-    for (int i = 0; i < allMethods.size(); i++) {
-      genMethod((Method) allMethods.get(i), out);
+    allMethods.sort(new MethodComparator());
+    for (Object allMethod : allMethods) {
+      genMethod((Method) allMethod, out);
     }
 
     out.println("}");
   }
 
   private static void addAllMethods(ArrayList allMethods, Class c) {
-    if (c == null) return;
-    if (c == Object.class) return;
+    if (c == null)
+      return;
+    if (c == Object.class)
+      return;
     Method[] methodsArray = c.getDeclaredMethods();
     allMethods.addAll(Arrays.asList(methodsArray));
 
@@ -51,7 +53,8 @@ public class ProxyGenerator {
 
     Class[] params = m.getParameterTypes();
     for (int i = 0; i < params.length; i++) {
-      if (i > 0) out.print(", ");
+      if (i > 0)
+        out.print(", ");
       out.print(makeClassName(params[i]) + " p" + i);
     }
     out.print(")");
@@ -60,7 +63,8 @@ public class ProxyGenerator {
     if (ex.length > 0) {
       out.print(" throws ");
       for (int i = 0; i < ex.length; i++) {
-        if (i > 0) out.print(", ");
+        if (i > 0)
+          out.print(", ");
         out.print(ex[i].getName());
       }
     }
@@ -73,7 +77,8 @@ public class ProxyGenerator {
 
     out.print("proxy." + m.getName() + "(");
     for (int i = 0; i < params.length; i++) {
-      if (i > 0) out.print(",");
+      if (i > 0)
+        out.print(",");
       out.print(" p" + i);
     }
     out.println(");");
@@ -99,21 +104,14 @@ public class ProxyGenerator {
     }
   }
 
-  static public void showMethods(Class c, PrintStream out) {
+  public static void showMethods(Class c, PrintStream out) {
 
     out.println("Methods for class " + c.getName());
 
     Method[] methodsArray = c.getDeclaredMethods();
 
-    for (int i = 0; i < methodsArray.length; i++) {
-      Method m = methodsArray[i];
+    for (Method m : methodsArray) {
       System.out.println(" " + m.getName());
     }
   }
-
-
-  public static void main(String[] args) throws SecurityException {
-    generate(thredds.client.catalog.Dataset.class, System.out);
-  }
-
 }

@@ -9,14 +9,12 @@ package ucar.nc2.dt.radial;
 
 import ucar.nc2.dataset.*;
 import ucar.nc2.constants.*;
-import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dt.*;
 import ucar.nc2.ft.FeatureDataset;
 import ucar.nc2.units.DateUnit;
 import ucar.nc2.VariableSimpleIF;
 import ucar.nc2.Variable;
 import ucar.ma2.*;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -33,18 +31,19 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
   float ranv, cellv, angv, nyqv, rangv, contv, rgainv, bwidthv;
 
   /////////////////////////////////////////////////
-  public Object isMine(FeatureType wantFeatureType, NetcdfDataset ncd, Formatter errlog) throws IOException {
+  public Object isMine(FeatureType wantFeatureType, NetcdfDataset ncd, Formatter errlog) {
     String convention = ncd.findAttValueIgnoreCase(null, "Conventions", null);
-    if ((null != convention) && convention.equals(_Coordinate.Convention)) {
+    if (_Coordinate.Convention.equals(convention)) {
       String format = ncd.findAttValueIgnoreCase(null, "Format", null);
-      if (format != null && format.equals("Unidata/netCDF/Dorade"))
+      if ("Unidata/netCDF/Dorade".equals(format))
         return this;
     }
 
     return null;
   }
 
-  public FeatureDataset open(FeatureType ftype, NetcdfDataset ncd, Object analysis, ucar.nc2.util.CancelTask task, Formatter errlog) throws IOException {
+  public FeatureDataset open(FeatureType ftype, NetcdfDataset ncd, Object analysis, ucar.nc2.util.CancelTask task,
+      Formatter errlog) {
     return new Dorade2RadialAdapter(ncd);
   }
 
@@ -53,8 +52,7 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
   }
 
   // needed for FeatureDatasetFactory
-  public Dorade2RadialAdapter() {
-  }
+  public Dorade2RadialAdapter() {}
 
   /**
    * Constructor.
@@ -66,7 +64,7 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
     this.ncd = ds;
 
     desc = "dorade radar dataset";
-    //EarthLocation y = getEarthLocation() ;
+    // EarthLocation y = getEarthLocation() ;
     try {
       elev = (float[]) ncd.findVariable("elevation").read().get1DJavaArray(Float.TYPE);
       aziv = (float[]) ncd.findVariable("azimuth").read().get1DJavaArray(Float.TYPE);
@@ -81,7 +79,7 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
       rangv = ncd.findVariable("Unambiguous_Range").readScalarFloat();
       contv = ncd.findVariable("Radar_Constant").readScalarFloat();
       rgainv = ncd.findVariable("rcvr_gain").readScalarFloat();
-      //bwidthv = ncd.findVariable("bm_width").readScalarFloat();
+      // bwidthv = ncd.findVariable("bm_width").readScalarFloat();
 
       setStartDate();
       setEndDate();
@@ -111,12 +109,12 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
   public boolean isStationary() {
     String t = ncd.findGlobalAttribute("IsStationary").getStringValue();
 
-    return t.equals("1");       //  if t == "1" return true
+    return t.equals("1"); // if t == "1" return true
   }
 
-  //public boolean isRadial() {
-  //     return true;
-  //}
+  // public boolean isRadial() {
+  // return true;
+  // }
 
   public boolean isVolume() {
     return false;
@@ -146,10 +144,6 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
     return new Dorade2Variable(nds, v, v0);
   }
 
-  public java.util.List getDataVariables() {
-    return dataVariables;
-  }
-
   protected void setStartDate() {
     Date da = new Date((long) timv[0]);
     String start_datetime = da.toString();
@@ -170,9 +164,7 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
 
 
   protected void setTimeUnits() throws Exception {
-    List axes = ncd.getCoordinateAxes();
-    for (int i = 0; i < axes.size(); i++) {
-      CoordinateAxis axis = (CoordinateAxis) axes.get(i);
+    for (CoordinateAxis axis : ncd.getCoordinateAxes()) {
       if (axis.getAxisType() == AxisType.Time) {
         String units = axis.getUnitsString();
         dateUnits = new DateUnit(units);
@@ -196,21 +188,21 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
   }
 
   public void clearDatasetMemory() {
-    List rvars = getDataVariables();
-    Iterator iter = rvars.iterator();
-    while (iter.hasNext()) {
-      RadialVariable radVar = (RadialVariable) iter.next();
+    for (VariableSimpleIF rvar : getDataVariables()) {
+      RadialVariable radVar = (RadialVariable) rvar;
       radVar.clearVariableMemory();
     }
   }
 
-  private class Dorade2Variable extends MyRadialVariableAdapter implements RadialDatasetSweep.RadialVariable {//extends VariableSimpleAdapter {
-    ArrayList sweeps;
+  private class Dorade2Variable extends MyRadialVariableAdapter implements RadialDatasetSweep.RadialVariable {// extends
+                                                                                                              // VariableSimpleAdapter
+                                                                                                              // {
+    ArrayList<Dorade2Sweep> sweeps;
     String name;
 
     float azi;
-    //float rt;
-    //RadialDatasetSweep.Sweep sweep;
+    // float rt;
+    // RadialDatasetSweep.Sweep sweep;
 
 
     public int getNumSweeps() {
@@ -223,7 +215,7 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
 
     private Dorade2Variable(NetcdfDataset nds, VariableSimpleIF v, Variable v0) {
       super(v.getShortName(), v0.getAttributes());
-      sweeps = new ArrayList();
+      sweeps = new ArrayList<>();
       name = v.getShortName();
 
       int[] shape = v0.getShape();
@@ -262,7 +254,7 @@ public class Dorade2RadialAdapter extends AbstractRadialAdapter {
       int nrays, ngates;
       double meanElevation = Double.NaN;
       Variable sweepVar;
-      //int[] shape, origi;
+      // int[] shape, origi;
 
       Dorade2Sweep(Variable v, int sweepno, int rays, int gates) {
         this.sweepVar = v;

@@ -7,7 +7,6 @@ package ucar.nc2.ft.point;
 import ucar.nc2.Structure;
 import ucar.ma2.StructureData;
 import ucar.ma2.StructureDataIterator;
-
 import java.io.IOException;
 
 /**
@@ -17,7 +16,7 @@ import java.io.IOException;
  * @since Mar 26, 2008
  */
 public class StructureDataIteratorLinked implements StructureDataIterator {
-  static private org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StructureDataIteratorLinked.class);
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StructureDataIteratorLinked.class);
 
   private Structure s;
   private int firstRecord, nextRecno, numRecords;
@@ -25,7 +24,7 @@ public class StructureDataIteratorLinked implements StructureDataIterator {
   private int currRecno;
   private boolean isContiguous;
 
-  public StructureDataIteratorLinked(Structure s, int firstRecord, int numRecords, String linkVarName) throws IOException {
+  public StructureDataIteratorLinked(Structure s, int firstRecord, int numRecords, String linkVarName) {
     this.s = s;
     this.firstRecord = firstRecord;
     this.nextRecno = firstRecord;
@@ -51,14 +50,14 @@ public class StructureDataIteratorLinked implements StructureDataIterator {
     } else {
       nextRecno = sdata.getScalarInt(linkVarName);
       if (currRecno == nextRecno) // infinite loop
-        throw new IllegalStateException("Infinite loop in linked list at recno= "+nextRecno);
-     }
+        throw new IllegalStateException("Infinite loop in linked list at recno= " + nextRecno);
+    }
 
     return sdata;
   }
 
   @Override
-  public boolean hasNext() throws IOException {
+  public boolean hasNext() {
     return isContiguous ? nextRecno < firstRecord + numRecords : nextRecno >= 0;
   }
 

@@ -48,7 +48,6 @@ public class Grib1GdsPredefined {
       case 61:
         return new NcepLatLon(gridNumber, 91, 45, 0.0F, 0.0F, 90.0F, 180.0F, 2.0F, 2.0F, (byte) 0x88, (byte) 64);
       case 62:
-        return new NcepLatLon(gridNumber, 91, 45, -90.0F, 0.0F, 0.0F, 180.0F, 2.0F, 2.0F, (byte) 0x88, (byte) 64);
       case 63:
         return new NcepLatLon(gridNumber, 91, 45, -90.0F, 0.0F, 0.0F, 180.0F, 2.0F, 2.0F, (byte) 0x88, (byte) 64);
       case 64:
@@ -62,8 +61,8 @@ public class Grib1GdsPredefined {
   private static class NcepLatLon extends Grib1Gds.LatLon {
     final int gridNumber;
 
-    NcepLatLon(int gridNumber, int nx, int ny, float la1, float lo1, float la2, float lo2, float deltaLon, float deltaLat,
-               byte resolution, byte scan) {
+    NcepLatLon(int gridNumber, int nx, int ny, float la1, float lo1, float la2, float lo2, float deltaLon,
+        float deltaLat, byte resolution, byte scan) {
       super(1000 * gridNumber);
       this.gridNumber = gridNumber;
       this.nx = nx;
@@ -80,13 +79,15 @@ public class Grib1GdsPredefined {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      if (!super.equals(o)) return false;
+      if (this == o)
+        return true;
+      if (o == null || getClass() != o.getClass())
+        return false;
+      if (!super.equals(o))
+        return false;
 
       NcepLatLon that = (NcepLatLon) o;
-      if (gridNumber != that.gridNumber) return false;
-      return true;
+      return gridNumber == that.gridNumber;
     }
 
     @Override
@@ -98,8 +99,8 @@ public class Grib1GdsPredefined {
   private static class NcepPS extends Grib1Gds.PolarStereographic {
     final int gridNumber;
 
-    NcepPS(int gridNumber, int nx, int ny, float la1, float lo1, float lov, float dX, float dY,
-           byte resolution, byte scan) {
+    NcepPS(int gridNumber, int nx, int ny, float la1, float lo1, float lov, float dX, float dY, byte resolution,
+        byte scan) {
       super(1000 * gridNumber);
       this.gridNumber = gridNumber;
       this.nx = nx;
@@ -115,13 +116,15 @@ public class Grib1GdsPredefined {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      if (!super.equals(o)) return false;
+      if (this == o)
+        return true;
+      if (o == null || getClass() != o.getClass())
+        return false;
+      if (!super.equals(o))
+        return false;
 
       NcepPS that = (NcepPS) o;
-      if (gridNumber != that.gridNumber) return false;
-      return true;
+      return gridNumber == that.gridNumber;
     }
 
     @Override

@@ -6,15 +6,13 @@
 package ucar.nc2.ft.fmrc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-
+import java.util.stream.Collectors;
 import ucar.nc2.Attribute;
 import ucar.nc2.constants.CF;
 import ucar.nc2.dataset.CoordinateAxis1DTime;
@@ -28,8 +26,8 @@ import ucar.nc2.util.Misc;
  * Represents a list of offset times shared among variables
  * Tracks a list of variables that all have the same list of offset times.
  */
-public class TimeCoord implements Comparable {
-  static public final TimeCoord EMPTY = new TimeCoord(CalendarDate.of(new Date()), new double[0]);
+public class TimeCoord implements Comparable<TimeCoord> {
+  public static final TimeCoord EMPTY = new TimeCoord(CalendarDate.of(new Date()), new double[0]);
 
   private CalendarDate runDate;
   private List<GridDatasetInv.Grid> gridInv; // track the grids that use this coord
@@ -37,7 +35,7 @@ public class TimeCoord implements Comparable {
   private String axisName; // time coordinate axis
 
   // time at point has offsets, intervals have bounds
-  private boolean isInterval = false;
+  private boolean isInterval;
   private double[] offset; // hours since runDate
   private double[] bound1, bound2; // hours since runDate [ntimes,2]
 
@@ -64,18 +62,18 @@ public class TimeCoord implements Comparable {
     this.runDate = runDate;
     this.axisName = axis.getFullName();
 
-    DateUnit unit = null;
-    Attribute atrCal = null;
-    Calendar cal = null;
-    
+    DateUnit unit;
+    Attribute atrCal;
+    Calendar cal;
+
     try {
       unit = new DateUnit(axis.getUnitsString());
-      atrCal = axis.findAttribute(CF.CALENDAR );
-      if(atrCal != null)
-    	  cal = Calendar.get((String)atrCal.getValue(0) );
+      atrCal = axis.findAttribute(CF.CALENDAR);
+      if (atrCal != null)
+        cal = Calendar.get((String) atrCal.getValue(0));
       else
-    	  cal = Calendar.getDefault();
-      
+        cal = Calendar.getDefault();
+
     } catch (Exception e) {
       throw new IllegalArgumentException("Not a unit of time " + axis.getUnitsString());
     }
@@ -85,8 +83,8 @@ public class TimeCoord implements Comparable {
       this.isInterval = true;
       this.bound1 = new double[n];
       this.bound2 = new double[n];
-      double[] orgBound1 =  axis.getBound1();
-      double[] orgBound2 =  axis.getBound2();
+      double[] orgBound1 = axis.getBound1();
+      double[] orgBound2 = axis.getBound2();
       this.bound2 = new double[n];
       for (int i = 0; i < axis.getSize(); i++) {
         this.bound1[i] = getValueInHours(unit, orgBound1[i]);
@@ -100,17 +98,18 @@ public class TimeCoord implements Comparable {
     }
   }
 
-  
+
   double getValueInHours(Calendar cal, DateUnit unit, double value) {
-	    //CalendarDate d = unit.makeCalendarDate(value);
-	    //double secs =  unit.getTimeUnit().getValueInSeconds(value);	    	    	    
-	    //CalendarDate d = CalendarDate.of(cal, unit.getDateOrigin().getTime() + (long)(1000*secs));
-	    
-	    CalendarDateUnit dateUnit = CalendarDateUnit.withCalendar(cal, unit.getUnitsString() ); // this will throw exception on failure
-	    CalendarDate d = dateUnit.makeCalendarDate(value);
-	    return FmrcInv.getOffsetInHours(runDate, d);
-	  }  
-  
+    // CalendarDate d = unit.makeCalendarDate(value);
+    // double secs = unit.getTimeUnit().getValueInSeconds(value);
+    // CalendarDate d = CalendarDate.of(cal, unit.getDateOrigin().getTime() + (long)(1000*secs));
+
+    CalendarDateUnit dateUnit = CalendarDateUnit.withCalendar(cal, unit.getUnitsString()); // this will throw exception
+                                                                                           // on failure
+    CalendarDate d = dateUnit.makeCalendarDate(value);
+    return FmrcInv.getOffsetInHours(runDate, d);
+  }
+
   double getValueInHours(DateUnit unit, double value) {
     CalendarDate d = unit.makeCalendarDate(value);
     return FmrcInv.getOffsetInHours(runDate, d);
@@ -136,7 +135,7 @@ public class TimeCoord implements Comparable {
    * @return list of GridDatasetInv.Grid that use this TimeCoord
    */
   public List<GridDatasetInv.Grid> getGridInventory() {
-    return (gridInv == null) ? new ArrayList<GridDatasetInv.Grid>() : gridInv;
+    return (gridInv == null) ? new ArrayList<>() : gridInv;
   }
 
   /**
@@ -158,7 +157,8 @@ public class TimeCoord implements Comparable {
   }
 
   public String getName() {
-    if (this == EMPTY) return "EMPTY";
+    if (this == EMPTY)
+      return "EMPTY";
     return id == 0 ? "time" : "time" + id;
   }
 
@@ -170,8 +170,9 @@ public class TimeCoord implements Comparable {
     return (isInterval) ? bound1.length : offset.length;
   }
 
-   /**
+  /**
    * The list of valid times, in units of hours since the run time
+   * 
    * @return list of valid times, in units of hours since the run time
    */
   public double[] getOffsetTimes() {
@@ -213,9 +214,11 @@ public class TimeCoord implements Comparable {
     Formatter out = new Formatter();
     out.format("%-10s %-26s offsets=", getName(), runDate);
     if (isInterval)
-      for (int i=0; i<bound1.length; i++) out.format((Locale) null, "(%3.1f,%3.1f) ", bound1[i], bound2[i]);
+      for (int i = 0; i < bound1.length; i++)
+        out.format((Locale) null, "(%3.1f,%3.1f) ", bound1[i], bound2[i]);
     else
-      for (double val : offset) out.format((Locale) null, "%3.1f, ", val);
+      for (double val : offset)
+        out.format((Locale) null, "%3.1f, ", val);
     return out.toString();
   }
 
@@ -227,10 +230,12 @@ public class TimeCoord implements Comparable {
    */
   public boolean equalsData(TimeCoord tother) {
     if (getRunDate() != null) {
-      if (!getRunDate().equals(tother.getRunDate())) return false;
+      if (!getRunDate().equals(tother.getRunDate()))
+        return false;
     }
 
-    if (isInterval != tother.isInterval) return false;
+    if (isInterval != tother.isInterval)
+      return false;
 
     if (isInterval) {
       if (bound1.length != tother.bound1.length)
@@ -272,9 +277,8 @@ public class TimeCoord implements Comparable {
     return -1;
   }
 
-  public int compareTo(Object o) {
-    TimeCoord ot = (TimeCoord) o;
-    return id - ot.id;
+  public int compareTo(TimeCoord o) {
+    return Integer.compare(id, o.id);
   }
 
   /////////////////////////////////////////////
@@ -288,8 +292,9 @@ public class TimeCoord implements Comparable {
    * @param want find equivilent
    * @return return equivilent or make a new one and add to timeCoords
    */
-  static public TimeCoord findTimeCoord(List<TimeCoord> timeCoords, TimeCoord want) {
-    if (want == null) return null;
+  public static TimeCoord findTimeCoord(List<TimeCoord> timeCoords, TimeCoord want) {
+    if (want == null)
+      return null;
 
     for (TimeCoord tc : timeCoords) {
       if (want.equalsData(tc))
@@ -304,13 +309,16 @@ public class TimeCoord implements Comparable {
 
   /**
    * Create the union of all the values in the list of TimeCoord, ignoring the TimeCoord's runDate
+   * 
    * @param timeCoords list of TimeCoord
    * @param baseDate resulting union timeCoord uses this as a base date
    * @return union TimeCoord
    */
-  static public TimeCoord makeUnion(List<TimeCoord> timeCoords, CalendarDate baseDate) {
-    if (timeCoords.size() == 0) return new TimeCoord(baseDate);
-    if (timeCoords.size() == 1) return timeCoords.get(0);
+  public static TimeCoord makeUnion(List<TimeCoord> timeCoords, CalendarDate baseDate) {
+    if (timeCoords.isEmpty())
+      return new TimeCoord(baseDate);
+    if (timeCoords.size() == 1)
+      return timeCoords.get(0);
 
     if (timeCoords.get(0).isInterval)
       return makeUnionIntv(timeCoords, baseDate);
@@ -318,7 +326,7 @@ public class TimeCoord implements Comparable {
       return makeUnionReg(timeCoords, baseDate);
   }
 
-  static private TimeCoord makeUnionReg(List<TimeCoord> timeCoords, CalendarDate baseDate) {
+  private static TimeCoord makeUnionReg(List<TimeCoord> timeCoords, CalendarDate baseDate) {
     // put into a set for uniqueness
     Set<Double> offsets = new HashSet<>();
     for (TimeCoord tc : timeCoords) {
@@ -328,11 +336,10 @@ public class TimeCoord implements Comparable {
         offsets.add(off);
     }
 
-    // extract into a List
-    List<Double> offsetList = Arrays.asList((Double[]) offsets.toArray(new Double[offsets.size()]));
+    // extract into a List and sort
+    List<Double> offsetList = offsets.stream().sorted().collect(Collectors.toList());
 
-    // sort and extract into double[]
-    Collections.sort(offsetList);
+    // extract into double[]
     double[] offset = new double[offsetList.size()];
     int count = 0;
     for (double off : offsetList)
@@ -344,25 +351,24 @@ public class TimeCoord implements Comparable {
     return result;
   }
 
-  static private TimeCoord makeUnionIntv(List<TimeCoord> timeCoords, CalendarDate baseDate) {
+  private static TimeCoord makeUnionIntv(List<TimeCoord> timeCoords, CalendarDate baseDate) {
     // put into a set for uniqueness
     Set<Tinv> offsets = new HashSet<>();
     for (TimeCoord tc : timeCoords) {
       if (!tc.isInterval)
         throw new IllegalArgumentException("Cant mix non-interval coordinates");
-      for (int i=0; i<tc.bound1.length; i++)
+      for (int i = 0; i < tc.bound1.length; i++)
         offsets.add(new Tinv(tc.bound1[i], tc.bound2[i]));
     }
 
-    // extract into a List
-    List<Tinv> bounds = Arrays.asList((Tinv[]) offsets.toArray(new Tinv[offsets.size()]));
+    // extract into a List and sort
+    List<Tinv> bounds = offsets.stream().sorted().collect(Collectors.toList());
 
-    // sort and extract into double[] bounds arrays
-    Collections.sort(bounds);
+    // extract into double[] bounds arrays
     int n = bounds.size();
     double[] bounds1 = new double[n];
     double[] bounds2 = new double[n];
-    for (int i=0; i<n; i++) {
+    for (int i = 0; i < n; i++) {
       Tinv tinv = bounds.get(i);
       bounds1[i] = tinv.b1;
       bounds2[i] = tinv.b2;
@@ -376,7 +382,7 @@ public class TimeCoord implements Comparable {
 
   // use for matching intervals
   public static class Tinv implements Comparable<Tinv> {
-    private double b1, b2;  // bounds
+    private double b1, b2; // bounds
 
     public Tinv(double offset) {
       this.b2 = offset;
@@ -389,21 +395,23 @@ public class TimeCoord implements Comparable {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o)
+        return true;
+      if (o == null || getClass() != o.getClass())
+        return false;
 
       Tinv tinv = (Tinv) o;
 
-      if (!Misc.nearlyEquals(b2, tinv.b2)) return false;
-      if (!Misc.nearlyEquals(b1, tinv.b1)) return false;
+      if (!Misc.nearlyEquals(b2, tinv.b2))
+        return false;
+      return Misc.nearlyEquals(b1, tinv.b1);
 
-      return true;
     }
 
     @Override
     public int hashCode() {
       int result = (int) Math.round(b1 / Misc.defaultMaxRelativeDiffDouble);
-      result = 31 * result + (int) Math.round(b2/Misc.defaultMaxRelativeDiffDouble);
+      result = 31 * result + (int) Math.round(b2 / Misc.defaultMaxRelativeDiffDouble);
       return result;
     }
 
@@ -411,56 +419,62 @@ public class TimeCoord implements Comparable {
     public int compareTo(Tinv o) {
       boolean b1close = Misc.nearlyEquals(b1, o.b1);
       boolean b2close = Misc.nearlyEquals(b2, o.b2);
-      if (b1close && b2close) return 0;
-      if (b2close) return Double.compare(b1, o.b1);
+      if (b1close && b2close)
+        return 0;
+      if (b2close)
+        return Double.compare(b1, o.b1);
       return Double.compare(b2, o.b2);
     }
   }
 
   /*
    * Create the union of all the values in the list of TimeCoord, converting all to a common baseDate
+   * 
    * @param timeCoords list of TimeCoord
+   * 
    * @param baseDate resulting union timeCoord uses this as a base date
+   * 
    * @return union TimeCoord
    *
-  static public TimeResult makeUnionConvert(List<TimeCoord> timeCoords, Date baseDate) {
-
-    Map<Double, Double> offsetMap = new HashMap<Double, Double>(256);
-    for (TimeCoord tc : timeCoords) {
-      double run_offset = FmrcInv.getOffsetInHours(baseDate, tc.getRunDate());
-      for (double offset : tc.getOffsetHours()) {
-        offsetMap.put(run_offset + offset, run_offset); // later ones override
-      }
-    }
-
-    Set<Double> keys = offsetMap.keySet();
-    int n = keys.size();
-    List<Double> offsetList = Arrays.asList((Double[]) keys.toArray(new Double[n]));
-    Collections.sort(offsetList);
-
-    int counto = 0;
-    double[] offs = new double[n];
-    double[] runoffs = new double[n];
-    for (Double key : offsetList) {
-      offs[counto] = key;
-      runoffs[counto] = offsetMap.get(key);
-      counto++;
-    }
-
-    return new TimeResult( baseDate, offs, runoffs);
-  }
-
-  static class TimeResult {
-    double[] offsets;
-    double[] runOffsets;
-    Date base;
-
-    TimeResult(Date base, double[] offsets, double[] runOffsets) {
-      this.base = base;
-      this.offsets = offsets;
-      this.runOffsets = runOffsets;
-    }
-  } */
+   * static public TimeResult makeUnionConvert(List<TimeCoord> timeCoords, Date baseDate) {
+   * 
+   * Map<Double, Double> offsetMap = new HashMap<Double, Double>(256);
+   * for (TimeCoord tc : timeCoords) {
+   * double run_offset = FmrcInv.getOffsetInHours(baseDate, tc.getRunDate());
+   * for (double offset : tc.getOffsetHours()) {
+   * offsetMap.put(run_offset + offset, run_offset); // later ones override
+   * }
+   * }
+   * 
+   * Set<Double> keys = offsetMap.keySet();
+   * int n = keys.size();
+   * List<Double> offsetList = Arrays.asList((Double[]) keys.toArray(new Double[n]));
+   * Collections.sort(offsetList);
+   * 
+   * int counto = 0;
+   * double[] offs = new double[n];
+   * double[] runoffs = new double[n];
+   * for (Double key : offsetList) {
+   * offs[counto] = key;
+   * runoffs[counto] = offsetMap.get(key);
+   * counto++;
+   * }
+   * 
+   * return new TimeResult( baseDate, offs, runoffs);
+   * }
+   * 
+   * static class TimeResult {
+   * double[] offsets;
+   * double[] runOffsets;
+   * Date base;
+   * 
+   * TimeResult(Date base, double[] offsets, double[] runOffsets) {
+   * this.base = base;
+   * this.offsets = offsets;
+   * this.runOffsets = runOffsets;
+   * }
+   * }
+   */
 
 
 }

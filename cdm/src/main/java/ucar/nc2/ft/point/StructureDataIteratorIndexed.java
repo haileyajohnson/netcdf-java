@@ -7,7 +7,6 @@ package ucar.nc2.ft.point;
 import ucar.ma2.StructureDataIterator;
 import ucar.ma2.StructureData;
 import ucar.nc2.Structure;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Iterator;
@@ -19,14 +18,14 @@ import java.util.Iterator;
  * @since Feb 11, 2009
  */
 public class StructureDataIteratorIndexed implements StructureDataIterator {
-  static private org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StructureDataIteratorLinked.class);
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StructureDataIteratorLinked.class);
 
   private Structure s;
   private List<Integer> index;
   private Iterator<Integer> indexIter;
   private int currRecord;
 
-  public StructureDataIteratorIndexed(Structure s, List<Integer> index) throws IOException {
+  public StructureDataIteratorIndexed(Structure s, List<Integer> index) {
     this.s = s;
     this.index = index;
     reset();
@@ -46,7 +45,7 @@ public class StructureDataIteratorIndexed implements StructureDataIterator {
   }
 
   @Override
-  public boolean hasNext() throws IOException {
+  public boolean hasNext() {
     return indexIter.hasNext();
   }
 

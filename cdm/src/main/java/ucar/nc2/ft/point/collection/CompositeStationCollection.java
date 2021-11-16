@@ -10,8 +10,9 @@ import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import thredds.inventory.TimedCollection;
 import ucar.ma2.StructureData;
 import ucar.nc2.Attribute;
@@ -43,12 +44,14 @@ import ucar.unidata.geoloc.Station;
  * @since May 19, 2009
  */
 public class CompositeStationCollection extends StationTimeSeriesCollectionImpl implements UpdateableCollection {
+  private static Logger log = LoggerFactory.getLogger(CompositeStationCollection.class);
+
   private TimedCollection dataCollection;
   protected List<VariableSimpleIF> dataVariables;
   protected List<Attribute> globalAttributes;
 
-  protected CompositeStationCollection(
-          String name, CalendarDateUnit timeUnit, String altUnits, TimedCollection dataCollection) throws IOException {
+  protected CompositeStationCollection(String name, CalendarDateUnit timeUnit, String altUnits,
+      TimedCollection dataCollection) {
     super(name, timeUnit, altUnits);
     this.dataCollection = dataCollection;
     TimedCollection.Dataset td = dataCollection.getPrototype();
@@ -63,7 +66,8 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
       throw new RuntimeException("No datasets in the collection");
 
     Formatter errlog = new Formatter();
-    try (FeatureDatasetPoint openDataset = (FeatureDatasetPoint) FeatureDatasetFactoryManager.open(FeatureType.STATION, td.getLocation(), null, errlog)) {
+    try (FeatureDatasetPoint openDataset =
+        (FeatureDatasetPoint) FeatureDatasetFactoryManager.open(FeatureType.STATION, td.getLocation(), null, errlog)) {
       if (openDataset == null)
         throw new IllegalStateException("Cant open FeatureDatasetPoint " + td.getLocation());
 
@@ -74,7 +78,8 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
       List<StationFeature> stns = openCollection.getStationFeatures();
 
       for (StationFeature stnFeature : stns) {
-        stationHelper.addStation(new CompositeStationFeature(stnFeature, timeUnit, altUnits, stnFeature.getFeatureData(), this.dataCollection));
+        stationHelper.addStation(new CompositeStationFeature(stnFeature, timeUnit, altUnits,
+            stnFeature.getFeatureData(), this.dataCollection));
       }
 
       dataVariables = openDataset.getDataVariables();
@@ -85,12 +90,12 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
   }
 
   public List<VariableSimpleIF> getDataVariables() {
-    getStationHelper();  // dataVariables gets initialized when stationHelper does. Bit of a kludge.
+    getStationHelper(); // dataVariables gets initialized when stationHelper does. Bit of a kludge.
     return dataVariables;
   }
 
   public List<Attribute> getGlobalAttributes() {
-    getStationHelper();  // globalAttributes gets initialized when stationHelper does. Bit of a kludge.
+    getStationHelper(); // globalAttributes gets initialized when stationHelper does. Bit of a kludge.
     return globalAttributes;
   }
 
@@ -103,7 +108,7 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
   // StationTimeSeriesFeatureCollection
 
   @Override
-  public StationTimeSeriesFeatureCollection subset(List<StationFeature> stations) throws IOException {
+  public StationTimeSeriesFeatureCollection subset(List<StationFeature> stations) {
     if (stations == null) {
       return this;
     } else {
@@ -113,7 +118,7 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
   }
 
   @Override
-  public StationTimeSeriesFeatureCollection subset(ucar.unidata.geoloc.LatLonRect boundingBox) throws IOException {
+  public StationTimeSeriesFeatureCollection subset(ucar.unidata.geoloc.LatLonRect boundingBox) {
     if (boundingBox == null) {
       return this;
     } else {
@@ -122,24 +127,29 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
     }
   }
 
-  /* @Override
-  public StationTimeSeriesFeature getStationFeature(Station s) throws IOException {
-    StationFeature stnFeature = getStationHelper().getStationFeature(s);
-    return new CompositeStationFeature(stnFeature, timeUnit, altUnits, stnFeature.getFeatureData(), dataCollection);
-  } */
+  /*
+   * @Override
+   * public StationTimeSeriesFeature getStationFeature(Station s) throws IOException {
+   * StationFeature stnFeature = getStationHelper().getStationFeature(s);
+   * return new CompositeStationFeature(stnFeature, timeUnit, altUnits, stnFeature.getFeatureData(), dataCollection);
+   * }
+   */
 
   @Override
-  public PointFeatureCollection flatten(LatLonRect boundingBox, CalendarDateRange dateRange) throws IOException {
+  public PointFeatureCollection flatten(LatLonRect boundingBox, CalendarDateRange dateRange) {
     TimedCollection subsetCollection = (dateRange != null) ? dataCollection.subset(dateRange) : dataCollection;
-    return new CompositeStationCollectionFlattened(getName(), getTimeUnit(), getAltUnits(), boundingBox, dateRange, subsetCollection);
+    return new CompositeStationCollectionFlattened(getName(), getTimeUnit(), getAltUnits(), boundingBox, dateRange,
+        subsetCollection);
 
-    //return flatten(stationHelper.getStations(boundingBox), dateRange, null);
+    // return flatten(stationHelper.getStations(boundingBox), dateRange, null);
   }
 
   @Override
-  public PointFeatureCollection flatten(List<String> stations, CalendarDateRange dateRange, List<VariableSimpleIF> varList) throws IOException {
+  public PointFeatureCollection flatten(List<String> stations, CalendarDateRange dateRange,
+      List<VariableSimpleIF> varList) {
     TimedCollection subsetCollection = (dateRange != null) ? dataCollection.subset(dateRange) : dataCollection;
-    return new CompositeStationCollectionFlattened(getName(), getTimeUnit(), getAltUnits(), stations, dateRange, varList, subsetCollection);
+    return new CompositeStationCollectionFlattened(getName(), getTimeUnit(), getAltUnits(), stations, dateRange,
+        varList, subsetCollection);
   }
 
 
@@ -147,13 +157,12 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
     private final CompositeStationCollection from;
     private final List<StationFeature> stationFeats;
 
-    private CompositeStationCollectionSubset(CompositeStationCollection from, List<StationFeature> stationFeats)
-            throws IOException {
+    private CompositeStationCollectionSubset(CompositeStationCollection from, List<StationFeature> stationFeats) {
       super(from.getName(), from.getTimeUnit(), from.getAltUnits(), from.dataCollection);
       this.from = Preconditions.checkNotNull(from, "from == null");
 
       Preconditions.checkArgument(stationFeats != null && !stationFeats.isEmpty(),
-              "stationFeats == null || stationFeats.isEmpty(): %s", stationFeats);
+          "stationFeats == null || stationFeats.isEmpty(): %s", stationFeats);
       this.stationFeats = stationFeats;
     }
 
@@ -162,8 +171,8 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
       StationHelper stationHelper = new StationHelper();
 
       for (StationFeature stationFeat : this.stationFeats) {
-        stationHelper.addStation(new CompositeStationFeature(
-                stationFeat, timeUnit, altUnits, stationFeat.getFeatureData(), from.dataCollection));
+        stationHelper.addStation(new CompositeStationFeature(stationFeat, timeUnit, altUnits,
+            stationFeat.getFeatureData(), from.dataCollection));
       }
 
       return stationHelper;
@@ -176,35 +185,35 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
   // betterto use the flatten() method, then reconstitute the station with getStation(pointFeature)
 
   @Override
-  public PointFeatureCollectionIterator getPointFeatureCollectionIterator() throws IOException {
+  public PointFeatureCollectionIterator getPointFeatureCollectionIterator() {
 
     // an anonymous class iterating over the stations
     return new PointFeatureCollectionIterator() {
       Iterator<Station> stationIter = getStationHelper().getStations().iterator();
 
       @Override
-      public boolean hasNext() throws IOException {
+      public boolean hasNext() {
         return stationIter.hasNext();
       }
 
       @Override
-      public PointFeatureCollection next() throws IOException {
+      public PointFeatureCollection next() {
         return (PointFeatureCollection) stationIter.next();
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
     };
   }
 
   // the StationTimeSeriesFeature
 
-  private class CompositeStationFeature extends StationTimeSeriesFeatureImpl {
+  private static class CompositeStationFeature extends StationTimeSeriesFeatureImpl {
     private TimedCollection collForFeature;
     private StructureData sdata;
 
-    CompositeStationFeature(StationFeature s, CalendarDateUnit timeUnit, String altUnits, StructureData sdata, TimedCollection collForFeature) {
+    CompositeStationFeature(StationFeature s, CalendarDateUnit timeUnit, String altUnits, StructureData sdata,
+        TimedCollection collForFeature) {
       super(s, timeUnit, altUnits, -1);
       this.sdata = sdata;
       this.collForFeature = collForFeature;
@@ -218,45 +227,47 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
     // an iterator over the observations for this station
 
     @Override
-    public PointFeatureIterator getPointFeatureIterator() throws IOException {
+    public PointFeatureIterator getPointFeatureIterator() {
       return new CompositeStationFeatureIterator();
     }
 
     /*
-    public StationTimeSeriesFeature subset(DateRange dateRange) throws IOException {
-      return subset(CalendarDateRange.of(dateRange));  // Handles dateRange == null.
-    } */
+     * public StationTimeSeriesFeature subset(DateRange dateRange) throws IOException {
+     * return subset(CalendarDateRange.of(dateRange)); // Handles dateRange == null.
+     * }
+     */
 
     @Override
-    public StationTimeSeriesFeature subset(CalendarDateRange dateRange) throws IOException {
-      if (dateRange == null) return this;
+    public StationTimeSeriesFeature subset(CalendarDateRange dateRange) {
+      if (dateRange == null)
+        return this;
 
       // Extract the collection members that intersect dateRange. For example, if we have:
-      //     collForFeature == CollectionManager{
-      //         Dataset{location='foo_20141015.nc', dateRange=2014-10-15T00:00:00Z - 2014-10-16T00:00:00Z}
-      //         Dataset{location='foo_20141016.nc', dateRange=2014-10-16T00:00:00Z - 2014-10-17T00:00:00Z}
-      //         Dataset{location='foo_20141017.nc', dateRange=2014-10-17T00:00:00Z - 2014-10-18T00:00:00Z}
-      //         Dataset{location='foo_20141018.nc', dateRange=2014-10-18T00:00:00Z - 2014-10-19T00:00:00Z}
-      //     }
+      // collForFeature == CollectionManager{
+      // Dataset{location='foo_20141015.nc', dateRange=2014-10-15T00:00:00Z - 2014-10-16T00:00:00Z}
+      // Dataset{location='foo_20141016.nc', dateRange=2014-10-16T00:00:00Z - 2014-10-17T00:00:00Z}
+      // Dataset{location='foo_20141017.nc', dateRange=2014-10-17T00:00:00Z - 2014-10-18T00:00:00Z}
+      // Dataset{location='foo_20141018.nc', dateRange=2014-10-18T00:00:00Z - 2014-10-19T00:00:00Z}
+      // }
       // and we want to subset it with:
-      //     dateRange == 2014-10-16T12:00:00Z - 2014-10-17T12:00:00Z
+      // dateRange == 2014-10-16T12:00:00Z - 2014-10-17T12:00:00Z
       // the result will be:
-      //     collectionSubset == CollectionManager{
-      //         Dataset{location='foo_20141016.nc', dateRange=2014-10-16T00:00:00Z - 2014-10-17T00:00:00Z}
-      //         Dataset{location='foo_20141017.nc', dateRange=2014-10-17T00:00:00Z - 2014-10-18T00:00:00Z}
-      //     }
+      // collectionSubset == CollectionManager{
+      // Dataset{location='foo_20141016.nc', dateRange=2014-10-16T00:00:00Z - 2014-10-17T00:00:00Z}
+      // Dataset{location='foo_20141017.nc', dateRange=2014-10-17T00:00:00Z - 2014-10-18T00:00:00Z}
+      // }
       TimedCollection collectionSubset = collForFeature.subset(dateRange);
 
       // Create a new CompositeStationFeature from the subsetted collection.
       CompositeStationFeature compStnFeatSubset =
-              new CompositeStationFeature(s, getTimeUnit(), getAltUnits(), sdata, collectionSubset);
+          new CompositeStationFeature(s, getTimeUnit(), getAltUnits(), sdata, collectionSubset);
 
       // We're not done yet! While compStnFeatSubset has been limited to only include datasets that intersect dateRange,
       // it'll often be the case that those datasets contain some times that we don't want. In the example above,
       // we only want:
-      //     dateRange == 2014-10-16T12:00:00Z - 2014-10-17T12:00:00Z
+      // dateRange == 2014-10-16T12:00:00Z - 2014-10-17T12:00:00Z
       // but the range of compStnFeatSubset is:
-      //     2014-10-16T00:00:00Z - 2014-10-18T00:00:00Z
+      // 2014-10-16T00:00:00Z - 2014-10-18T00:00:00Z
       // We don't want the first or last 12 hours! So, wrap in a StationFeatureSubset to do per-feature filtering.
       // Note that the TimedCollection.subset() call above is still worth doing, as it limits the number of features
       // we must iterate over.
@@ -265,16 +276,18 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
 
     @Nonnull
     @Override
-    public StructureData getFeatureData() throws IOException {
+    public StructureData getFeatureData() {
       return sdata;
     }
 
     @Override
     @Nullable
-    public PointFeatureCollection subset(LatLonRect boundingBox, CalendarDateRange dateRange) throws IOException {
+    public PointFeatureCollection subset(LatLonRect boundingBox, CalendarDateRange dateRange) {
       if (boundingBox != null) {
-        if (!boundingBox.contains(s.getLatLon())) return null;
-        if (dateRange == null) return this;
+        if (!boundingBox.contains(s.getLatLon()))
+          return null;
+        if (dateRange == null)
+          return this;
       }
       return subset(dateRange);
     }
@@ -284,18 +297,20 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
     private class CompositeStationFeatureIterator extends PointIteratorAbstract {
       private Iterator<TimedCollection.Dataset> iter;
       private FeatureDatasetPoint currentDataset;
-      private PointFeatureIterator pfIter = null;
-      private boolean finished = false;
+      private PointFeatureIterator pfIter;
+      private boolean finished;
 
       CompositeStationFeatureIterator() {
         iter = collForFeature.getDatasets().iterator();
       }
 
       private PointFeatureIterator getNextIterator() throws IOException {
-        if (!iter.hasNext()) return null;
+        if (!iter.hasNext())
+          return null;
         TimedCollection.Dataset td = iter.next();
         Formatter errlog = new Formatter();
-        currentDataset = (FeatureDatasetPoint) FeatureDatasetFactoryManager.open(FeatureType.STATION, td.getLocation(), null, errlog);
+        currentDataset = (FeatureDatasetPoint) FeatureDatasetFactoryManager.open(FeatureType.STATION, td.getLocation(),
+            null, errlog);
         if (currentDataset == null)
           throw new IllegalStateException("Cant open FeatureDatasetPoint " + td.getLocation());
 
@@ -303,8 +318,7 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
         StationTimeSeriesFeatureCollection stnCollection = (StationTimeSeriesFeatureCollection) fcList.get(0);
         StationFeature s = stnCollection.findStationFeature(getName());
         if (s == null) {
-          System.out.printf("CompositeStationFeatureIterator dataset: %s missing station %s%n",
-                  td.getLocation(), getName());
+          log.warn("CompositeStationFeatureIterator dataset: {} missing station {}", td.getLocation(), getName());
           return getNextIterator();
         }
 
@@ -342,14 +356,15 @@ public class CompositeStationCollection extends StationTimeSeriesCollectionImpl 
 
       @Override
       public PointFeature next() {
-        PointFeature pf =  pfIter.next();
+        PointFeature pf = pfIter.next();
         calcBounds(pf);
         return pf;
       }
 
       @Override
       public void close() {
-        if (finished) return;
+        if (finished)
+          return;
 
         if (pfIter != null)
           pfIter.close();

@@ -7,7 +7,6 @@ package ucar.nc2.ft.fmrc;
 
 import org.jdom2.Element;
 import org.jdom2.Namespace;
-
 import thredds.featurecollection.FeatureCollectionConfig;
 import thredds.inventory.*;
 import ucar.nc2.Attribute;
@@ -17,7 +16,6 @@ import ucar.nc2.dt.grid.GridDataset;
 import ucar.nc2.ncml.NcMLWriter;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateRange;
-
 import javax.annotation.concurrent.ThreadSafe;
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,7 +29,7 @@ import java.util.*;
  * Assumes that we dont have multiple runtimes in the same file.
  * Can handle different time steps in different files.
  * Can handle different grids in different files. However this creates problems for the "typical dataset".
- * Cannot handle different ensembles in different files.  (LOOK fix)
+ * Cannot handle different ensembles in different files. (LOOK fix)
  * Cannot handle different levels in different files. ok
  *
  * @author caron
@@ -39,22 +37,22 @@ import java.util.*;
  */
 @ThreadSafe
 public class Fmrc implements Closeable {
-  static private org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Fmrc.class);
-  static private final Namespace ncNSHttps = thredds.client.catalog.Catalog.ncmlNSHttps;
-  static private NcMLWriter ncmlWriter = new NcMLWriter();
+  private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Fmrc.class);
+  private static final Namespace ncNSHttps = thredds.client.catalog.Catalog.ncmlNSHttps;
+  private static NcMLWriter ncmlWriter = new NcMLWriter();
 
   /**
    * Factory method
    *
    * @param collection describes the collection. May be one of:
-   *  <ol>
-   *  <li>collection specification string
-   *  <li>catalog:catalogURL
-   *  <li>filename.ncml
-   *  <li>
-   *  </ol>
-   *  collectionSpec date extraction is used to get rundates
-   * @param errlog     place error messages here
+   *        <ol>
+   *        <li>collection specification string
+   *        <li>catalog:catalogURL
+   *        <li>filename.ncml
+   *        <li>
+   *        </ol>
+   *        collectionSpec date extraction is used to get rundates
+   * @param errlog place error messages here
    * @return Fmrc or null on error
    * @throws IOException on read error
    * @see "http://www.unidata.ucar.edu/software/netcdf-java/reference/collections/CollectionSpecification.html"
@@ -66,7 +64,8 @@ public class Fmrc implements Closeable {
 
     } else if (collection.endsWith(".ncml")) {
       NcmlCollectionReader ncmlCollection = NcmlCollectionReader.open(collection, errlog);
-      if (ncmlCollection == null) return null;
+      if (ncmlCollection == null)
+        return null;
       Fmrc fmrc = new Fmrc(ncmlCollection.getCollectionManager(), new FeatureCollectionConfig());
       fmrc.setNcml(ncmlCollection.getNcmlOuter(), ncmlCollection.getNcmlInner());
       return fmrc;
@@ -74,16 +73,17 @@ public class Fmrc implements Closeable {
 
     return new Fmrc(collection, errlog);
   }
-  
+
   public static Fmrc readNcML(String ncmlString, Formatter errlog) throws IOException {
-      NcmlCollectionReader ncmlCollection = NcmlCollectionReader.readNcML(ncmlString, errlog);
-      if (ncmlCollection == null) return null;
-      Fmrc fmrc = new Fmrc(ncmlCollection.getCollectionManager(), new FeatureCollectionConfig());
-      fmrc.setNcml(ncmlCollection.getNcmlOuter(), ncmlCollection.getNcmlInner());
-      return fmrc;
+    NcmlCollectionReader ncmlCollection = NcmlCollectionReader.readNcML(ncmlString, errlog);
+    if (ncmlCollection == null)
+      return null;
+    Fmrc fmrc = new Fmrc(ncmlCollection.getCollectionManager(), new FeatureCollectionConfig());
+    fmrc.setNcml(ncmlCollection.getNcmlOuter(), ncmlCollection.getNcmlInner());
+    return fmrc;
   }
 
-  public static Fmrc open(FeatureCollectionConfig config, Formatter errlog) throws IOException {
+  public static Fmrc open(FeatureCollectionConfig config, Formatter errlog) {
     if (config.spec.startsWith(MFileCollectionManager.CATALOG)) {
       String name = config.collectionName != null ? config.collectionName : config.spec;
       CollectionManagerCatalog manager = new CollectionManagerCatalog(name, config.spec, null, errlog);
@@ -103,12 +103,12 @@ public class Fmrc implements Closeable {
   // the current state - changing must be thread safe
   private final Object lock = new Object();
   private FmrcDataset fmrcDataset;
-  private volatile boolean forceProto = false;
+  private volatile boolean forceProto;
   private volatile long lastInvChanged;
   private volatile long lastProtoChanged;
 
-  private Fmrc(String collectionSpec, Formatter errlog) throws IOException {
-    this.manager = MFileCollectionManager.open(collectionSpec, collectionSpec, null, errlog);  // LOOK no name
+  private Fmrc(String collectionSpec, Formatter errlog) {
+    this.manager = MFileCollectionManager.open(collectionSpec, collectionSpec, null, errlog); // LOOK no name
     this.config = new FeatureCollectionConfig();
     this.config.spec = collectionSpec;
   }
@@ -140,63 +140,63 @@ public class Fmrc implements Closeable {
     return manager;
   }
 
-  public FmrcInv getFmrcInv(Formatter debug) throws IOException {
-    return makeFmrcInv( debug);
+  public FmrcInv getFmrcInv(Formatter debug) {
+    return makeFmrcInv(debug);
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////
 
   public CalendarDateRange getDateRangeForRun(CalendarDate run) {
-    return fmrcDataset.getDateRangeForRun( run);
+    return fmrcDataset.getDateRangeForRun(run);
   }
 
   public CalendarDateRange getDateRangeForOffset(double offset) {
-    return fmrcDataset.getDateRangeForOffset( offset);
+    return fmrcDataset.getDateRangeForOffset(offset);
   }
 
-  public List<CalendarDate> getRunDates() throws IOException {
-    checkNeeded( false); // ??
+  public List<CalendarDate> getRunDates() {
+    checkNeeded(false); // ??
     return fmrcDataset.getRunDates();
   }
 
-  public List<CalendarDate> getForecastDates() throws IOException {
-    checkNeeded( false); // ??
+  public List<CalendarDate> getForecastDates() {
+    checkNeeded(false); // ??
     return fmrcDataset.getForecastDates();
   }
 
   // for making offset datasets
-  public double[] getForecastOffsets() throws IOException {
-    checkNeeded( false); // ??
+  public double[] getForecastOffsets() {
+    checkNeeded(false); // ??
     return fmrcDataset.getForecastOffsets();
   }
 
   public GridDataset getDataset2D(NetcdfDataset result) throws IOException {
-    checkNeeded( false);
+    checkNeeded(false);
     return fmrcDataset.getNetcdfDataset2D(result);
   }
 
   public GridDataset getDatasetBest() throws IOException {
-    checkNeeded( false);
+    checkNeeded(false);
     return fmrcDataset.getBest();
   }
 
   public GridDataset getDatasetBest(FeatureCollectionConfig.BestDataset bd) throws IOException {
-    checkNeeded( false);
+    checkNeeded(false);
     return fmrcDataset.getBest(bd);
   }
 
   public GridDataset getRunTimeDataset(CalendarDate run) throws IOException {
-    checkNeeded( false);
+    checkNeeded(false);
     return fmrcDataset.getRunTimeDataset(run);
   }
 
   public GridDataset getConstantForecastDataset(CalendarDate time) throws IOException {
-    checkNeeded( false);
+    checkNeeded(false);
     return fmrcDataset.getConstantForecastDataset(time);
   }
 
   public GridDataset getConstantOffsetDataset(double hour) throws IOException {
-    checkNeeded( false);
+    checkNeeded(false);
     return fmrcDataset.getConstantOffsetDataset(hour);
   }
 
@@ -207,15 +207,15 @@ public class Fmrc implements Closeable {
   }
 
   public void update() {
-     synchronized (lock) {
+    synchronized (lock) {
       boolean forceProtoLocal = forceProto;
 
       if (fmrcDataset == null) {
         try {
           fmrcDataset = new FmrcDataset(config);
         } catch (Throwable t) {
-          logger.error(config.name+": initial fmrcDataset creation failed", t);
-          //throw new RuntimeException(t);
+          logger.error(config.name + ": initial fmrcDataset creation failed", t);
+          // throw new RuntimeException(t);
         }
       }
 
@@ -223,24 +223,27 @@ public class Fmrc implements Closeable {
         FmrcInv fmrcInv = makeFmrcInv(null);
         fmrcDataset.setInventory(fmrcInv, forceProtoLocal);
         logger.debug("{}: make new Dataset, new proto = {}", config.name, forceProtoLocal);
-        if (forceProtoLocal) forceProto = false;
+        if (forceProtoLocal)
+          forceProto = false;
         this.lastInvChanged = System.currentTimeMillis();
-        if (forceProtoLocal) this.lastProtoChanged = this.lastInvChanged;
+        if (forceProtoLocal)
+          this.lastProtoChanged = this.lastInvChanged;
 
       } catch (Throwable t) {
-        logger.error(config.name+": makeFmrcInv failed", t);
-        //throw new RuntimeException(t);
+        logger.error(config.name + ": makeFmrcInv failed", t);
+        // throw new RuntimeException(t);
       }
     }
 
   }
 
   // true if things have changed since given time
-  public boolean checkInvState(long lastInvChange) throws IOException {
+  public boolean checkInvState(long lastInvChange) {
     return this.lastInvChanged > lastInvChange;
   }
+
   // true if things have changed since given time
-  public boolean checkProtoState(long lastProtoChanged) throws IOException {
+  public boolean checkProtoState(long lastProtoChanged) {
     return this.lastProtoChanged > lastProtoChanged;
   }
 
@@ -249,14 +252,14 @@ public class Fmrc implements Closeable {
       try {
         update();
       } catch (Throwable t) {
-        logger.error(config.name+": rescan failed");
+        logger.error(config.name + ": rescan failed");
         throw new RuntimeException(t);
       }
     }
   }
 
   // scan has been done, create FmrcInv
-  private FmrcInv makeFmrcInv(Formatter debug) throws IOException {
+  private FmrcInv makeFmrcInv(Formatter debug) {
     try {
       Map<CalendarDate, FmrInv> fmrMap = new HashMap<>(); // all files are grouped by run date in an FmrInv
       List<FmrInv> fmrList = new ArrayList<>(); // an fmrc is a collection of fmr
@@ -274,7 +277,8 @@ public class Fmrc implements Closeable {
           // 177 with comment // Look: not really right )
           runDate = CalendarDate.parseISOformat(null, filesRunDateMap.get(f.getPath()));
           Element element = new Element("netcdf", ncNSHttps);
-          Element runDateAttr = ncmlWriter.makeAttributeElement(new Attribute(_Coordinate.ModelRunDate, runDate.toString()));
+          Element runDateAttr =
+              ncmlWriter.makeAttributeElement(new Attribute(_Coordinate.ModelRunDate, runDate.toString()));
           config.innerNcml = element.addContent(runDateAttr);
         }
 
@@ -287,7 +291,8 @@ public class Fmrc implements Closeable {
         }
 
         runDate = inv.getRunDate();
-        if (debug != null) debug.format("  opened %s rundate = %s%n", f.getPath(), inv.getRunDateString());
+        if (debug != null)
+          debug.format("  opened %s rundate = %s%n", f.getPath(), inv.getRunDateString());
 
         // add to fmr for that rundate
         FmrInv fmr = fmrMap.get(runDate);
@@ -298,17 +303,19 @@ public class Fmrc implements Closeable {
         }
         fmr.addDataset(inv, debug);
       }
-      if (debug != null) debug.format("%n");
+      if (debug != null)
+        debug.format("%n");
 
       // finish the FmrInv
       Collections.sort(fmrList);
       for (FmrInv fmr : fmrList) {
         fmr.finish();
         if (logger.isDebugEnabled())
-          logger.debug("Fmrc:"+config.name+": made fmr with rundate="+fmr.getRunDate()+" nfiles= "+fmr.getFiles().size());
+          logger.debug("Fmrc:" + config.name + ": made fmr with rundate=" + fmr.getRunDate() + " nfiles= "
+              + fmr.getFiles().size());
       }
 
-      return new FmrcInv("fmrc:"+manager.getCollectionName(), fmrList, config.fmrcConfig.regularize);
+      return new FmrcInv("fmrc:" + manager.getCollectionName(), fmrList, config.fmrcConfig.regularize);
 
     } catch (Throwable t) {
       logger.error("makeFmrcInv", t);
@@ -316,7 +323,7 @@ public class Fmrc implements Closeable {
     }
   }
 
-  public void showDetails(Formatter out) throws IOException {
+  public void showDetails(Formatter out) {
     checkNeeded(false);
     fmrcDataset.showDetails(out);
   }

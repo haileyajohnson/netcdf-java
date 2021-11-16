@@ -15,7 +15,6 @@ import ucar.nc2.util.CancelTask;
 import ucar.nc2.util.IO;
 import ucar.unidata.io.RandomAccessFile;
 import ucar.ma2.*;
-
 import java.io.IOException;
 import java.io.File;
 import java.util.StringTokenizer;
@@ -28,9 +27,10 @@ import java.util.StringTokenizer;
  */
 public class GtopoIosp extends AbstractIOServiceProvider {
 
-  public boolean isValidFile(RandomAccessFile raf) throws IOException {
+  public boolean isValidFile(RandomAccessFile raf) {
     String location = raf.getLocation();
-    if (!location.endsWith(".DEM")) return false;
+    if (!location.endsWith(".DEM"))
+      return false;
 
     int pos = location.lastIndexOf('.');
     String stub = location.substring(0, pos);

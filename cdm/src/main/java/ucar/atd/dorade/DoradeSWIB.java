@@ -5,9 +5,8 @@
 
 package ucar.atd.dorade;
 
-import ucar.nc2.constants.CDM;
-
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 class DoradeSWIB extends DoradeDescriptor {
@@ -25,8 +24,8 @@ class DoradeSWIB extends DoradeDescriptor {
   private DoradeRYIB[] myRYIBs;
   private DoradeASIB[] myASIBs;
 
-  private float[] azimuths = null;
-  private float[] elevations = null;
+  private float[] azimuths;
+  private float[] elevations;
 
   public DoradeSWIB(RandomAccessFile file, boolean littleEndianData, DoradeVOLD vold) throws DescriptorException {
     byte[] data = readDescriptor(file, littleEndianData, "SWIB");
@@ -34,19 +33,13 @@ class DoradeSWIB extends DoradeDescriptor {
     //
     // unpack
     //
-    comment = new String(data, 8, 8, CDM.utf8Charset).trim();
+    comment = new String(data, 8, 8, StandardCharsets.UTF_8).trim();
     sweepNumber = grabInt(data, 16);
     nRays = grabInt(data, 20);
     startAngle = grabFloat(data, 24);
     endAngle = grabFloat(data, 28);
     fixedAngle = grabFloat(data, 32);
     filterFlag = grabInt(data, 36);
-
-    //
-    // debugging output
-    //
-    if (verbose)
-      System.out.println(this);
 
     //
     // Get the RYIBs and save offsets to the data for each ray
@@ -67,30 +60,31 @@ class DoradeSWIB extends DoradeDescriptor {
       // the results from the first ray) are expecting an ASIB for every
       // ray.
       //
-      if (i == 0 || haveASIBs) try {
-        myASIBs[i] = new DoradeASIB(file, littleEndianData);
-        haveASIBs = true;
-      } catch (DescriptorException ex) {
-        //
-        // We failed to find an ASIB.  If this is the first ray, just
-        // assume we have no ASIBs and move on.  Otherwise, we're
-        // missing an expected ASIB, and that's bad...
-        //
-        if (i == 0) {
-          haveASIBs = false;
-          myASIBs = null;
+      if (i == 0 || haveASIBs)
+        try {
+          myASIBs[i] = new DoradeASIB(file, littleEndianData);
+          haveASIBs = true;
+        } catch (DescriptorException ex) {
           //
-          // We're at EOF.  Move back to where we started.
+          // We failed to find an ASIB. If this is the first ray, just
+          // assume we have no ASIBs and move on. Otherwise, we're
+          // missing an expected ASIB, and that's bad...
           //
-          try {
-            file.seek(rayDataOffsets[i]);
-          } catch (java.io.IOException ioex) {
-            throw new DescriptorException(ioex);
+          if (i == 0) {
+            haveASIBs = false;
+            myASIBs = null;
+            //
+            // We're at EOF. Move back to where we started.
+            //
+            try {
+              file.seek(rayDataOffsets[i]);
+            } catch (java.io.IOException ioex) {
+              throw new DescriptorException(ioex);
+            }
+          } else {
+            throw new DescriptorException("not enough ASIBs");
           }
-        } else {
-          throw new DescriptorException("not enough ASIBs");
         }
-      }
     }
   }
 
@@ -122,8 +116,7 @@ class DoradeSWIB extends DoradeDescriptor {
       //
       // find the RDAT for the selected parameter
       //
-      DoradeRDAT rdat = DoradeRDAT.getNextOf(parm, file,
-              littleEndianData);
+      DoradeRDAT rdat = DoradeRDAT.getNextOf(parm, file, littleEndianData);
       return parm.getParamValues(rdat, workingArray);
 
     } catch (java.io.IOException ex) {
@@ -135,7 +128,7 @@ class DoradeSWIB extends DoradeDescriptor {
     return nRays;
   }
 
-  //  unidata added
+  // unidata added
   public Date[] getTimes() {
     if (myRYIBs == null)
       return null;
@@ -152,11 +145,11 @@ class DoradeSWIB extends DoradeDescriptor {
   }
 
   /**
-   * Get the array of per-ray latitudes.  If we do not have per-ray position
+   * Get the array of per-ray latitudes. If we do not have per-ray position
    * information, null is returned.
    *
    * @return an array of per-ray latitudes, or null if no per-ray position
-   * information is available.
+   *         information is available.
    */
   public float[] getLatitudes() {
     if (myASIBs == null)
@@ -168,11 +161,11 @@ class DoradeSWIB extends DoradeDescriptor {
   }
 
   /**
-   * Get the array of per-ray longitudes.  If we do not have per-ray position
+   * Get the array of per-ray longitudes. If we do not have per-ray position
    * information, null is returned.
    *
    * @return an array of per-ray longitudes, or null if no per-ray position
-   * information is available.
+   *         information is available.
    */
   public float[] getLongitudes() {
     if (myASIBs == null)
@@ -184,11 +177,11 @@ class DoradeSWIB extends DoradeDescriptor {
   }
 
   /**
-   * Get the array of per-ray altitudes.  If we do not have per-ray position
+   * Get the array of per-ray altitudes. If we do not have per-ray position
    * information, null is returned.
    *
    * @return an array of per-ray altitudes in km MSL, or null if no per-ray
-   * position information is available.
+   *         position information is available.
    */
   public float[] getAltitudes() {
     if (myASIBs == null)

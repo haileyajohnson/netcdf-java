@@ -10,9 +10,7 @@ package ucar.nc2.iosp.gempak;
 import ucar.unidata.io.RandomAccessFile;
 import ucar.unidata.util.Format;
 import ucar.unidata.util.StringUtil2;
-
 import java.io.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -117,13 +115,12 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
   /**
    * Default ctor
    */
-  GempakSoundingFileReader() {
-  }
+  GempakSoundingFileReader() {}
 
   /**
    * Initialize the file, read in all the metadata (ala DM_OPEN)
    *
-   * @param raf       RandomAccessFile to read.
+   * @param raf RandomAccessFile to read.
    * @param fullCheck if true, check entire structure
    * @return A GempakSoundingFileReader
    * @throws IOException problem reading file
@@ -135,7 +132,7 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
   }
 
   /**
-   * Initialize this reader.  Read all the metadata
+   * Initialize this reader. Read all the metadata
    *
    * @return true if successful
    * @throws IOException problem reading the data
@@ -145,7 +142,7 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
   }
 
   /**
-   * Initialize this reader.  Get the Grid specific info
+   * Initialize this reader. Get the Grid specific info
    *
    * @param fullCheck check to make sure there are grids we can handle
    * @return true if successful
@@ -165,7 +162,7 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
 
     DMPart part = getPart(SNDT);
 
-    if (part != null) {  // merged file
+    if (part != null) { // merged file
       subType = MERGED;
       String vertName = part.params.get(0).kprmnm;
       switch (vertName) {
@@ -237,8 +234,7 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
   /**
    * Make the file subtype
    */
-  protected void makeFileSubType() {
-  }  // already set in init()
+  protected void makeFileSubType() {} // already set in init()
 
   /**
    * Print the list of dates in the file
@@ -295,10 +291,7 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
       int numLevels = data.length / numParams;
       for (int j = 0; j < numLevels; j++) {
         for (int i = 0; i < numParams; i++) {
-          builder.append(
-                  StringUtil2.padLeft(
-                          Format.formatDouble(
-                                  data[j * numParams + i], 7, 1), 7));
+          builder.append(StringUtil2.padLeft(Format.formatDouble(data[j * numParams + i], 7, 1), 7));
           builder.append("\t");
         }
         builder.append("\n");
@@ -309,21 +302,20 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
       builder.append("\n");
     }
     builder.append("\n");
-    System.out.println(builder.toString());
+    System.out.println(builder);
   }
 
   /**
    * Make the header for the text report
    *
-   * @param stn  the station
+   * @param stn the station
    * @param date the date
    * @return the header
    */
   private String makeHeader(GempakStation stn, String date) {
     StringBuilder builder = new StringBuilder();
     builder.append("STID = ");
-    builder.append(StringUtil2.padRight((stn.getSTID().trim()
-            + stn.getSTD2().trim()), 8));
+    builder.append(StringUtil2.padRight((stn.getSTID().trim() + stn.getSTD2().trim()), 8));
     builder.append("\t");
     builder.append("STNM = ");
     builder.append(Format.i(stn.getSTNM(), 6));
@@ -379,7 +371,7 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
    * Check for valid groups
    *
    * @param partToCheck the part name
-   * @param params      the parameters that are supposed to be there
+   * @param params the parameters that are supposed to be there
    * @return true if the part is there and has the right params
    */
   private boolean checkForValidGroup(String partToCheck, String[] params) {
@@ -395,55 +387,6 @@ public class GempakSoundingFileReader extends AbstractGempakStationFileReader {
     }
     return true;
   }
-
-  /**
-   * Run the program
-   *
-   * @param args [0] filename (required),
-   *             [1] variable name (X for default),
-   *             [2] X to not list grids
-   * @throws IOException problem reading the file
-   */
-  public static void main(String[] args) throws IOException {
-    if (args.length == 0) {
-      System.out.println("need to supply a GEMPAK sounding file name");
-      System.exit(1);
-    }
-    try {
-      GempakParameters.addParameters(
-              "resources/nj22/tables/gempak/params.tbl");
-    } catch (Exception e) {
-      System.out.println("unable to init param tables");
-    }
-
-    GempakSoundingFileReader gsfr = getInstance(getFile(args[0]), true);
-    System.out.println("Type = " + gsfr.getFileType());
-    gsfr.printFileLabel();
-    gsfr.printKeys();
-    gsfr.printHeaders();
-    gsfr.printParts();
-    gsfr.printDates();
-    gsfr.printStations(false);
-    int row = 1;
-    int col = 1;
-    if (args.length > 1) {
-      row = Integer.parseInt(args[1]);
-    }
-    if (args.length > 2) {
-      try {
-        col = Integer.parseInt(args[2]);
-      } catch (Exception npe) {
-        col = gsfr.findStationIndex(args[2]);
-        if (col == -1) {
-          System.out.println("couldn't find station " + args[2]);
-          System.exit(1);
-        }
-        System.out.println("found station at column " + col);
-      }
-    }
-    gsfr.printOb(row, col);
-  }
-
 
 }
 

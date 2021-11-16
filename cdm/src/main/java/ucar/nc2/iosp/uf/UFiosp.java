@@ -6,14 +6,12 @@ package ucar.nc2.iosp.uf;
 
 import ucar.nc2.constants.*;
 import ucar.nc2.iosp.AbstractIOServiceProvider;
-
 import ucar.nc2.Variable;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Dimension;
 import ucar.nc2.Attribute;
 import ucar.nc2.units.DateFormatter;
 import ucar.ma2.*;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -25,8 +23,8 @@ import java.util.*;
  * To change this template use File | Settings | File Templates.
  */
 public class UFiosp extends AbstractIOServiceProvider {
-  static private final int MISSING_INT = -9999;
-  static private final float MISSING_FLOAT = Float.NaN;
+  private static final int MISSING_INT = -9999;
+  private static final float MISSING_FLOAT = Float.NaN;
   protected UFheader headerParser;
 
   public boolean isValidFile(ucar.unidata.io.RandomAccessFile raf) {
@@ -43,14 +41,14 @@ public class UFiosp extends AbstractIOServiceProvider {
   }
 
   public void open(ucar.unidata.io.RandomAccessFile raf, ucar.nc2.NetcdfFile ncfile,
-                   ucar.nc2.util.CancelTask cancelTask) throws IOException {
+      ucar.nc2.util.CancelTask cancelTask) throws IOException {
     super.open(raf, ncfile, cancelTask);
 
     headerParser = new UFheader();
     headerParser.read(this.raf);
-    //Map variables = headerParser.variableGroup;
+    // Map variables = headerParser.variableGroup;
 
-    for (Map.Entry<String,List<List<Ray>>> entry : headerParser.variableGroup.entrySet()) {
+    for (Map.Entry<String, List<List<Ray>>> entry : headerParser.variableGroup.entrySet()) {
       String key = entry.getKey();
       List<List<Ray>> groups = entry.getValue();
       List<Ray> rays = groups.get(0);
@@ -64,33 +62,41 @@ public class UFiosp extends AbstractIOServiceProvider {
     ncfile.addAttribute(null, new Attribute("cdm_data_type", FeatureType.RADIAL.toString()));
     ncfile.addAttribute(null, new Attribute("instrument_name", headerParser.getRadarName()));
     ncfile.addAttribute(null, new Attribute("site_name", headerParser.getSiteName()));
-    //Date d = Cinrad2Record.getDate(volScan.getTitleJulianDays(), volScan.getTitleMsecs());
-    //ncfile.addAttribute(null, new Attribute("base_date", formatter.toDateOnlyString(d)));
+    // Date d = Cinrad2Record.getDate(volScan.getTitleJulianDays(), volScan.getTitleMsecs());
+    // ncfile.addAttribute(null, new Attribute("base_date", formatter.toDateOnlyString(d)));
     ncfile.addAttribute(null, new Attribute("StationLatitude", (double) headerParser.getStationLatitude()));
     ncfile.addAttribute(null, new Attribute("StationLongitude", (double) headerParser.getStationLongitude()));
     ncfile.addAttribute(null, new Attribute("StationElevationInMeters", (double) headerParser.getStationElevation()));
-    ncfile.addAttribute(null, new Attribute("time_coverage_start", formatter.toDateTimeStringISO(headerParser.getStartDate())));
-    //.toDateTimeStringISO(d)));
-    ncfile.addAttribute(null, new Attribute("time_coverage_end", formatter.toDateTimeStringISO(headerParser.getEndDate())));
+    ncfile.addAttribute(null,
+        new Attribute("time_coverage_start", formatter.toDateTimeStringISO(headerParser.getStartDate())));
+    // .toDateTimeStringISO(d)));
+    ncfile.addAttribute(null,
+        new Attribute("time_coverage_end", formatter.toDateTimeStringISO(headerParser.getEndDate())));
     double latRadiusDegrees = Math.toDegrees(radarRadius / ucar.unidata.geoloc.Earth.getRadius());
-    ncfile.addAttribute(null, new Attribute("geospatial_lat_min", headerParser.getStationLatitude() - latRadiusDegrees));
-    ncfile.addAttribute(null, new Attribute("geospatial_lat_max", headerParser.getStationLatitude() + latRadiusDegrees));
+    ncfile.addAttribute(null,
+        new Attribute("geospatial_lat_min", headerParser.getStationLatitude() - latRadiusDegrees));
+    ncfile.addAttribute(null,
+        new Attribute("geospatial_lat_max", headerParser.getStationLatitude() + latRadiusDegrees));
     double cosLat = Math.cos(Math.toRadians(headerParser.getStationLatitude()));
     double lonRadiusDegrees = Math.toDegrees(radarRadius / cosLat / ucar.unidata.geoloc.Earth.getRadius());
-    ncfile.addAttribute(null, new Attribute("geospatial_lon_min", headerParser.getStationLongitude() - lonRadiusDegrees));
-    ncfile.addAttribute(null, new Attribute("geospatial_lon_max", headerParser.getStationLongitude() + lonRadiusDegrees));
+    ncfile.addAttribute(null,
+        new Attribute("geospatial_lon_min", headerParser.getStationLongitude() - lonRadiusDegrees));
+    ncfile.addAttribute(null,
+        new Attribute("geospatial_lon_max", headerParser.getStationLongitude() + lonRadiusDegrees));
     ncfile.addAttribute(null, new Attribute(CDM.HISTORY, "Direct read of UF Radar by CDM (version 4.5)"));
     ncfile.addAttribute(null, new Attribute("DataType", "Radial"));
 
-    ncfile.addAttribute(null, new Attribute("Title", "Radar Data from station" +
-            " " + headerParser.getRadarName() + " from " +
-            formatter.toDateTimeStringISO(headerParser.getStartDate()) + " to " +
-            formatter.toDateTimeStringISO(headerParser.getEndDate())));
+    ncfile.addAttribute(null,
+        new Attribute("Title",
+            "Radar Data from station" + " " + headerParser.getRadarName() + " from "
+                + formatter.toDateTimeStringISO(headerParser.getStartDate()) + " to "
+                + formatter.toDateTimeStringISO(headerParser.getEndDate())));
 
     ncfile.addAttribute(null, new Attribute("SweepMode", headerParser.getSweepMode()));
 
     // ncfile.addAttribute(null, new Attribute("VolumeCoveragePattern", new Integer(headerParser.getVCP())));
-    // ncfile.addAttribute(null, new Attribute("HorizonatalBeamWidthInDegrees", new Double(headerParser.getHorizontalBeamWidth(abbrev))));
+    // ncfile.addAttribute(null, new Attribute("HorizonatalBeamWidthInDegrees", new
+    // Double(headerParser.getHorizontalBeamWidth(abbrev))));
 
     ncfile.finish();
   }
@@ -99,8 +105,8 @@ public class UFiosp extends AbstractIOServiceProvider {
   private DateFormatter formatter = new DateFormatter();
   private double radarRadius = 100000.0;
 
-  public Variable makeVariable(NetcdfFile ncfile, String shortName, String longName,
-                               String abbrev, List<List<Ray>> groups) throws IOException {
+  public Variable makeVariable(NetcdfFile ncfile, String shortName, String longName, String abbrev,
+      List<List<Ray>> groups) {
     int nscans = groups.size();
 
     if (nscans == 0) {
@@ -173,7 +179,8 @@ public class UFiosp extends AbstractIOServiceProvider {
     ncfile.addVariable(null, elevVar);
 
     elevVar.addAttribute(new Attribute(CDM.UNITS, "degrees"));
-    elevVar.addAttribute(new Attribute(CDM.LONG_NAME, "elevation angle in degrees: 0 = parallel to pedestal base, 90 = perpendicular"));
+    elevVar.addAttribute(
+        new Attribute(CDM.LONG_NAME, "elevation angle in degrees: 0 = parallel to pedestal base, 90 = perpendicular"));
     elevVar.addAttribute(new Attribute(CDM.MISSING_VALUE, firstRay.getMissingData()));
     elevVar.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.RadialElevation.toString()));
 
@@ -194,11 +201,11 @@ public class UFiosp extends AbstractIOServiceProvider {
     Variable gateVar = new Variable(ncfile, null, null, gateCoordName);
     gateVar.setDataType(DataType.FLOAT);
     gateVar.setDimensions(gateDimName);
-    Array data = Array.makeArray(DataType.FLOAT, ngates,
-            (double) firstRay.getGateStart(abbrev), (double) firstRay.getGateSize(abbrev));
+    Array data = Array.makeArray(DataType.FLOAT, ngates, (double) firstRay.getGateStart(abbrev),
+        (double) firstRay.getGateSize(abbrev));
     gateVar.setCachedData(data, false);
     ncfile.addVariable(null, gateVar);
-    //      radarRadius = firstRay.getGateStart(datatype) + ngates * firstRay.getGateSize(datatype);
+    // radarRadius = firstRay.getGateStart(datatype) + ngates * firstRay.getGateSize(datatype);
 
     gateVar.addAttribute(new Attribute(CDM.UNITS, "m"));
     gateVar.addAttribute(new Attribute(CDM.LONG_NAME, "radial distance to start of gate"));
@@ -245,8 +252,8 @@ public class UFiosp extends AbstractIOServiceProvider {
     return v;
   }
 
-  private void makeCoordinateDataWithMissing(String abbrev, Variable time, Variable elev, Variable azi, Variable nradialsVar,
-                                             Variable ngatesVar, List<List<Ray>> groups) {
+  private void makeCoordinateDataWithMissing(String abbrev, Variable time, Variable elev, Variable azi,
+      Variable nradialsVar, Variable ngatesVar, List<List<Ray>> groups) {
 
     Array timeData = Array.factory(time.getDataType(), time.getShape());
     Index timeIndex = timeData.getIndex();
@@ -285,14 +292,11 @@ public class UFiosp extends AbstractIOServiceProvider {
         int radial = 0;
         boolean needFirst = true;
         for (Ray r : scanGroup) {
-          if (needFirst)
-          {
-              ngatesIter.setIntNext(r.getGateCount(abbrev));
-              needFirst = false;
+          if (needFirst) {
+            ngatesIter.setIntNext(r.getGateCount(abbrev));
+            needFirst = false;
           }
 
-          // int radial = r.uf_header2.rayNumber ;
-          // if(scan == 0) System.out.println("AZI " + r.getAzimuth());
           timeData.setLong(timeIndex.set(scan, radial), r.data_msecs);
           elevData.setFloat(elevIndex.set(scan, radial), r.getElevation());
           aziData.setFloat(aziIndex.set(scan, radial), r.getAzimuth());
@@ -302,7 +306,7 @@ public class UFiosp extends AbstractIOServiceProvider {
         nradialsIter.setIntNext(nradials);
       }
     } catch (java.lang.ArrayIndexOutOfBoundsException ae) {
-
+      throw new RuntimeException(ae);
     }
     time.setCachedData(timeData, false);
     elev.setCachedData(elevData, false);
@@ -321,7 +325,7 @@ public class UFiosp extends AbstractIOServiceProvider {
     }
   }
 
-  public Array readData(Variable v2, Section section) throws IOException, InvalidRangeException {
+  public Array readData(Variable v2, Section section) throws IOException {
     Vgroup vgroup = (Vgroup) v2.getSPobject();
 
     Range scanRange = section.getRange(0);
@@ -339,7 +343,8 @@ public class UFiosp extends AbstractIOServiceProvider {
     return data;
   }
 
-  private void readOneScan(Ray[] mapScan, Range radialRange, Range gateRange, String abbrev, IndexIterator ii) throws IOException {
+  private void readOneScan(Ray[] mapScan, Range radialRange, Range gateRange, String abbrev, IndexIterator ii)
+      throws IOException {
     for (int radialIdx : radialRange) {
       Ray r = mapScan[radialIdx];
       readOneRadial(r, abbrev, gateRange, ii);

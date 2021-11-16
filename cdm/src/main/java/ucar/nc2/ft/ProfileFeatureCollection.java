@@ -6,7 +6,6 @@
 package ucar.nc2.ft;
 
 import java.io.IOException;
-
 import ucar.nc2.time.CalendarDateRange;
 import ucar.unidata.geoloc.LatLonRect;
 
@@ -20,18 +19,20 @@ public interface ProfileFeatureCollection extends PointFeatureCC, Iterable<Profi
 
   /**
    * Subset this collection by boundingBox
+   * 
    * @param boundingBox want only profiles in this lat/lon bounding box.
    * @return subsetted collection, may be null if empty
-   * @throws IOException on read error
    */
-  ProfileFeatureCollection subset(LatLonRect boundingBox) throws IOException;
-  ProfileFeatureCollection subset(LatLonRect boundingBox, CalendarDateRange dateRange) throws IOException;
+  ProfileFeatureCollection subset(LatLonRect boundingBox);
+
+  ProfileFeatureCollection subset(LatLonRect boundingBox, CalendarDateRange dateRange);
 
   //////////////////////////////////////////////////////
   // deprecated use foreach
 
   /**
    * Use the internal iterator to check if there is another ProfileFeature in the iteration.
+   * 
    * @return true is there is another ProfileFeature in the iteration.
    * @throws java.io.IOException on read error
    * @deprecated use foreach
@@ -41,6 +42,7 @@ public interface ProfileFeatureCollection extends PointFeatureCC, Iterable<Profi
   /**
    * Use the internal iterator to get the next ProfileFeature in the iteration.
    * You must call hasNext() before you call this.
+   * 
    * @return the next ProfileFeature in the iteration
    * @throws java.io.IOException on read error
    * @deprecated use foreach
@@ -49,6 +51,7 @@ public interface ProfileFeatureCollection extends PointFeatureCC, Iterable<Profi
 
   /**
    * Reset the internal iterator for another iteration over the ProfileFeatures in this Collection.
+   * 
    * @throws java.io.IOException on read error
    * @deprecated use foreach
    */

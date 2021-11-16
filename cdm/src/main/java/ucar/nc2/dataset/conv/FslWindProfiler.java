@@ -13,16 +13,15 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.constants._Coordinate;
 import ucar.nc2.constants.AxisType;
 
-import java.io.IOException;
-
 /**
  * FslWindProfiler netccdf files - identify coordinates
+ * 
  * @author caron
  * @since Apr 17, 2008
  */
 public class FslWindProfiler extends CoordSysBuilder {
 
-  public static boolean isMine( NetcdfFile ncfile) {
+  public static boolean isMine(NetcdfFile ncfile) {
     String title = ncfile.findAttValueIgnoreCase(null, "title", null);
     return title != null && (title.startsWith("WPDN data"));
   }
@@ -31,7 +30,7 @@ public class FslWindProfiler extends CoordSysBuilder {
     this.conventionName = "FslWindProfiler";
   }
 
-  public void augmentDataset( NetcdfDataset ds, CancelTask cancelTask) throws IOException {
+  public void augmentDataset(NetcdfDataset ds, CancelTask cancelTask) {
     for (Variable v : ds.getVariables()) {
       switch (v.getShortName()) {
         case "staName":
@@ -44,8 +43,6 @@ public class FslWindProfiler extends CoordSysBuilder {
           v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Lon.toString()));
           break;
         case "staElev":
-          v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Height.toString()));
-          break;
         case "levels":
           v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Height.toString()));
           break;

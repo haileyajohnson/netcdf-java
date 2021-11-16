@@ -18,8 +18,6 @@ import ucar.nc2.VariableSimpleIF;
 import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.FeatureType;
 import ucar.nc2.ft.*;
-import ucar.nc2.ft.point.CollectionInfo;
-import ucar.nc2.ft.point.DsgCollectionHelper;
 import ucar.nc2.ft.point.StationFeature;
 import ucar.nc2.ncml.NcMLReader;
 import ucar.nc2.ncml.NcMLWriter;
@@ -30,7 +28,6 @@ import ucar.nc2.time.CalendarDateUnit;
 import ucar.unidata.geoloc.LatLonPointImpl;
 import ucar.unidata.geoloc.LatLonRect;
 import ucar.unidata.geoloc.Station;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -67,12 +64,11 @@ public class FeatureDatasetCapabilitiesWriter {
    * Create an XML document for the stations in this dataset, possible subsetted by bb.
    * Must be a station dataset.
    *
-   * @param bb    restrict stations to this bounding box, may be null
+   * @param bb restrict stations to this bounding box, may be null
    * @param names restrict stations to these names, may be null
    * @return XML document for the stations
-   * @throws IOException on read error
    */
-  public Document makeStationCollectionDocument(LatLonRect bb, String[] names) throws IOException {
+  public Document makeStationCollectionDocument(LatLonRect bb, String[] names) {
 
     List<DsgFeatureCollection> list = fdp.getPointFeatureCollectionList();
     DsgFeatureCollection fc = list.get(0); // LOOK maybe should pass in the dsg?
@@ -98,7 +94,7 @@ public class FeatureDatasetCapabilitiesWriter {
       sElem.setAttribute("name", s.getName());
       if (s.getWmoId() != null)
         sElem.setAttribute("wmo_id", s.getWmoId());
-      if ((s.getDescription() != null) && (s.getDescription().length() > 0))
+      if ((s.getDescription() != null) && (!s.getDescription().isEmpty()))
         sElem.addContent(new Element("description").addContent(s.getDescription()));
 
       sElem.addContent(new Element("longitude").addContent(Double.toString(s.getLongitude())));
@@ -142,12 +138,14 @@ public class FeatureDatasetCapabilitiesWriter {
       rootElem.addContent(writeVariable(v));
     }
 
-    /* CollectionInfo info;
-    try {
-      info = new DsgCollectionHelper(fc).calcBounds();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } */
+    /*
+     * CollectionInfo info;
+     * try {
+     * info = new DsgCollectionHelper(fc).calcBounds();
+     * } catch (IOException e) {
+     * throw new RuntimeException(e);
+     * }
+     */
 
     LatLonRect bb = fc.getBoundingBox();
     if (bb != null)
@@ -165,17 +163,19 @@ public class FeatureDatasetCapabilitiesWriter {
       rootElem.addContent(drElem);
     }
 
-    /* add accept list
-    Element elem = new Element("AcceptList");
-    //elem.addContent(new Element("accept").addContent("raw"));
-    elem.addContent(new Element("accept").addContent("csv").setAttribute("displayName", "csv"));
-    elem.addContent(new Element("accept").addContent("text/csv").setAttribute("displayName", "csv (file)"));
-    elem.addContent(new Element("accept").addContent("xml").setAttribute("displayName", "xml"));
-    elem.addContent(new Element("accept").addContent("text/xml").setAttribute("displayName", "xml (file)"));
-    elem.addContent(new Element("accept").addContent("waterml2").setAttribute("displayName", "WaterML 2.0"));
-    elem.addContent(new Element("accept").addContent("netcdf").setAttribute("displayName", "CF/NetCDF-3"));
-    //elem.addContent(new Element("accept").addContent("ncstream"));
-    rootElem.addContent(elem); */
+    /*
+     * add accept list
+     * Element elem = new Element("AcceptList");
+     * //elem.addContent(new Element("accept").addContent("raw"));
+     * elem.addContent(new Element("accept").addContent("csv").setAttribute("displayName", "csv"));
+     * elem.addContent(new Element("accept").addContent("text/csv").setAttribute("displayName", "csv (file)"));
+     * elem.addContent(new Element("accept").addContent("xml").setAttribute("displayName", "xml"));
+     * elem.addContent(new Element("accept").addContent("text/xml").setAttribute("displayName", "xml (file)"));
+     * elem.addContent(new Element("accept").addContent("waterml2").setAttribute("displayName", "WaterML 2.0"));
+     * elem.addContent(new Element("accept").addContent("netcdf").setAttribute("displayName", "CF/NetCDF-3"));
+     * //elem.addContent(new Element("accept").addContent("ncstream"));
+     * rootElem.addContent(elem);
+     */
 
     return doc;
   }
@@ -192,11 +192,11 @@ public class FeatureDatasetCapabilitiesWriter {
     double bbExpand = Math.pow(10, -decToKeep);
 
     // extend the bbox to make sure the implicit rounding does not result in a bbox that does not contain
-    //   any points (can happen when you have a single station with very precise lat/lon values)
-    //   See https://github.com/Unidata/thredds/issues/470
+    // any points (can happen when you have a single station with very precise lat/lon values)
+    // See https://github.com/Unidata/thredds/issues/470
     // This accounts for the implicit rounding errors that result from the use of
-    //   ucar.unidata.util.Format.dfrac when writing out the lat/lon box on the NCSS for Points dataset.html
-    //   page
+    // ucar.unidata.util.Format.dfrac when writing out the lat/lon box on the NCSS for Points dataset.html
+    // page
     LatLonPointImpl extendNorthEast = new LatLonPointImpl(bb.getLatMax() + bbExpand, bb.getLonMax() + bbExpand);
     LatLonPointImpl extendSouthWest = new LatLonPointImpl(bb.getLatMin() - bbExpand, bb.getLonMin() - bbExpand);
     bb.extend(extendNorthEast);
@@ -236,16 +236,18 @@ public class FeatureDatasetCapabilitiesWriter {
     return builder.build(in);
   }
 
-  public static LatLonRect getSpatialExtent(Document doc) throws IOException {
+  public static LatLonRect getSpatialExtent(Document doc) {
     Element root = doc.getRootElement();
     Element latlonBox = root.getChild("LatLonBox");
-    if (latlonBox == null) return null;
+    if (latlonBox == null)
+      return null;
 
     String westS = latlonBox.getChildText("west");
     String eastS = latlonBox.getChildText("east");
     String northS = latlonBox.getChildText("north");
     String southS = latlonBox.getChildText("south");
-    if ((westS == null) || (eastS == null) || (northS == null) || (southS == null)) return null;
+    if ((westS == null) || (eastS == null) || (northS == null) || (southS == null))
+      return null;
 
     try {
       double west = Double.parseDouble(westS);
@@ -259,15 +261,17 @@ public class FeatureDatasetCapabilitiesWriter {
     }
   }
 
-  public static CalendarDateRange getTimeSpan(Document doc) throws IOException {
+  public static CalendarDateRange getTimeSpan(Document doc) {
     Element root = doc.getRootElement();
     Element timeSpan = root.getChild("TimeSpan");
-    if (timeSpan == null) return null;
+    if (timeSpan == null)
+      return null;
 
     String beginS = timeSpan.getChildText("begin");
     String endS = timeSpan.getChildText("end");
-//    String resS = timeSpan.getChildText("resolution");
-    if ((beginS == null) || (endS == null)) return null;
+    // String resS = timeSpan.getChildText("resolution");
+    if ((beginS == null) || (endS == null))
+      return null;
 
     try {
       CalendarDate start = CalendarDateFormatter.isoStringToCalendarDate(null, beginS);
@@ -279,7 +283,7 @@ public class FeatureDatasetCapabilitiesWriter {
       CalendarDateRange dr = CalendarDateRange.of(start, end);
 
       // LOOK if (resS != null)
-      //  dr.setResolution(new TimeDuration(resS));
+      // dr.setResolution(new TimeDuration(resS));
 
       return dr;
 
@@ -291,7 +295,8 @@ public class FeatureDatasetCapabilitiesWriter {
   public static CalendarDateUnit getTimeUnit(Document doc) {
     Element root = doc.getRootElement();
     Element timeUnitE = root.getChild("TimeUnit");
-    if (timeUnitE == null) return null;
+    if (timeUnitE == null)
+      return null;
 
     String cal = timeUnitE.getAttributeValue("calendar");
     String timeUnitS = timeUnitE.getTextNormalize();
@@ -304,14 +309,15 @@ public class FeatureDatasetCapabilitiesWriter {
     }
   }
 
-  public static String getAltUnits(Document doc) throws IOException {
+  public static String getAltUnits(Document doc) {
     Element root = doc.getRootElement();
     String altUnits = root.getChildText("AltitudeUnits");
-    if (altUnits == null || altUnits.length() == 0) return null;
+    if (altUnits == null || altUnits.isEmpty())
+      return null;
     return altUnits;
   }
 
-  public static List<VariableSimpleIF> getDataVariables(Document doc) throws IOException {
+  public static List<VariableSimpleIF> getDataVariables(Document doc) {
     Element root = doc.getRootElement();
 
     List<VariableSimpleIF> dataVars = new ArrayList<>();

@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import ucar.nc2.constants.FeatureType;
 import ucar.nc2.ft.PointFeatureCC;
 import ucar.nc2.ft.PointFeatureCCIterator;
@@ -23,14 +22,16 @@ import ucar.unidata.geoloc.Station;
 /**
  * Abstract superclass for StationProfileFeatureCollection
  * Subclasses must implement getNestedPointFeatureCollection
+ * 
  * @author caron
  * @since Mar 20, 2008
  */
-public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl implements StationProfileFeatureCollection {
+public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl
+    implements StationProfileFeatureCollection {
   private volatile StationHelper stationHelper;
 
   public StationProfileCollectionImpl(String name, CalendarDateUnit timeUnit, String altUnits) {
-    super( name, timeUnit, altUnits, FeatureType.STATION_PROFILE);
+    super(name, timeUnit, altUnits, FeatureType.STATION_PROFILE);
   }
 
   // Double-check idiom for lazy initialization of instance fields. See Effective Java 2nd Ed, p. 283.
@@ -62,7 +63,7 @@ public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl i
   }
 
   @Override
-  public List<StationFeature> getStationFeatures() throws IOException {
+  public List<StationFeature> getStationFeatures() {
     return getStationHelper().getStationFeatures();
   }
 
@@ -72,7 +73,7 @@ public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl i
   }
 
   @Override
-  public List<StationFeature> getStationFeatures(ucar.unidata.geoloc.LatLonRect boundingBox) throws IOException {
+  public List<StationFeature> getStationFeatures(ucar.unidata.geoloc.LatLonRect boundingBox) {
     return getStationHelper().getStationFeatures(boundingBox);
   }
 
@@ -82,28 +83,29 @@ public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl i
   }
 
   @Override
-  public StationProfileFeature getStationProfileFeature(StationFeature s) throws IOException {
+  public StationProfileFeature getStationProfileFeature(StationFeature s) {
     return (StationProfileFeature) s; // LOOK
   }
 
   @Override
-  public StationProfileCollectionImpl subset(List<StationFeature> stations) throws IOException {
-    if (stations == null) return this;
+  public StationProfileCollectionImpl subset(List<StationFeature> stations) {
+    if (stations == null)
+      return this;
     return new StationProfileFeatureCollectionSubset(this, stations);
   }
 
   @Override
-  public StationProfileCollectionImpl subset(ucar.unidata.geoloc.LatLonRect boundingBox) throws IOException {
+  public StationProfileCollectionImpl subset(ucar.unidata.geoloc.LatLonRect boundingBox) {
     return subset(getStationFeatures(boundingBox));
   }
 
   @Override
-  public StationProfileFeatureCollection subset(LatLonRect boundingBox, CalendarDateRange dateRange) throws IOException {
+  public StationProfileFeatureCollection subset(LatLonRect boundingBox, CalendarDateRange dateRange) {
     return subset(getStationFeatures(boundingBox), dateRange);
   }
 
   @Override
-  public StationProfileCollectionImpl subset(List<StationFeature> stnsWanted, CalendarDateRange dateRange) throws IOException {
+  public StationProfileCollectionImpl subset(List<StationFeature> stnsWanted, CalendarDateRange dateRange) {
     if (dateRange == null)
       return subset(stnsWanted);
 
@@ -118,28 +120,29 @@ public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl i
   }
 
   public int compareTo(Station so) {
-    return name.compareTo( so.getName());
+    return name.compareTo(so.getName());
   }
 
-  // LOOK subset by filtering on the stations, but it would be easier if we could get the StationFeature from the Station
+  // LOOK subset by filtering on the stations, but it would be easier if we could get the StationFeature from the
+  // Station
   private static class StationProfileFeatureCollectionSubset extends StationProfileCollectionImpl {
     private final StationProfileCollectionImpl from;
     private final List<StationFeature> stations;
 
-    StationProfileFeatureCollectionSubset(StationProfileCollectionImpl from, List<StationFeature> stations) throws IOException {
-      super( from.getName(), from.getTimeUnit(), from.getAltUnits());
+    StationProfileFeatureCollectionSubset(StationProfileCollectionImpl from, List<StationFeature> stations) {
+      super(from.getName(), from.getTimeUnit(), from.getAltUnits());
       this.from = from;
       this.stations = stations;
     }
 
     @Override
-    protected StationHelper createStationHelper() throws IOException {
+    protected StationHelper createStationHelper() {
       return from.getStationHelper().subset(stations);
     }
 
     @Override
     public PointFeatureCCIterator getNestedPointFeatureCollectionIterator() throws IOException {
-      return new PointFeatureCCIteratorFiltered( from.getNestedPointFeatureCollectionIterator(), new Filter());
+      return new PointFeatureCCIteratorFiltered(from.getNestedPointFeatureCollectionIterator(), new Filter());
     }
 
     @Override
@@ -157,7 +160,7 @@ public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl i
   }
 
   // LOOK make into top-level; how come section didnt need this?
-  public class NestedCollectionIOIteratorAdapter<T> implements IOIterator<T> {
+  public static class NestedCollectionIOIteratorAdapter<T> implements IOIterator<T> {
     PointFeatureCCIterator pfIterator;
 
     public NestedCollectionIOIteratorAdapter(PointFeatureCCIterator pfIterator) {
@@ -181,6 +184,11 @@ public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl i
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    public void close() throws IOException {
+      pfIterator.close();
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////////////////
@@ -201,7 +209,8 @@ public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl i
 
   @Override
   public boolean hasNext() throws IOException {
-    if (localIterator == null) resetIteration();
+    if (localIterator == null)
+      resetIteration();
     return localIterator.hasNext();
   }
 

@@ -5,9 +5,9 @@
 
 package ucar.nc2.ft.fmrc;
 
+import java.util.stream.Collectors;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarPeriod;
-
 import javax.annotation.concurrent.Immutable;
 import java.util.*;
 
@@ -28,13 +28,15 @@ import java.util.*;
  */
 @Immutable
 public class FmrcInv {
-  static private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FmrcInv.class);
+  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FmrcInv.class);
 
-  /* public static CalendarDate addHour(CalendarDate d, double hour) {
-    long msecs = d.getTime();
-    msecs += hour * 3600 * 1000;
-    return new Date(msecs);
-  }  */
+  /*
+   * public static CalendarDate addHour(CalendarDate d, double hour) {
+   * long msecs = d.getTime();
+   * msecs += hour * 3600 * 1000;
+   * return new Date(msecs);
+   * }
+   */
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////
   private final String name; // name of ForecastModelRunCollection
@@ -52,16 +54,16 @@ public class FmrcInv {
   private final List<FmrInv> fmrList;
 
   // the list of grids
-  private final List<UberGrid> uberGridList;              // sorted list of UberGrid
+  private final List<UberGrid> uberGridList; // sorted list of UberGrid
 
   // all run times
-  private final List<CalendarDate> runTimeList;                // sorted list of Date: all run times
+  private final List<CalendarDate> runTimeList; // sorted list of Date: all run times
 
   // track offsets and bounds
-  private final CalendarDate baseDate;            // first runtime : offsetsAll calculated from here
+  private final CalendarDate baseDate; // first runtime : offsetsAll calculated from here
 
   // all forecast times
-  private final List<CalendarDate> forecastTimeList;          // sorted list of Date : all forecast times
+  private final List<CalendarDate> forecastTimeList; // sorted list of Date : all forecast times
 
   // use on motherlode to regularize the missing inventory
   private final boolean regularize;
@@ -89,7 +91,8 @@ public class FmrcInv {
     Set<CalendarDate> forecastTimeHash = new HashSet<>();
     for (FmrInv fmrInv : fmrList) {
       runTimeList.add(fmrInv.getRunDate());
-      if (firstDate == null) firstDate = fmrInv.getRunDate();
+      if (firstDate == null)
+        firstDate = fmrInv.getRunDate();
 
       // hour of this runDate
       int hour = fmrInv.getRunDate().getHourOfDay();
@@ -108,9 +111,9 @@ public class FmrcInv {
       for (TimeCoord tc : fmrInv.getTimeCoords()) {
 
         if (tc.isInterval()) {
-          double[] bounds1 =  tc.getBound1();
-          double[] bounds2 =  tc.getBound2();
-          for (int i=0; i<bounds1.length; i++) {
+          double[] bounds1 = tc.getBound1();
+          double[] bounds2 = tc.getBound2();
+          for (int i = 0; i < bounds1.length; i++) {
             CalendarDate date1 = fmrInv.getRunDate().add(bounds1[i], CalendarPeriod.Field.Hour);
             CalendarDate date2 = fmrInv.getRunDate().add(bounds2[i], CalendarPeriod.Field.Hour);
             forecastTimeHash.add(date2); // second is used as the forecast date
@@ -139,6 +142,7 @@ public class FmrcInv {
       uv.finish();
     }
 
+    // LOOK runSeqs is alwats empty, according to InteliJ!
     // assign sequence ids
     int seqno = 0;
     for (RunSeq seq : runSeqs) {
@@ -146,55 +150,54 @@ public class FmrcInv {
     }
 
     // create the overall list of forecast times
-    forecastTimeList = Arrays.asList((CalendarDate[]) forecastTimeHash.toArray(new CalendarDate[forecastTimeHash.size()]));
-    Collections.sort(forecastTimeList);
+    forecastTimeList = forecastTimeHash.stream().sorted().collect(Collectors.toList());
 
     // create the overall list of offsets - may be zero
-    List<Double> offsetsAll = Arrays.asList((Double[]) offsetHash.toArray(new Double[offsetHash.size()]));
-    Collections.sort(offsetsAll);
+    List<Double> offsetsAll = offsetHash.stream().sorted().collect(Collectors.toList());
     int counto = 0;
     double[] offs = new double[offsetsAll.size()];
-    for (double off : offsetsAll) offs[counto++] = off;
+    for (double off : offsetsAll)
+      offs[counto++] = off;
     tcOffAll = new TimeCoord(baseDate);
     tcOffAll.setOffsetTimes(offs);
 
     // create the overall list of offsets - may be zero
-    List<TimeCoord.Tinv> intervalAll = Arrays.asList((TimeCoord.Tinv[]) intervalHash.toArray(new TimeCoord.Tinv[intervalHash.size()]));
-    Collections.sort(intervalAll);
+    List<TimeCoord.Tinv> intervalAll = intervalHash.stream().sorted().collect(Collectors.toList());
     tcIntAll = new TimeCoord(baseDate);
     tcIntAll.setBounds(intervalAll);
   }
 
   // not really needed
-  private final TimeCoord tcOffAll;       // all offsets in this collection, reletive to baseDate
-  private final TimeCoord tcIntAll;       // all intervals in this collection, reletive to baseDate
+  private final TimeCoord tcOffAll; // all offsets in this collection, reletive to baseDate
+  private final TimeCoord tcIntAll; // all intervals in this collection, reletive to baseDate
 
   // public for debugging
   public List<FmrInv> getFmrList() {
     return fmrList;
   }
 
-  /* private UberGrid findVar(String varName) {
-    for (UberGrid uv : uberGridList) {
-      if (uv.gridName.equals(varName))
-        return uv;
-    }
-    return null;
-  }
-
-  public int findFmrIndex(Date runDate) {
-    for (int i = 0; i < fmrList.size(); i++) {
-      FmrInv fmr = fmrList.get(i);
-      if (fmr.getRunDate().equals(runDate)) return i;
-    }
-    return -1;
-  }
-
-  public List<Date> getRunTimes() {
-    return runTimeList;
-  }
-
-  */
+  /*
+   * private UberGrid findVar(String varName) {
+   * for (UberGrid uv : uberGridList) {
+   * if (uv.gridName.equals(varName))
+   * return uv;
+   * }
+   * return null;
+   * }
+   * 
+   * public int findFmrIndex(Date runDate) {
+   * for (int i = 0; i < fmrList.size(); i++) {
+   * FmrInv fmr = fmrList.get(i);
+   * if (fmr.getRunDate().equals(runDate)) return i;
+   * }
+   * return -1;
+   * }
+   * 
+   * public List<Date> getRunTimes() {
+   * return runTimeList;
+   * }
+   * 
+   */
 
   public String getName() {
     return name;
@@ -219,7 +222,8 @@ public class FmrcInv {
 
   public UberGrid findUberGrid(String name) {
     for (UberGrid grid : uberGridList)
-      if (grid.getName().equals(name)) return grid;
+      if (grid.getName().equals(name))
+        return grid;
     return null;
   }
 
@@ -236,20 +240,23 @@ public class FmrcInv {
     return baseDate;
   }
 
-  /* public TimeCoord getTimeCoordsAll() {
-    return tcAll;
-  } */
+  /*
+   * public TimeCoord getTimeCoordsAll() {
+   * return tcAll;
+   * }
+   */
 
   /**
    * Find the difference between two dates in hours
+   * 
    * @param base date1
    * @param forecast date2
    * @return (forecast minus base) difference in hours
    */
   public static double getOffsetInHours(CalendarDate base, CalendarDate forecast) {
     long diff = forecast.getDifferenceInMsecs(base);
-    double result =  diff / 1000.0 / 60.0 / 60.0;                // LOOK why convert to double? precision may be lost ??
-    long testRoundoff = (long) ( result * 1000.0 * 60.0 * 60.0);
+    double result = diff / 1000.0 / 60.0 / 60.0; // LOOK why convert to double? precision may be lost ??
+    long testRoundoff = (long) (result * 1000.0 * 60.0 * 60.0);
     if (diff != testRoundoff)
       log.debug("HEY getOffsetInHours");
     return result;
@@ -257,6 +264,7 @@ public class FmrcInv {
 
   /**
    * Create a date from base and hour offset
+   * 
    * @param base base date
    * @param offset hourss
    * @return base + offset as a Date
@@ -273,8 +281,8 @@ public class FmrcInv {
     private final String gridName;
     private final List<FmrInv.GridVariable> runs = new ArrayList<>();
 
-    private VertCoord vertCoordUnion = null;
-    private RunSeq runSeq = null;
+    private VertCoord vertCoordUnion;
+    private RunSeq runSeq;
 
     UberGrid(String name) {
       this.gridName = name;
@@ -292,7 +300,7 @@ public class FmrcInv {
       return gridName;
     }
 
-     // the union of all offset hours, ignoring rundate
+    // the union of all offset hours, ignoring rundate
     public TimeCoord getUnionTimeCoord() {
       return runSeq.getUnionTimeCoord();
     }
@@ -328,7 +336,7 @@ public class FmrcInv {
       int nvert = (vertCoordUnion == null) ? 1 : vertCoordUnion.getSize();
 
       int ntimes = 0;
-      for (FmrInv.GridVariable grid : runs) {  // maybe should use the runseq ???
+      for (FmrInv.GridVariable grid : runs) { // maybe should use the runseq ???
         TimeCoord exp = grid.getTimeExpected();
         ntimes += exp.getNCoords();
       }
@@ -339,8 +347,8 @@ public class FmrcInv {
       if (runs.size() == 1) {
         FmrInv.GridVariable grid = runs.get(0);
         vertCoordUnion = VertCoord.findVertCoord(getVertCoords(), grid.vertCoordUnion);
-        //timeCoordUnion = TimeCoord.findTimeCoord(getTimeCoords(), grid.timeCoordUnion);
-        //timeCoordUnion.addGridVariable(this);
+        // timeCoordUnion = TimeCoord.findTimeCoord(getTimeCoords(), grid.timeCoordUnion);
+        // timeCoordUnion.addGridVariable(this);
         grid.timeExpected = grid.timeCoordUnion; // if only one, not much else to do
         this.runSeq = findRunSeq(runs);
         this.runSeq.addVariable(this);
@@ -352,14 +360,16 @@ public class FmrcInv {
       EnsCoord ec_union = null;
       for (FmrInv.GridVariable grid : runs) {
         EnsCoord ec = grid.ensCoordUnion;
-        if (ec == null) continue;
+        if (ec == null)
+          continue;
         if (ec_union == null)
           ec_union = new EnsCoord(ec);
         else if (!ec_union.equalsData(ec))
           ensList.add(ec);
       }
       if (ec_union != null) {
-        if (ensList.size() > 0) EnsCoord.normalize(ec_union, ensList); // add the other coords
+        if (!ensList.isEmpty())
+          EnsCoord.normalize(ec_union, ensList); // add the other coords
       }
 
       // run over all vertCoords and construct the union
@@ -367,11 +377,12 @@ public class FmrcInv {
       VertCoord vc_union = null;
       for (FmrInv.GridVariable grid : runs) {
         VertCoord vc = grid.vertCoordUnion;
-        if (vc == null) continue;
+        if (vc == null)
+          continue;
         if (vc_union == null)
           vc_union = new VertCoord(vc);
         else if (!vc_union.equalsData(vc)) {
-//          log.warn(name+" Grid "+ gridName +" has different vert coords in run " + grid.getRunDate());
+          // log.warn(name+" Grid "+ gridName +" has different vert coords in run " + grid.getRunDate());
           vertList.add(vc);
         }
       }
@@ -380,7 +391,7 @@ public class FmrcInv {
         vertCoordUnion = VertCoord.findVertCoord(getVertCoords(), vc_union); // now find unique within collection
       }
 
-     // optionally calculate expected inventory based on matching run hours
+      // optionally calculate expected inventory based on matching run hours
       if (regularize) {
         // create groups of runs with the same runtime hour (integer offset from 0Z)
         Map<Integer, HourGroup> hourMap = new HashMap<>();
@@ -410,7 +421,7 @@ public class FmrcInv {
               grid.timeExpected = new TimeCoord(grid.getRunDate());
               grid.timeExpected.setBounds(hg.expected.getBound1(), hg.expected.getBound2());
             }
-            
+
           } else {
             // we discard the resulting TimeCoord and just use the union of offsets
             for (FmrInv.GridVariable grid : hg.runs)
@@ -431,12 +442,15 @@ public class FmrcInv {
         this.runSeq = findRunSeq(runs);
         this.runSeq.addVariable(this);
 
-        /* run over all timeCoords and construct the union
-        List<TimeCoord> timeList = new ArrayList<TimeCoord>();
-        for (FmrInv.GridVariable grid : runs)
-          timeList.add(grid.timeCoordUnion);
-        TimeCoord tc_union = TimeCoord.makeUnion(timeList, baseDate); // create the union of all time coords used by this grid
-        this.timeCoordUnion = TimeCoord.findTimeCoord(getRunSeqs(), tc_union); // track unique ones in the FmrcInv */
+        /*
+         * run over all timeCoords and construct the union
+         * List<TimeCoord> timeList = new ArrayList<TimeCoord>();
+         * for (FmrInv.GridVariable grid : runs)
+         * timeList.add(grid.timeCoordUnion);
+         * TimeCoord tc_union = TimeCoord.makeUnion(timeList, baseDate); // create the union of all time coords used by
+         * this grid
+         * this.timeCoordUnion = TimeCoord.findTimeCoord(getRunSeqs(), tc_union); // track unique ones in the FmrcInv
+         */
       }
     }
 
@@ -475,8 +489,8 @@ public class FmrcInv {
     private final HashMap<CalendarDate, TimeCoord> coordMap; // runDate, timeExpected
     private final List<UberGrid> vars = new ArrayList<>(); // list of UberGrid that use this
     private int id;
-    private List<TimeCoord> timeList = null; // timeList has differing runDates
-    private TimeCoord timeCoordUnion = null; // union of all offset hours
+    private List<TimeCoord> timeList; // timeList has differing runDates
+    private TimeCoord timeCoordUnion; // union of all offset hours
     private boolean isInterval;
 
     RunSeq(List<FmrInv.GridVariable> runs) {
@@ -494,9 +508,9 @@ public class FmrcInv {
         // check intervals are consistent
         if (first)
           isInterval = grid.getTimeCoord().isInterval();
-        else if (isInterval  != grid.getTimeCoord().isInterval()) {
-          log.error("mixed intervals for grid "+grid. getName());
-          throw new IllegalArgumentException("mixed intervals for grid "+grid. getName());
+        else if (isInterval != grid.getTimeCoord().isInterval()) {
+          log.error("mixed intervals for grid " + grid.getName());
+          throw new IllegalArgumentException("mixed intervals for grid " + grid.getName());
         }
         first = false;
       }
@@ -535,12 +549,12 @@ public class FmrcInv {
             timeList.add(tc);
         }
         // sort by run Date
-        Collections.sort(timeList, new Comparator<TimeCoord>() {
-          public int compare(TimeCoord o1, TimeCoord o2) {
-            if (o1 == null || o1.getRunDate() == null) return -1;
-            if (o2 == null || o2.getRunDate() == null) return 1;
-            return o1.getRunDate().compareTo(o2.getRunDate());
-          }
+        timeList.sort((o1, o2) -> {
+          if (o1 == null || o1.getRunDate() == null)
+            return -1;
+          if (o2 == null || o2.getRunDate() == null)
+            return 1;
+          return o1.getRunDate().compareTo(o2.getRunDate());
         });
         // here again the timeList has differing runDates
         timeCoordUnion = TimeCoord.makeUnion(timeList, baseDate); // create the union of all offsets used by this grid
@@ -559,11 +573,13 @@ public class FmrcInv {
       for (FmrInv.GridVariable grid : oruns) {
         TimeCoord run = coordMap.get(grid.getRunDate());
         if (run == null) {
-          if (okAdd == null) okAdd = new ArrayList<>();
+          if (okAdd == null)
+            okAdd = new ArrayList<>();
           okAdd.add(grid);
         } else {
           TimeCoord orune = grid.getTimeExpected();
-          if (!run.equalsData(orune)) return false;
+          if (!run.equalsData(orune))
+            return false;
         }
       }
 
@@ -587,220 +603,222 @@ public class FmrcInv {
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /* debugging  - Fmrc2 Panel
-
-
-  public void showRuntimeOffsetMatrix(Formatter out) {
-    out.format("                                  Forecast Time Offset %n");
-    out.format("     RunTime                 ");
-    for (double offsetHour : tcOffAll.getOffsetTimes()) {
-      out.format("%10.0f", offsetHour);
-    }
-    out.format("%n");
-
-    int count = 0;
-    for (int i = 0; i < fmrList.size(); i++) {
-      FmrInv fmr = fmrList.get(i);
-      Date runDate = fmr.getRunDate();
-      out.format("%2d %s      ", i, dateFormatter.toDateTimeStringISO(runDate));
-      for (double offsetHour : tcOffAll.getOffsetTimes()) {
-        Inventory inv = getInventory(fmr, offsetHour);
-        count += inv.showInventory( out);
-      }
-      out.format("%n");
-    }
-    out.format("%ntotal inventory count = %d%n", count);
-  }
-
-  // for a given offset hour and Fmr, find the expected and actual inventory over all grids
-  private Inventory getInventory(FmrInv fmr, double hour) {
-    int actual = 0, expected = 0;
-    for (FmrInv.GridVariable grid : fmr.getGrids()) {
-      TimeCoord tExpect = grid.getTimeExpected();
-      if (tExpect.findIndex(hour) >= 0)
-        expected += grid.getNVerts();
-
-      for (GridDatasetInv.Grid inv : grid.getInventory()) {
-        TimeCoord tc = inv.getTimeCoord();
-        if (tc.findIndex(hour) >= 0)
-          actual += inv.getVertCoordLength();
-      }
-
-    }
-    return new Inventory(actual, expected);
-  }
-
-  @Immutable
-  public static class Inventory {
-    public final int actual;
-    public final int expected;
-
-    public Inventory(int actual, int expected) {
-      this.actual = actual;
-      this.expected = expected;
-    }
-
-    public int showInventory(Formatter out) {
-      if (actual != expected) {
-        out.format("%10s", actual + "/" + expected);
-      } else if (actual == 0)
-        out.format("          "); // blank
-      else
-        out.format("%10d", actual);
-
-      return actual;
-    }
-
-  }
-
-  private class TimeInventory {
-    final TimeCoord tc; // all the TimeCoords possible
-    final FmrcInv.UberGrid ugrid; // for this grid
-    final FmrInv.GridVariable[] useGrid; // use this run and grid for ith offset
-    final int[] runIndex; // the index of the run in the fmrList. ie findFmrIndex()
-
-    TimeInventory(TimeCoord tc, FmrcInv.UberGrid ugrid) {
-      this.tc = tc;
-      this.ugrid = ugrid;
-      this.useGrid = new FmrInv.GridVariable[tc.getNCoords()];
-      this.runIndex = new int[tc.getNCoords()];
-    }
-
-    private void setOffset(double offsetHour, FmrInv.GridVariable grid, int runIndex) {
-      int offsetIndex = tc.findIndex(offsetHour);
-      if (offsetIndex < 0)
-        throw new IllegalStateException("FmrSnapshot cant find hour " + offsetHour + " in " + tc);
-      this.useGrid[offsetIndex] = grid;
-      this.runIndex[offsetIndex] = runIndex;
-    }
-  }
-
-
-  //////////////////////////////////////
-  // 1D subsets
-
-  public void showBest(Formatter out) {
-    out.format("%nRun used in best dataset%n");
-    out.format("                              Forecast Time Offset %n");
-    out.format("Grid                         ");
-    for (double offsetHour : tcOffAll.getOffsetTimes())
-      out.format("%4.0f ", offsetHour);
-    out.format("%n");
-
-    for (FmrcInv.UberGrid ugrid : getUberGrids()) {
-      TimeInventory inv = makeBestInventory(ugrid);
-      String name = ugrid.getName();
-      if (name.length() > 27) name = name.substring(0, 27);
-      out.format(" %-27s ", name);
-      showInv(inv, out);
-      out.format("%n");
-    }
-  }
-
-  public void showBest2(Formatter out) {
-    out.format("%nRun used in best dataset by RunSeq%n");
-    out.format("Seq  Forecast Time Offset %n    ");
-    for (double offsetHour : tcOffAll.getOffsetTimes())
-      out.format("%4.0f ", offsetHour);
-    out.format("%n");
-
-    int count = 0;
-    for (RunSeq seq : getRunSeqs()) {
-      out.format("%3d ", count++);
-      List<FmrcInv.UberGrid> ugrids = seq.getUberGrids();
-      TimeInventory inv = makeBestInventory(ugrids.get(0));
-      showInv(inv, out);
-      for (FmrcInv.UberGrid ugrid : seq.getUberGrids()) {
-        TimeInventory inv2 = makeBestInventory(ugrid);
-        out.format(", %s ", ugrid.getName());
-        if (!testInv(inv, inv2))  out.format("BAD ");
-      }
-      out.format("%n");
-    }
-  }
-
-  // select best inventory for each forecast time
-  private TimeInventory makeBestInventory(FmrcInv.UberGrid ugrid) {
-    return ugrid.isInterval() ? makeBestInventoryFromIntervals(ugrid) : makeBestInventoryFromOffsets( ugrid);
-  }
-
-  private TimeInventory makeBestInventoryFromIntervals(FmrcInv.UberGrid ugrid) {
-    TimeInventory inv = new TimeInventory(tcIntAll, ugrid);
-    for (FmrInv.GridVariable grid : ugrid.getRuns()) {
-      double forecastOffset = getOffsetInHours(baseDate, grid.getRunDate());
-      int runIndex = findFmrIndex(grid.getRunDate());
-      TimeCoord tc = grid.getTimeCoord(); // forecast times for this run
-      for (double offset : tc.getOffsetTimes()) {
-        inv.setOffset(forecastOffset + offset, grid, runIndex); // later ones override
-      }
-    }
-    return inv;
-  }
-
-  // select best inventory for each forecast time
-  private TimeInventory makeBestInventoryFromOffsets(FmrcInv.UberGrid ugrid) {
-    TimeInventory inv = new TimeInventory(tcOffAll, ugrid);
-    for (FmrInv.GridVariable grid : ugrid.getRuns()) {
-      double forecastOffset = getOffsetInHours(baseDate, grid.getRunDate());
-      int runIndex = findFmrIndex(grid.getRunDate());
-      TimeCoord tc = grid.getTimeCoord(); // forecast times for this run
-      for (double offset : tc.getOffsetTimes()) {
-        inv.setOffset(forecastOffset + offset, grid, runIndex); // later ones override
-      }
-    }
-    return inv;
-  }
-
-  // select best inventory for each forecast time
-  public void showBest(FmrcInv.UberGrid ugrid, Formatter out) {
-    out.format("%nRun used in best dataset for grid %s %n", ugrid.getName());
-    out.format("                              Forecast Time Offset %n");
-    out.format("Run                          ");
-    for (double offsetHour : tcOffAll.getOffsetTimes()) {
-      out.format("%3.0f ", offsetHour);
-    }
-    out.format("%n");
-
-    TimeInventory inv = new TimeInventory(tcOffAll, ugrid);
-    for (FmrInv.GridVariable grid : ugrid.getRuns()) {
-      double forecastOffset = getOffsetInHours(baseDate, grid.getRunDate());
-      int runIndex = findFmrIndex(grid.getRunDate());
-      TimeCoord tc = grid.getTimeCoord(); // forecast times for this run
-      TimeInventory invRun = new TimeInventory(tcOffAll, ugrid);
-      for (double offset : tc.getOffsetTimes()) {
-        inv.setOffset(forecastOffset + offset, grid, runIndex); // later ones override
-        invRun.setOffset(forecastOffset + offset, grid, runIndex); // later ones override
-      }
-      out.format(" %-27s ", dateFormatter.toDateTimeString(grid.getRunDate()));
-      showInv(invRun, out);
-      out.format("%n");
-    }
-
-    String name = ugrid.getName();
-    if (name.length() > 27) name = name.substring(0, 27);
-    out.format(" %-27s ", "result");
-    showInv(inv, out);
-    out.format("%n");
-  }
-
-  private void showInv(TimeInventory tinv, Formatter out) {
-    for (int i = 0; i < tinv.useGrid.length; i++) {
-      FmrInv.GridVariable grid = tinv.useGrid[i];
-      if (grid == null)
-        out.format("    ");
-      else
-        out.format("%4d ", tinv.runIndex[i]);
-    }
-  }
-
-  private boolean testInv(TimeInventory tinv1, TimeInventory tinv2) {
-    if (tinv1.useGrid.length != tinv2.useGrid.length) return false;
-
-    for (int i = 0; i < tinv1.useGrid.length; i++) {
-      if (tinv1.runIndex[i] != tinv2.runIndex[i])
-        return false;
-    }
-    return true;
-  } */
+  /*
+   * debugging - Fmrc2 Panel
+   * 
+   * 
+   * public void showRuntimeOffsetMatrix(Formatter out) {
+   * out.format("                                  Forecast Time Offset %n");
+   * out.format("     RunTime                 ");
+   * for (double offsetHour : tcOffAll.getOffsetTimes()) {
+   * out.format("%10.0f", offsetHour);
+   * }
+   * out.format("%n");
+   * 
+   * int count = 0;
+   * for (int i = 0; i < fmrList.size(); i++) {
+   * FmrInv fmr = fmrList.get(i);
+   * Date runDate = fmr.getRunDate();
+   * out.format("%2d %s      ", i, dateFormatter.toDateTimeStringISO(runDate));
+   * for (double offsetHour : tcOffAll.getOffsetTimes()) {
+   * Inventory inv = getInventory(fmr, offsetHour);
+   * count += inv.showInventory( out);
+   * }
+   * out.format("%n");
+   * }
+   * out.format("%ntotal inventory count = %d%n", count);
+   * }
+   * 
+   * // for a given offset hour and Fmr, find the expected and actual inventory over all grids
+   * private Inventory getInventory(FmrInv fmr, double hour) {
+   * int actual = 0, expected = 0;
+   * for (FmrInv.GridVariable grid : fmr.getGrids()) {
+   * TimeCoord tExpect = grid.getTimeExpected();
+   * if (tExpect.findIndex(hour) >= 0)
+   * expected += grid.getNVerts();
+   * 
+   * for (GridDatasetInv.Grid inv : grid.getInventory()) {
+   * TimeCoord tc = inv.getTimeCoord();
+   * if (tc.findIndex(hour) >= 0)
+   * actual += inv.getVertCoordLength();
+   * }
+   * 
+   * }
+   * return new Inventory(actual, expected);
+   * }
+   * 
+   * @Immutable
+   * public static class Inventory {
+   * public final int actual;
+   * public final int expected;
+   * 
+   * public Inventory(int actual, int expected) {
+   * this.actual = actual;
+   * this.expected = expected;
+   * }
+   * 
+   * public int showInventory(Formatter out) {
+   * if (actual != expected) {
+   * out.format("%10s", actual + "/" + expected);
+   * } else if (actual == 0)
+   * out.format("          "); // blank
+   * else
+   * out.format("%10d", actual);
+   * 
+   * return actual;
+   * }
+   * 
+   * }
+   * 
+   * private class TimeInventory {
+   * final TimeCoord tc; // all the TimeCoords possible
+   * final FmrcInv.UberGrid ugrid; // for this grid
+   * final FmrInv.GridVariable[] useGrid; // use this run and grid for ith offset
+   * final int[] runIndex; // the index of the run in the fmrList. ie findFmrIndex()
+   * 
+   * TimeInventory(TimeCoord tc, FmrcInv.UberGrid ugrid) {
+   * this.tc = tc;
+   * this.ugrid = ugrid;
+   * this.useGrid = new FmrInv.GridVariable[tc.getNCoords()];
+   * this.runIndex = new int[tc.getNCoords()];
+   * }
+   * 
+   * private void setOffset(double offsetHour, FmrInv.GridVariable grid, int runIndex) {
+   * int offsetIndex = tc.findIndex(offsetHour);
+   * if (offsetIndex < 0)
+   * throw new IllegalStateException("FmrSnapshot cant find hour " + offsetHour + " in " + tc);
+   * this.useGrid[offsetIndex] = grid;
+   * this.runIndex[offsetIndex] = runIndex;
+   * }
+   * }
+   * 
+   * 
+   * //////////////////////////////////////
+   * // 1D subsets
+   * 
+   * public void showBest(Formatter out) {
+   * out.format("%nRun used in best dataset%n");
+   * out.format("                              Forecast Time Offset %n");
+   * out.format("Grid                         ");
+   * for (double offsetHour : tcOffAll.getOffsetTimes())
+   * out.format("%4.0f ", offsetHour);
+   * out.format("%n");
+   * 
+   * for (FmrcInv.UberGrid ugrid : getUberGrids()) {
+   * TimeInventory inv = makeBestInventory(ugrid);
+   * String name = ugrid.getName();
+   * if (name.length() > 27) name = name.substring(0, 27);
+   * out.format(" %-27s ", name);
+   * showInv(inv, out);
+   * out.format("%n");
+   * }
+   * }
+   * 
+   * public void showBest2(Formatter out) {
+   * out.format("%nRun used in best dataset by RunSeq%n");
+   * out.format("Seq  Forecast Time Offset %n    ");
+   * for (double offsetHour : tcOffAll.getOffsetTimes())
+   * out.format("%4.0f ", offsetHour);
+   * out.format("%n");
+   * 
+   * int count = 0;
+   * for (RunSeq seq : getRunSeqs()) {
+   * out.format("%3d ", count++);
+   * List<FmrcInv.UberGrid> ugrids = seq.getUberGrids();
+   * TimeInventory inv = makeBestInventory(ugrids.get(0));
+   * showInv(inv, out);
+   * for (FmrcInv.UberGrid ugrid : seq.getUberGrids()) {
+   * TimeInventory inv2 = makeBestInventory(ugrid);
+   * out.format(", %s ", ugrid.getName());
+   * if (!testInv(inv, inv2)) out.format("BAD ");
+   * }
+   * out.format("%n");
+   * }
+   * }
+   * 
+   * // select best inventory for each forecast time
+   * private TimeInventory makeBestInventory(FmrcInv.UberGrid ugrid) {
+   * return ugrid.isInterval() ? makeBestInventoryFromIntervals(ugrid) : makeBestInventoryFromOffsets( ugrid);
+   * }
+   * 
+   * private TimeInventory makeBestInventoryFromIntervals(FmrcInv.UberGrid ugrid) {
+   * TimeInventory inv = new TimeInventory(tcIntAll, ugrid);
+   * for (FmrInv.GridVariable grid : ugrid.getRuns()) {
+   * double forecastOffset = getOffsetInHours(baseDate, grid.getRunDate());
+   * int runIndex = findFmrIndex(grid.getRunDate());
+   * TimeCoord tc = grid.getTimeCoord(); // forecast times for this run
+   * for (double offset : tc.getOffsetTimes()) {
+   * inv.setOffset(forecastOffset + offset, grid, runIndex); // later ones override
+   * }
+   * }
+   * return inv;
+   * }
+   * 
+   * // select best inventory for each forecast time
+   * private TimeInventory makeBestInventoryFromOffsets(FmrcInv.UberGrid ugrid) {
+   * TimeInventory inv = new TimeInventory(tcOffAll, ugrid);
+   * for (FmrInv.GridVariable grid : ugrid.getRuns()) {
+   * double forecastOffset = getOffsetInHours(baseDate, grid.getRunDate());
+   * int runIndex = findFmrIndex(grid.getRunDate());
+   * TimeCoord tc = grid.getTimeCoord(); // forecast times for this run
+   * for (double offset : tc.getOffsetTimes()) {
+   * inv.setOffset(forecastOffset + offset, grid, runIndex); // later ones override
+   * }
+   * }
+   * return inv;
+   * }
+   * 
+   * // select best inventory for each forecast time
+   * public void showBest(FmrcInv.UberGrid ugrid, Formatter out) {
+   * out.format("%nRun used in best dataset for grid %s %n", ugrid.getName());
+   * out.format("                              Forecast Time Offset %n");
+   * out.format("Run                          ");
+   * for (double offsetHour : tcOffAll.getOffsetTimes()) {
+   * out.format("%3.0f ", offsetHour);
+   * }
+   * out.format("%n");
+   * 
+   * TimeInventory inv = new TimeInventory(tcOffAll, ugrid);
+   * for (FmrInv.GridVariable grid : ugrid.getRuns()) {
+   * double forecastOffset = getOffsetInHours(baseDate, grid.getRunDate());
+   * int runIndex = findFmrIndex(grid.getRunDate());
+   * TimeCoord tc = grid.getTimeCoord(); // forecast times for this run
+   * TimeInventory invRun = new TimeInventory(tcOffAll, ugrid);
+   * for (double offset : tc.getOffsetTimes()) {
+   * inv.setOffset(forecastOffset + offset, grid, runIndex); // later ones override
+   * invRun.setOffset(forecastOffset + offset, grid, runIndex); // later ones override
+   * }
+   * out.format(" %-27s ", dateFormatter.toDateTimeString(grid.getRunDate()));
+   * showInv(invRun, out);
+   * out.format("%n");
+   * }
+   * 
+   * String name = ugrid.getName();
+   * if (name.length() > 27) name = name.substring(0, 27);
+   * out.format(" %-27s ", "result");
+   * showInv(inv, out);
+   * out.format("%n");
+   * }
+   * 
+   * private void showInv(TimeInventory tinv, Formatter out) {
+   * for (int i = 0; i < tinv.useGrid.length; i++) {
+   * FmrInv.GridVariable grid = tinv.useGrid[i];
+   * if (grid == null)
+   * out.format("    ");
+   * else
+   * out.format("%4d ", tinv.runIndex[i]);
+   * }
+   * }
+   * 
+   * private boolean testInv(TimeInventory tinv1, TimeInventory tinv2) {
+   * if (tinv1.useGrid.length != tinv2.useGrid.length) return false;
+   * 
+   * for (int i = 0; i < tinv1.useGrid.length; i++) {
+   * if (tinv1.runIndex[i] != tinv2.runIndex[i])
+   * return false;
+   * }
+   * return true;
+   * }
+   */
 
 }

@@ -5,18 +5,21 @@
 
 package ucar.atd.dorade;
 
-import ucar.nc2.constants.CDM;
+import java.nio.charset.StandardCharsets;
 import ucar.nc2.util.Misc;
-
 import java.io.*;
 import java.util.Arrays;
 
 class DoradeRADD extends DoradeDescriptor {
 
   /**
-   * <p>Title: RadarType</p>
-   * <p>Description: nested top level class for defining DORADE radar
-   * types</p>
+   * <p>
+   * Title: RadarType
+   * </p>
+   * <p>
+   * Description: nested top level class for defining DORADE radar
+   * types
+   * </p>
    */
   static class RadarType {
     private String name;
@@ -71,34 +74,32 @@ class DoradeRADD extends DoradeDescriptor {
    */
   public static final RadarType TYPE_MOVING_LIDAR = new RadarType("moving lidar");
 
-  private static RadarType[] radarTypes = {
-          TYPE_GROUND,       // 0
-          TYPE_AIR_FORE,     // 1
-          TYPE_AIR_AFT,      // 2
-          TYPE_AIR_LF,       // 3
-          TYPE_AIR_TAIL,     // 4
-          TYPE_SHIP,         // 5
-          TYPE_AIR_NOSE,     // 6
-          TYPE_SATELLITE,    // 7
-          TYPE_MOVING_LIDAR, // 8
-          TYPE_FIXED_LIDAR,  // 9
+  private static RadarType[] radarTypes = {TYPE_GROUND, // 0
+      TYPE_AIR_FORE, // 1
+      TYPE_AIR_AFT, // 2
+      TYPE_AIR_LF, // 3
+      TYPE_AIR_TAIL, // 4
+      TYPE_SHIP, // 5
+      TYPE_AIR_NOSE, // 6
+      TYPE_SATELLITE, // 7
+      TYPE_MOVING_LIDAR, // 8
+      TYPE_FIXED_LIDAR, // 9
   };
 
   //
   // lookup table mapping DORADE scan mode integer values to ScanMode-s
   //
-  private static ScanMode[] scanModeTable = {
-          ScanMode.MODE_calibration, // 0
-          ScanMode.MODE_PPI,         // 1
-          ScanMode.MODE_coplane,     // 2
-          ScanMode.MODE_RHI,         // 3
-          ScanMode.MODE_vertical,    // 4
-          ScanMode.MODE_target,      // 5
-          ScanMode.MODE_manual,      // 6
-          ScanMode.MODE_idle,        // 7
-          ScanMode.MODE_SUR,         // 8
-          ScanMode.MODE_air,         // 9
-          ScanMode.MODE_horizontal,  // 10
+  private static ScanMode[] scanModeTable = {ScanMode.MODE_calibration, // 0
+      ScanMode.MODE_PPI, // 1
+      ScanMode.MODE_coplane, // 2
+      ScanMode.MODE_RHI, // 3
+      ScanMode.MODE_vertical, // 4
+      ScanMode.MODE_target, // 5
+      ScanMode.MODE_manual, // 6
+      ScanMode.MODE_idle, // 7
+      ScanMode.MODE_SUR, // 8
+      ScanMode.MODE_air, // 9
+      ScanMode.MODE_horizontal, // 10
   };
 
 
@@ -150,7 +151,7 @@ class DoradeRADD extends DoradeDescriptor {
   private DoradeCELV myCELV;
   private DoradeCFAC myCFAC;
 
-  private int nCells;  // extracted from our CELV
+  private int nCells; // extracted from our CELV
 
 
   public DoradeRADD(RandomAccessFile file, boolean littleEndianData) throws DescriptorException {
@@ -159,7 +160,7 @@ class DoradeRADD extends DoradeDescriptor {
     //
     // unpack
     //
-    radarName = new String(data, 8, 8, CDM.utf8Charset).trim();
+    radarName = new String(data, 8, 8, StandardCharsets.UTF_8).trim();
     radarConstant = grabFloat(data, 16);
     peakPower = grabFloat(data, 20);
     noisePower = grabFloat(data, 24);
@@ -195,12 +196,6 @@ class DoradeRADD extends DoradeDescriptor {
     for (int i = 0; i < 5; i++)
       PRTs[i] = grabFloat(data, 124 + 4 * i);
 
-    //
-    // debugging output
-    //
-    if (verbose)
-      System.out.println(this);
-
     myPARMs = new DoradePARM[nParams];
     for (int i = 0; i < nParams; i++)
       myPARMs[i] = new DoradePARM(file, littleEndianData, this);
@@ -210,8 +205,8 @@ class DoradeRADD extends DoradeDescriptor {
     //
     try {
       long startpos = file.getFilePointer();
-      //  try
-      //   {
+      // try
+      // {
       String dName = peekName(file);
       switch (dName) {
         case "CELV":
@@ -224,10 +219,10 @@ class DoradeRADD extends DoradeDescriptor {
         default:
           throw new DescriptorException("Expected " + dName + " descriptor not found!");
       }
-      //    } catch (DescriptorException ex) {
-      //    file.seek(startpos);
-      //	myCELV = new DoradeCSFD(file, littleEndianData);
-      //   }
+      // } catch (DescriptorException ex) {
+      // file.seek(startpos);
+      // myCELV = new DoradeCSFD(file, littleEndianData);
+      // }
     } catch (IOException ioex) {
       throw new DescriptorException(ioex);
     }
@@ -243,52 +238,30 @@ class DoradeRADD extends DoradeDescriptor {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("DoradeRADD{");
-    sb.append("radarName='").append(radarName).append('\'');
-    sb.append(", radarConstant=").append(radarConstant);
-    sb.append(", peakPower=").append(peakPower);
-    sb.append(", noisePower=").append(noisePower);
-    sb.append(", rcvrGain=").append(rcvrGain);
-    sb.append(", antennaGain=").append(antennaGain);
-    sb.append(", systemGain=").append(systemGain);
-    sb.append(", hBeamWidth=").append(hBeamWidth);
-    sb.append(", vBeamWidth=").append(vBeamWidth);
-    sb.append(", radarTypeNdx=").append(radarTypeNdx);
-    sb.append(", scanMode=").append(scanMode);
-    sb.append(", rotVelocity=").append(rotVelocity);
-    sb.append(", scanParam0=").append(scanParam0);
-    sb.append(", scanParam1=").append(scanParam1);
-    sb.append(", nParams=").append(nParams);
-    sb.append(", nAdditionalDescriptors=").append(nAdditionalDescriptors);
-    sb.append(", compressionScheme=").append(compressionScheme);
-    sb.append(", dataReductionMethod=").append(dataReductionMethod);
-    sb.append(", reductionBound0=").append(reductionBound0);
-    sb.append(", reductionBound1=").append(reductionBound1);
-    sb.append(", longitude=").append(longitude);
-    sb.append(", latitude=").append(latitude);
-    sb.append(", altitude=").append(altitude);
-    sb.append(", unambiguousVelocity=").append(unambiguousVelocity);
-    sb.append(", unambiguousRange=").append(unambiguousRange);
-    sb.append(", nFrequencies=").append(nFrequencies);
-    sb.append(", nPRTs=").append(nPRTs);
-    sb.append(", frequencies=").append(Arrays.toString(frequencies));
-    sb.append(", PRTs=").append(Arrays.toString(PRTs));
-    sb.append(", myPARMs=").append(Arrays.toString(myPARMs));
-    sb.append(", myCELV=").append(myCELV);
-    sb.append(", myCFAC=").append(myCFAC);
-    sb.append(", nCells=").append(nCells);
-    sb.append('}');
-    return sb.toString();
+    String sb = "DoradeRADD{" + "radarName='" + radarName + '\'' + ", radarConstant=" + radarConstant + ", peakPower="
+        + peakPower + ", noisePower=" + noisePower + ", rcvrGain=" + rcvrGain + ", antennaGain=" + antennaGain
+        + ", systemGain=" + systemGain + ", hBeamWidth=" + hBeamWidth + ", vBeamWidth=" + vBeamWidth + ", radarTypeNdx="
+        + radarTypeNdx + ", scanMode=" + scanMode + ", rotVelocity=" + rotVelocity + ", scanParam0=" + scanParam0
+        + ", scanParam1=" + scanParam1 + ", nParams=" + nParams + ", nAdditionalDescriptors=" + nAdditionalDescriptors
+        + ", compressionScheme=" + compressionScheme + ", dataReductionMethod=" + dataReductionMethod
+        + ", reductionBound0=" + reductionBound0 + ", reductionBound1=" + reductionBound1 + ", longitude=" + longitude
+        + ", latitude=" + latitude + ", altitude=" + altitude + ", unambiguousVelocity=" + unambiguousVelocity
+        + ", unambiguousRange=" + unambiguousRange + ", nFrequencies=" + nFrequencies + ", nPRTs=" + nPRTs
+        + ", frequencies=" + Arrays.toString(frequencies) + ", PRTs=" + Arrays.toString(PRTs) + ", myPARMs="
+        + Arrays.toString(myPARMs) + ", myCELV=" + myCELV + ", myCFAC=" + myCFAC + ", nCells=" + nCells + '}';
+    return sb;
   }
 
   /**
    * Get the compression scheme being used.
    *
    * @return the integer defining the compression scheme:
-   * <ul><code>
+   *         <ul>
+   *         <code>
    * <li>COMPRESSION_NONE
    * <li>COMPRESSION_HRD
-   * </code></ul>
+   * </code>
+   *         </ul>
    */
   public int getCompressionScheme() {
     return compressionScheme;
@@ -352,7 +325,7 @@ class DoradeRADD extends DoradeDescriptor {
   }
 
   /**
-   * Get the cell spacing.  An exception is thrown if the cell spacing
+   * Get the cell spacing. An exception is thrown if the cell spacing
    * is not constant.
    *
    * @return the cell spacing, in meters

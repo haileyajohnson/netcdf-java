@@ -13,38 +13,37 @@ import ucar.nc2.constants._Coordinate;
 import ucar.ma2.DataType;
 import ucar.unidata.geoloc.LatLonRect;
 import ucar.unidata.geoloc.LatLonPointImpl;
-
 import java.util.List;
 import java.util.Date;
 
 /**
- * Helper routines for  station/point datasets
+ * Helper routines for station/point datasets
  *
  * @deprecated use ucar.nc2.ft.point
  * @author caron
  */
 public class UnidataObsDatasetHelper {
 
-  static public Date getStartDate(NetcdfDataset ds) {
+  public static Date getStartDate(NetcdfDataset ds) {
     Attribute att = ds.findGlobalAttributeIgnoreCase("time_coverage_start");
     if (null == att)
       throw new IllegalArgumentException("Must have a time_coverage_start global attribute");
 
     if (att.getDataType() == DataType.STRING) {
-      return DateUnit.getStandardOrISO( att.getStringValue());
+      return DateUnit.getStandardOrISO(att.getStringValue());
     } else {
       throw new IllegalArgumentException("time_coverage_start must be a ISO or udunit date string");
     }
   }
 
-  static public Date getEndDate(NetcdfDataset ds) {
+  public static Date getEndDate(NetcdfDataset ds) {
     Attribute att = ds.findGlobalAttributeIgnoreCase("time_coverage_end");
     if (null == att)
       throw new IllegalArgumentException("Must have a time_coverage_end global attribute");
 
     Date result;
     if (att.getDataType() == DataType.STRING) {
-      result = DateUnit.getStandardOrISO( att.getStringValue());
+      result = DateUnit.getStandardOrISO(att.getStringValue());
     } else {
       throw new IllegalArgumentException("time_coverage_end must be a ISO or udunit date string");
     }
@@ -52,22 +51,22 @@ public class UnidataObsDatasetHelper {
     return result;
   }
 
-  static public LatLonRect getBoundingBox(NetcdfDataset ds) {
-    double lat_max = getAttAsDouble( ds, "geospatial_lat_max");
-    double lat_min = getAttAsDouble( ds, "geospatial_lat_min");
-    double lon_max = getAttAsDouble( ds, "geospatial_lon_max");
-    double lon_min = getAttAsDouble( ds, "geospatial_lon_min");
+  public static LatLonRect getBoundingBox(NetcdfDataset ds) {
+    double lat_max = getAttAsDouble(ds, "geospatial_lat_max");
+    double lat_min = getAttAsDouble(ds, "geospatial_lat_min");
+    double lon_max = getAttAsDouble(ds, "geospatial_lon_max");
+    double lon_min = getAttAsDouble(ds, "geospatial_lon_min");
 
-    return new LatLonRect(new LatLonPointImpl(lat_min, lon_min), lat_max-lat_min, lon_max-lon_min);
+    return new LatLonRect(new LatLonPointImpl(lat_min, lon_min), lat_max - lat_min, lon_max - lon_min);
   }
 
-  static private double getAttAsDouble( NetcdfDataset ds, String attname) {
+  private static double getAttAsDouble(NetcdfDataset ds, String attname) {
     Attribute att = ds.findGlobalAttributeIgnoreCase(attname);
     if (null == att)
-      throw new IllegalArgumentException("Must have a "+attname+" global attribute");
+      throw new IllegalArgumentException("Must have a " + attname + " global attribute");
 
     if (att.getDataType() == DataType.STRING) {
-      return Double.parseDouble( att.getStringValue());
+      return Double.parseDouble(att.getStringValue());
     } else {
       return att.getNumericValue().doubleValue();
     }
@@ -75,18 +74,19 @@ public class UnidataObsDatasetHelper {
 
   /**
    * Tries to find the coordinate variable of the specified type.
+   * 
    * @param ds look in this dataset
    * @param a AxisType.LAT, LON, HEIGHT, or TIME
    * @return coordinate variable, or null if not found.
    */
-  static public Variable getCoordinate(NetcdfDataset ds, AxisType a) {
+  public static Variable getCoordinate(NetcdfDataset ds, AxisType a) {
     List<Variable> varList = ds.getVariables();
     for (Variable v : varList) {
       if (v instanceof Structure) {
-        //System.out.println( "v is a Structure" );
+        // System.out.println( "v is a Structure" );
         List<Variable> vars = ((Structure) v).getVariables();
         for (Variable vs : vars) {
-          //System.out.println( "vs =" + vs.getShortName() );
+          // System.out.println( "vs =" + vs.getShortName() );
           String axisType = ds.findAttValueIgnoreCase(vs, _Coordinate.AxisType, null);
           if ((axisType != null) && axisType.equals(a.toString()))
             return vs;
@@ -99,17 +99,18 @@ public class UnidataObsDatasetHelper {
     }
 
     if (a == AxisType.Lat)
-      return findVariable( ds, "latitude");
+      return findVariable(ds, "latitude");
 
     if (a == AxisType.Lon)
-      return findVariable( ds, "longitude");
+      return findVariable(ds, "longitude");
 
     if (a == AxisType.Time)
-      return findVariable( ds, "time");
+      return findVariable(ds, "time");
 
     if (a == AxisType.Height) {
-      Variable v = findVariable( ds, "altitude");
-      if (null == v) v = findVariable( ds, "depth");
+      Variable v = findVariable(ds, "altitude");
+      if (null == v)
+        v = findVariable(ds, "depth");
       return v;
     }
 
@@ -117,14 +118,14 @@ public class UnidataObsDatasetHelper {
     return null;
   }
 
-  static public Variable findVariable(NetcdfFile ds, String name) {
+  public static Variable findVariable(NetcdfFile ds, String name) {
     Variable result = ds.findVariable(name);
     if (result == null) {
-      String aname = ds.findAttValueIgnoreCase(null, name+"_coordinate", null);
+      String aname = ds.findAttValueIgnoreCase(null, name + "_coordinate", null);
       if (aname != null)
         result = ds.findVariable(aname);
       else {
-        aname = ds.findAttValueIgnoreCase(null, name+"_variable", null);
+        aname = ds.findAttValueIgnoreCase(null, name + "_variable", null);
         if (aname != null)
           result = ds.findVariable(aname);
       }
@@ -132,10 +133,10 @@ public class UnidataObsDatasetHelper {
     return result;
   }
 
-  static public Dimension findDimension(NetcdfFile ds, String name) {
+  public static Dimension findDimension(NetcdfFile ds, String name) {
     Dimension result = ds.findDimension(name);
     if (result == null) {
-      String aname = ds.findAttValueIgnoreCase(null, name+"Dimension", null);
+      String aname = ds.findAttValueIgnoreCase(null, name + "Dimension", null);
       if (aname != null)
         result = ds.findDimension(aname);
     }

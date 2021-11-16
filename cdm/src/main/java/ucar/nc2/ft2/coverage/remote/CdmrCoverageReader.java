@@ -10,9 +10,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Formatter;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.InflaterInputStream;
-
 import com.google.common.escape.Escaper;
 import com.google.common.net.UrlEscapers;
 import org.apache.http.Header;
@@ -45,13 +43,13 @@ public class CdmrCoverageReader implements CoverageReader, CoordAxisReader {
   boolean showCompression = true;
   boolean showRequest = true;
 
-  CdmrCoverageReader(String endpoint, HTTPSession httpClient) throws IOException {
+  CdmrCoverageReader(String endpoint, HTTPSession httpClient) {
     this.endpoint = endpoint;
     this.httpClient = httpClient;
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     httpClient.close();
   }
 
@@ -61,7 +59,8 @@ public class CdmrCoverageReader implements CoverageReader, CoordAxisReader {
   }
 
   @Override
-  public GeoReferencedArray readData(Coverage coverage, SubsetParams subset, boolean canonicalOrder) throws IOException {
+  public GeoReferencedArray readData(Coverage coverage, SubsetParams subset, boolean canonicalOrder)
+      throws IOException {
     if (httpClient == null)
       httpClient = HTTPFactory.newSession(endpoint); // LOOK is this ok? no authentication...
 
@@ -108,27 +107,31 @@ public class CdmrCoverageReader implements CoverageReader, CoordAxisReader {
       assert geoArrays.size() == 1; // LOOK maybe need readData(List<names>) returns List<GeoArray> ?
 
       if (showRequest)
-        System.out.printf(" took %d msecs%n", System.currentTimeMillis()-start);
+        System.out.printf(" took %d msecs%n", System.currentTimeMillis() - start);
 
       return geoArrays.get(0);
     }
   }
 
-  public GeoReferencedArray readData(CoverageDataResponse dataResponse, GeoArrayResponse arrayResponse, InputStream is) throws IOException {
-    int sizeIn  = NcStream.readVInt(is);  // not used ?
+  public GeoReferencedArray readData(CoverageDataResponse dataResponse, GeoArrayResponse arrayResponse, InputStream is)
+      throws IOException {
+    int sizeIn = NcStream.readVInt(is); // not used ?
 
     if (arrayResponse.deflate) {
       is = new InflaterInputStream(is);
       float ratio = (sizeIn == 0) ? 0.0f : ((float) arrayResponse.uncompressedSize) / sizeIn;
-      if (showCompression) System.out.printf("  readData data message compress= %d decompress=%d compress=%f%n", sizeIn, arrayResponse.uncompressedSize, ratio);
+      if (showCompression)
+        System.out.printf("  readData data message compress= %d decompress=%d compress=%f%n", sizeIn,
+            arrayResponse.uncompressedSize, ratio);
     }
 
     byte[] datab = new byte[(int) arrayResponse.uncompressedSize];
     NcStream.readFully(is, datab);
     Array data = Array.factory(arrayResponse.dataType, arrayResponse.shape, ByteBuffer.wrap(datab));
 
-    CoverageCoordSys csys = dataResponse.findCoordSys( arrayResponse.coordSysName);
-    if (csys == null) throw new IOException("Misformed response - no coordsys");
+    CoverageCoordSys csys = dataResponse.findCoordSys(arrayResponse.coordSysName);
+    if (csys == null)
+      throw new IOException("Misformed response - no coordsys");
     return new GeoReferencedArray(arrayResponse.coverageName, arrayResponse.dataType, data, csys);
   }
 
@@ -136,7 +139,7 @@ public class CdmrCoverageReader implements CoverageReader, CoordAxisReader {
     String path = method.getURI().toString();
     String status = method.getStatusLine();
     String content = method.getResponseAsString();
-    return (content == null) ? path+" "+status : path+" "+status +"\n "+content;
+    return (content == null) ? path + " " + status : path + " " + status + "\n " + content;
   }
 
   @Override
@@ -166,9 +169,9 @@ public class CdmrCoverageReader implements CoverageReader, CoordAxisReader {
       NcStreamReader.DataResult result = reader.readData(is, null, endpoint);
 
       if (showRequest)
-        System.out.printf(" took %d msecs%n", System.currentTimeMillis()-start);
+        System.out.printf(" took %d msecs%n", System.currentTimeMillis() - start);
 
-      return (double []) result.data.getStorage();
+      return (double[]) result.data.getStorage();
     }
   }
 }

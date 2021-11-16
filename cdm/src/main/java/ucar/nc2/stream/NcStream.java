@@ -11,12 +11,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import ucar.ma2.Array;
 import ucar.ma2.ArrayStructure;
 import ucar.ma2.ArrayStructureBB;
@@ -39,6 +39,7 @@ import ucar.unidata.io.RandomAccessFile;
 
 /**
  * Defines the ncstream format, along with ncStream.proto.
+ * 
  * <pre>
  * To regenerate ncStreamProto.java from ncStream.proto:
  * cd c:/dev/tds4.2/thredds/cdm/src/main/java
@@ -49,22 +50,22 @@ import ucar.unidata.io.RandomAccessFile;
  * @see "http://www.unidata.ucar.edu/software/netcdf-java/stream/NcstreamGrammer.html"
  */
 public class NcStream {
-  //  must start with this "CDFS"
-  static public final byte[] MAGIC_START = new byte[]{0x43, 0x44, 0x46, 0x53};
+  // must start with this "CDFS"
+  public static final byte[] MAGIC_START = {0x43, 0x44, 0x46, 0x53};
 
-  static public final byte[] MAGIC_HEADER = new byte[]{(byte) 0xad, (byte) 0xec, (byte) 0xce, (byte) 0xda};
-  static public final byte[] MAGIC_DATA = new byte[]{(byte) 0xab, (byte) 0xec, (byte) 0xce, (byte) 0xba};
-  static public final byte[] MAGIC_DATA2 = new byte[]{(byte) 0xab, (byte) 0xeb, (byte) 0xbe, (byte) 0xba};
-  static public final byte[] MAGIC_VDATA = new byte[]{(byte) 0xab, (byte) 0xef, (byte) 0xfe, (byte) 0xba};
-  static public final byte[] MAGIC_VEND = new byte[]{(byte) 0xed, (byte) 0xef, (byte) 0xfe, (byte) 0xda};
+  public static final byte[] MAGIC_HEADER = {(byte) 0xad, (byte) 0xec, (byte) 0xce, (byte) 0xda};
+  public static final byte[] MAGIC_DATA = {(byte) 0xab, (byte) 0xec, (byte) 0xce, (byte) 0xba};
+  public static final byte[] MAGIC_DATA2 = {(byte) 0xab, (byte) 0xeb, (byte) 0xbe, (byte) 0xba};
+  public static final byte[] MAGIC_VDATA = {(byte) 0xab, (byte) 0xef, (byte) 0xfe, (byte) 0xba};
+  public static final byte[] MAGIC_VEND = {(byte) 0xed, (byte) 0xef, (byte) 0xfe, (byte) 0xda};
 
-  static public final byte[] MAGIC_HEADERCOV = new byte[]{(byte) 0xad, (byte) 0xed, (byte) 0xde, (byte) 0xda};
-  static public final byte[] MAGIC_DATACOV = new byte[]{(byte) 0xab, (byte) 0xed, (byte) 0xde, (byte) 0xba};
+  public static final byte[] MAGIC_HEADERCOV = {(byte) 0xad, (byte) 0xed, (byte) 0xde, (byte) 0xda};
+  public static final byte[] MAGIC_DATACOV = {(byte) 0xab, (byte) 0xed, (byte) 0xde, (byte) 0xba};
 
-  static public final byte[] MAGIC_ERR = new byte[]{(byte) 0xab, (byte) 0xad, (byte) 0xba, (byte) 0xda};
-  static public final byte[] MAGIC_END = new byte[]{(byte) 0xed, (byte) 0xed, (byte) 0xde, (byte) 0xde};
+  public static final byte[] MAGIC_ERR = {(byte) 0xab, (byte) 0xad, (byte) 0xba, (byte) 0xda};
+  public static final byte[] MAGIC_END = {(byte) 0xed, (byte) 0xed, (byte) 0xde, (byte) 0xde};
 
-  static public final int ncstream_data_version = 3;
+  public static final int ncstream_data_version = 3;
 
   static NcStreamProto.Group.Builder encodeGroup(Group g, int sizeToCache) throws IOException {
     NcStreamProto.Group.Builder groupBuilder = NcStreamProto.Group.newBuilder();
@@ -93,7 +94,7 @@ public class NcStream {
   }
 
 
-  static public NcStreamProto.Attribute.Builder encodeAtt(Attribute att) {
+  public static NcStreamProto.Attribute.Builder encodeAtt(Attribute att) {
     NcStreamProto.Attribute.Builder attBuilder = NcStreamProto.Attribute.newBuilder();
     attBuilder.setName(att.getShortName());
     attBuilder.setDataType(convertDataType(att.getDataType()));
@@ -127,7 +128,7 @@ public class NcStream {
     return dimBuilder;
   }
 
-  static NcStreamProto.EnumTypedef.Builder encodeEnumTypedef(EnumTypedef enumType) throws IOException {
+  static NcStreamProto.EnumTypedef.Builder encodeEnumTypedef(EnumTypedef enumType) {
     NcStreamProto.EnumTypedef.Builder builder = NcStreamProto.EnumTypedef.newBuilder();
 
     builder.setName(enumType.getShortName());
@@ -193,14 +194,14 @@ public class NcStream {
     return builder;
   }
 
-  static public NcStreamProto.Error encodeErrorMessage(String message) {
+  public static NcStreamProto.Error encodeErrorMessage(String message) {
     NcStreamProto.Error.Builder builder = NcStreamProto.Error.newBuilder();
     builder.setMessage(message);
     return builder.build();
   }
 
   static NcStreamProto.Data encodeDataProto(Variable var, Section section, NcStreamProto.Compress compressionType,
-                                            ByteOrder bo, int uncompressedLength) {
+      ByteOrder bo, int uncompressedLength) {
     NcStreamProto.Data.Builder builder = NcStreamProto.Data.newBuilder();
     builder.setVarName(var.getFullNameEscaped());
     builder.setDataType(convertDataType(var.getDataType()));
@@ -215,7 +216,8 @@ public class NcStream {
     return builder.build();
   }
 
-  static public NcStreamProto.Data encodeDataProto(String varname, DataType datatype, Section section, boolean deflate, int uncompressedLength) {
+  public static NcStreamProto.Data encodeDataProto(String varname, DataType datatype, Section section, boolean deflate,
+      int uncompressedLength) {
     NcStreamProto.Data.Builder builder = NcStreamProto.Data.newBuilder();
     builder.setVarName(varname);
     builder.setDataType(convertDataType(datatype));
@@ -228,7 +230,7 @@ public class NcStream {
     return builder.build();
   }
 
-  static public NcStreamProto.Section encodeSection(Section section) {
+  public static NcStreamProto.Section encodeSection(Section section) {
     NcStreamProto.Section.Builder sbuilder = NcStreamProto.Section.newBuilder();
     for (Range r : section.getRanges()) {
       NcStreamProto.Range.Builder rbuilder = NcStreamProto.Range.newBuilder();
@@ -243,7 +245,7 @@ public class NcStream {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-  static void show(NcStreamProto.Header proto) throws InvalidProtocolBufferException {
+  static void show(NcStreamProto.Header proto) {
     NcStreamProto.Group root = proto.getRoot();
 
     for (NcStreamProto.Dimension dim : root.getDimsList()) {
@@ -271,11 +273,11 @@ public class NcStream {
     return length;
   }
 
-  static public int writeBytes(OutputStream out, byte[] b) throws IOException {
+  public static int writeBytes(OutputStream out, byte[] b) throws IOException {
     return writeBytes(out, b, 0, b.length);
   }
 
-  static public int writeVInt(OutputStream out, int value) throws IOException {
+  public static int writeVInt(OutputStream out, int value) throws IOException {
     int count = 0;
 
     // stolen from protobuf.CodedOutputStream.writeRawVarint32()
@@ -292,7 +294,7 @@ public class NcStream {
     return count + 1;
   }
 
-  static public int writeVInt(RandomAccessFile out, int value) throws IOException {
+  public static int writeVInt(RandomAccessFile out, int value) throws IOException {
     int count = 0;
 
     while (true) {
@@ -309,7 +311,7 @@ public class NcStream {
   }
 
 
-  static public int writeVInt(WritableByteChannel wbc, int value) throws IOException {
+  public static int writeVInt(WritableByteChannel wbc, int value) throws IOException {
     ByteBuffer bb = ByteBuffer.allocate(8);
 
     while (true) {
@@ -327,7 +329,7 @@ public class NcStream {
     return bb.limit();
   }
 
-  static public int writeVLong(OutputStream out, long i) throws IOException {
+  public static int writeVLong(OutputStream out, long i) throws IOException {
     int count = 0;
     while ((i & ~0x7F) != 0) {
       writeByte(out, (byte) ((i & 0x7f) | 0x80));
@@ -338,88 +340,99 @@ public class NcStream {
     return count + 1;
   }
 
-  static public int readVInt(InputStream is) throws IOException {
+  public static int readVInt(InputStream is) throws IOException {
     int ib = is.read();
-    if (ib == -1) return -1;
+    if (ib == -1)
+      return -1;
 
     byte b = (byte) ib;
     int i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
       ib = is.read();
-      if (ib == -1) return -1;
+      if (ib == -1)
+        return -1;
       b = (byte) ib;
       i |= (b & 0x7F) << shift;
     }
     return i;
   }
 
-  static public int readVInt(RandomAccessFile raf) throws IOException {
+  public static int readVInt(RandomAccessFile raf) throws IOException {
     int ib = raf.read();
-    if (ib == -1) return -1;
+    if (ib == -1)
+      return -1;
 
     byte b = (byte) ib;
     int i = b & 0x7F;
     for (int shift = 7; (b & 0x80) != 0; shift += 7) {
       ib = raf.read();
-      if (ib == -1) return -1;
+      if (ib == -1)
+        return -1;
       b = (byte) ib;
       i |= (b & 0x7F) << shift;
     }
     return i;
   }
 
-  static public int readFully(InputStream is, byte[] b) throws IOException {
+  public static int readFully(InputStream is, byte[] b) throws IOException {
     int done = 0;
     int want = b.length;
     while (want > 0) {
       int bytesRead = is.read(b, done, want);
-      if (bytesRead == -1) break;
+      if (bytesRead == -1)
+        break;
       done += bytesRead;
       want -= bytesRead;
     }
     return done;
   }
 
-  static public boolean readAndTest(InputStream is, byte[] test) throws IOException {
+  public static boolean readAndTest(InputStream is, byte[] test) throws IOException {
     byte[] b = new byte[test.length];
     readFully(is, b);
 
-    if (b.length != test.length) return false;
+    if (b.length != test.length)
+      return false;
     for (int i = 0; i < b.length; i++)
-      if (b[i] != test[i]) return false;
+      if (b[i] != test[i])
+        return false;
     return true;
   }
 
-  static public boolean readAndTest(RandomAccessFile raf, byte[] test) throws IOException {
+  public static boolean readAndTest(RandomAccessFile raf, byte[] test) throws IOException {
     byte[] b = new byte[test.length];
     raf.readFully(b);
 
-    if (b.length != test.length) return false;
+    if (b.length != test.length)
+      return false;
     for (int i = 0; i < b.length; i++)
-      if (b[i] != test[i]) return false;
+      if (b[i] != test[i])
+        return false;
     return true;
   }
 
-  static public boolean test(byte[] b, byte[] test) throws IOException {
-    if (b.length != test.length) return false;
+  public static boolean test(byte[] b, byte[] test) {
+    if (b.length != test.length)
+      return false;
     for (int i = 0; i < b.length; i++)
-      if (b[i] != test[i]) return false;
+      if (b[i] != test[i])
+        return false;
     return true;
   }
 
-  static public String decodeErrorMessage(NcStreamProto.Error err) {
+  public static String decodeErrorMessage(NcStreamProto.Error err) {
     return err.getMessage();
   }
 
   static Dimension decodeDim(NcStreamProto.Dimension dim) {
-    String name = (dim.getName().length() == 0 ? null : dim.getName());
+    String name = (dim.getName().isEmpty() ? null : dim.getName());
     int dimLen = dim.getIsVlen() ? -1 : (int) dim.getLength();
     return new Dimension(name, dimLen, !dim.getIsPrivate(), dim.getIsUnlimited(), dim.getIsVlen());
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  static void readGroup(NcStreamProto.Group proto, NetcdfFile ncfile, Group g) throws InvalidProtocolBufferException {
+  static void readGroup(NcStreamProto.Group proto, NetcdfFile ncfile, Group g) {
 
     for (NcStreamProto.Dimension dim : proto.getDimsList())
       g.addDimension(NcStream.decodeDim(dim));
@@ -452,15 +465,19 @@ public class NcStream {
     return new EnumTypedef(enumType.getName(), map);
   }
 
-  static public Attribute decodeAtt(NcStreamProto.Attribute attp) {
+  public static Attribute decodeAtt(NcStreamProto.Attribute attp) {
     // BARF LOOK
     DataType dtOld = decodeAttributeType(attp.getType());
     DataType dtNew = convertDataType(attp.getDataType());
     DataType dtUse;
-    if (dtNew != DataType.CHAR) dtUse = dtNew;
-    else if (dtOld != DataType.STRING) dtUse = dtOld;
-    else if (attp.getSdataCount() > 0) dtUse = DataType.STRING;
-    else dtUse = DataType.CHAR;
+    if (dtNew != DataType.CHAR)
+      dtUse = dtNew;
+    else if (dtOld != DataType.STRING)
+      dtUse = dtOld;
+    else if (attp.getSdataCount() > 0)
+      dtUse = DataType.STRING;
+    else
+      dtUse = DataType.CHAR;
 
     int len = attp.getLen();
     if (len == 0) // deal with empty attribute
@@ -473,8 +490,9 @@ public class NcStream {
       if (lenp == 1)
         return new Attribute(attp.getName(), attp.getSdata(0));
       else {
-        Array data = Array.factory(dtUse, new int[]{lenp});
-        for (int i = 0; i < lenp; i++) data.setObject(i, attp.getSdata(i));
+        Array data = Array.factory(dtUse, new int[] {lenp});
+        for (int i = 0; i < lenp; i++)
+          data.setObject(i, attp.getSdata(i));
         return new Attribute(attp.getName(), data);
       }
     } else {
@@ -525,8 +543,9 @@ public class NcStream {
   }
 
   static Structure decodeStructure(NetcdfFile ncfile, Group g, Structure parent, NcStreamProto.Structure s) {
-    Structure ncvar = (s.getDataType() == ucar.nc2.stream.NcStreamProto.DataType.SEQUENCE) ?
-            new Sequence(ncfile, g, parent, s.getName()) : new Structure(ncfile, g, parent, s.getName());
+    Structure ncvar = (s.getDataType() == ucar.nc2.stream.NcStreamProto.DataType.SEQUENCE)
+        ? new Sequence(ncfile, g, parent, s.getName())
+        : new Structure(ncfile, g, parent, s.getName());
 
     ncvar.setDataType(convertDataType(s.getDataType()));
 
@@ -557,13 +576,14 @@ public class NcStream {
   }
 
   @Nonnull
-  static public Section decodeSection(NcStreamProto.Section proto) {
+  public static Section decodeSection(NcStreamProto.Section proto) {
     Section section = new Section();
 
     for (ucar.nc2.stream.NcStreamProto.Range pr : proto.getRangeList()) {
       try {
         long stride = pr.getStride();
-        if (stride == 0) stride = 1; // default in protobuf2 was 1, but protobuf3 is 0, luckily 0 is illegal
+        if (stride == 0)
+          stride = 1; // default in protobuf2 was 1, but protobuf3 is 0, luckily 0 is illegal
         if (pr.getSize() == 0)
           section.appendRange(Range.EMPTY); // used for scalars LOOK really used ??
         else {
@@ -578,39 +598,41 @@ public class NcStream {
     return section;
   }
 
-  /* decodeDataByteOrder
-
-    proto2:
-    message Data {
-      required string varName = 1;          // full escaped name.
-      required DataType dataType = 2;
-      optional Section section = 3;         // not required for SEQUENCE
-      optional bool bigend = 4 [default = true];
-      optional uint32 version = 5 [default = 0];
-      optional Compress compress = 6 [default = NONE];
-      optional bool vdata = 7 [default = false];
-      optional uint32 uncompressedSize = 8;
-    }
-
-    problem is that bigend default is true, but in proto3 it must be false. so we need to detect if the value is set or not.
-    thanks to Simon (Vsevolod) Ilyushchenko <simonf@google.com>, workaround is:
-
-    proto3:
-    message Data {
-      string varName = 1;          // full escaped name.
-      DataType dataType = 2;
-      Section section = 3;         // not required for SEQUENCE
-      oneof bigend_present {
-        bool bigend = 4;           // [default=true] in proto2
-      }
-      uint32 version = 5;          // < 3 for proto2, = 3 for proto3 (v5.0+)
-      Compress compress = 6;
-      bool vdata = 7;
-      uint32 uncompressedSize = 8;
-    }
-
-    which is wire-compatible and allows us to detect if value is set or not.
-  */
+  /*
+   * decodeDataByteOrder
+   * 
+   * proto2:
+   * message Data {
+   * required string varName = 1; // full escaped name.
+   * required DataType dataType = 2;
+   * optional Section section = 3; // not required for SEQUENCE
+   * optional bool bigend = 4 [default = true];
+   * optional uint32 version = 5 [default = 0];
+   * optional Compress compress = 6 [default = NONE];
+   * optional bool vdata = 7 [default = false];
+   * optional uint32 uncompressedSize = 8;
+   * }
+   * 
+   * problem is that bigend default is true, but in proto3 it must be false. so we need to detect if the value is set or
+   * not.
+   * thanks to Simon (Vsevolod) Ilyushchenko <simonf@google.com>, workaround is:
+   * 
+   * proto3:
+   * message Data {
+   * string varName = 1; // full escaped name.
+   * DataType dataType = 2;
+   * Section section = 3; // not required for SEQUENCE
+   * oneof bigend_present {
+   * bool bigend = 4; // [default=true] in proto2
+   * }
+   * uint32 version = 5; // < 3 for proto2, = 3 for proto3 (v5.0+)
+   * Compress compress = 6;
+   * bool vdata = 7;
+   * uint32 uncompressedSize = 8;
+   * }
+   * 
+   * which is wire-compatible and allows us to detect if value is set or not.
+   */
   static ByteOrder decodeDataByteOrder(NcStreamProto.Data pData) {
     boolean isMissing = pData.getBigendPresentCase() == NcStreamProto.Data.BigendPresentCase.BIGENDPRESENT_NOT_SET;
     if (isMissing) {
@@ -622,7 +644,7 @@ public class NcStream {
 
   ////////////////////////////////////////////////////////////////
 
-  static public ucar.nc2.stream.NcStreamProto.DataType convertDataType(DataType dtype) {
+  public static ucar.nc2.stream.NcStreamProto.DataType convertDataType(DataType dtype) {
     switch (dtype) {
       case CHAR:
         return ucar.nc2.stream.NcStreamProto.DataType.CHAR;
@@ -664,7 +686,7 @@ public class NcStream {
     throw new IllegalStateException("illegal data type " + dtype);
   }
 
-  static public DataType convertDataType(ucar.nc2.stream.NcStreamProto.DataType dtype) {
+  public static DataType convertDataType(ucar.nc2.stream.NcStreamProto.DataType dtype) {
     switch (dtype) {
       case CHAR:
         return DataType.CHAR;
@@ -734,7 +756,7 @@ public class NcStream {
   public static long encodeArrayStructure(ArrayStructure as, ByteOrder bo, OutputStream os) throws java.io.IOException {
     long size = 0;
 
-    ArrayStructureBB dataBB = StructureDataDeep.copyToArrayBB(as, bo, true);  // force canonical packing
+    ArrayStructureBB dataBB = StructureDataDeep.copyToArrayBB(as, bo, true); // force canonical packing
     List<String> ss = new ArrayList<>();
     List<Object> heap = dataBB.getHeap();
     List<Integer> count = new ArrayList<>();
@@ -746,8 +768,7 @@ public class NcStream {
         } else if (ho instanceof String[]) {
           String[] hos = (String[]) ho;
           count.add(hos.length);
-          for (String s : hos)
-            ss.add(s);
+          ss.addAll(Arrays.asList(hos));
         }
       }
     }
@@ -755,17 +776,18 @@ public class NcStream {
     // LOOK optionally compress
     StructureMembers sm = dataBB.getStructureMembers();
     ByteBuffer bb = dataBB.getByteBuffer();
-    NcStreamProto.StructureData proto = NcStream.encodeStructureDataProto(bb.array(), count, ss, (int) as.getSize(), sm.getStructureSize());
+    NcStreamProto.StructureData proto =
+        NcStream.encodeStructureDataProto(bb.array(), count, ss, (int) as.getSize(), sm.getStructureSize());
     byte[] datab = proto.toByteArray();
     size += NcStream.writeVInt(os, datab.length); // proto len
     os.write(datab); // proto
     size += datab.length;
-    // System.out.printf("encodeArrayStructure write sdata size= %d%n", datab.length);
 
     return size;
   }
 
-  static NcStreamProto.StructureData encodeStructureDataProto(byte[] fixed, List<Integer> count, List<String> ss, int nrows, int rowLength) {
+  static NcStreamProto.StructureData encodeStructureDataProto(byte[] fixed, List<Integer> count, List<String> ss,
+      int nrows, int rowLength) {
     NcStreamProto.StructureData.Builder builder = NcStreamProto.StructureData.newBuilder();
     builder.setData(ByteString.copyFrom(fixed));
     builder.setNrows(nrows);
@@ -777,7 +799,8 @@ public class NcStream {
     return builder.build();
   }
 
-  public static ArrayStructureBB decodeArrayStructure(StructureMembers sm, int shape[], byte[] proto) throws java.io.IOException {
+  public static ArrayStructureBB decodeArrayStructure(StructureMembers sm, int[] shape, byte[] proto)
+      throws java.io.IOException {
     NcStreamProto.StructureData.Builder builder = NcStreamProto.StructureData.newBuilder();
     builder.mergeFrom(proto);
     long size = 0;
@@ -803,13 +826,14 @@ public class NcStream {
     return dataBB;
   }
 
-  public static StructureData decodeStructureData(StructureMembers sm, ByteOrder bo, byte[] proto) throws java.io.IOException {
+  public static StructureData decodeStructureData(StructureMembers sm, ByteOrder bo, byte[] proto)
+      throws java.io.IOException {
     NcStreamProto.StructureData.Builder builder = NcStreamProto.StructureData.newBuilder();
     builder.mergeFrom(proto);
 
     ByteBuffer bb = ByteBuffer.wrap(builder.getData().toByteArray());
     bb.order(bo);
-    ArrayStructureBB dataBB = new ArrayStructureBB(sm, new int[]{1}, bb, 0);
+    ArrayStructureBB dataBB = new ArrayStructureBB(sm, new int[] {1}, bb, 0);
 
     List<String> ss = builder.getSdataList();
     List<Integer> count = builder.getHeapCountList();

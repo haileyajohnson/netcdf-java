@@ -6,12 +6,11 @@
 
 package ucar.nc2.iosp.nowrad;
 
-//~--- non-JDK imports --------------------------------------------------------
+// ~--- non-JDK imports --------------------------------------------------------
 
 import ucar.ma2.*;
 import ucar.nc2.Variable;
 import ucar.nc2.iosp.AbstractIOServiceProvider;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -25,16 +24,14 @@ import java.util.List;
  * To change this template use File | Settings | File Templates.
  */
 public class NOWRadiosp extends AbstractIOServiceProvider {
-  final static int DEF_WBITS = 15;
-  final static int Z_DEFLATED = 8;
+  static final int DEF_WBITS = 15;
+  static final int Z_DEFLATED = 8;
 
   // used for writing
-  protected int fileUsed = 0;    // how much of the file is written to ?
-  protected int recStart = 0;    // where the record data starts
-  protected boolean debug = false,
-          debugSize = false,
-          debugSPIO = false;
-  protected boolean showHeaderBytes = false;
+  protected int fileUsed; // how much of the file is written to ?
+  protected int recStart; // where the record data starts
+  protected boolean debug, debugSize, debugSPIO;
+  protected boolean showHeaderBytes;
   protected HashMap dimHash = new HashMap(50);
   protected boolean fill;
 
@@ -44,10 +41,7 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
   protected boolean readonly;
 
   /**
-   * checking the file
-   *
-   * @param raf
-   * @return the valid of file checking
+   * Check if the file is a NOWRad file
    */
   public boolean isValidFile(ucar.unidata.io.RandomAccessFile raf) {
     NOWRadheader localHeader = new NOWRadheader();
@@ -65,21 +59,16 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
 
   /**
    * Open the file and read the header part
-   *
-   * @param raf
-   * @param file
-   * @param cancelTask
-   * @throws java.io.IOException
    */
-  public void open(ucar.unidata.io.RandomAccessFile raf, ucar.nc2.NetcdfFile file,
-                   ucar.nc2.util.CancelTask cancelTask)
-          throws IOException {
+  public void open(ucar.unidata.io.RandomAccessFile raf, ucar.nc2.NetcdfFile file, ucar.nc2.util.CancelTask cancelTask)
+      throws IOException {
     super.open(raf, ncfile, cancelTask);
     headerParser = new NOWRadheader();
 
     try {
       headerParser.read(this.raf, ncfile);
     } catch (Exception e) {
+      throw new IOException(e);
     }
 
     // myInfo = headerParser.getVarInfo();
@@ -89,19 +78,13 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
 
   /**
    * Read the data for each variable passed in
-   *
-   * @param v2
-   * @param section
-   * @return output data
-   * @throws IOException
-   * @throws ucar.ma2.InvalidRangeException
    */
   public Array readData(Variable v2, Section section) throws IOException, InvalidRangeException {
 
     // subset
     Object data;
     Array outputData;
-    byte[] vdata = null;
+    byte[] vdata;
     NOWRadheader.Vinfo vinfo;
     ByteBuffer bos;
     List<Range> ranges = section.getRanges();
@@ -123,17 +106,16 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
   /**
    * Read one scan radar data
    *
-   * @param bos   Data buffer
+   * @param bos Data buffer
    * @param vinfo variable info
    * @return the data object of scan data
    */
 
   // all the work is here, so can be called recursively
-  public Object readOneScanData(ByteBuffer bos, NOWRadheader.Vinfo vinfo, String vName)
-          throws IOException, InvalidRangeException {
+  public Object readOneScanData(ByteBuffer bos, NOWRadheader.Vinfo vinfo, String vName) {
     int doff = (int) vinfo.hoff;
     int npixel = vinfo.yt * vinfo.xt;
-    byte[] rdata = null;
+    byte[] rdata;
     byte[] ldata = new byte[vinfo.xt];
     byte[] pdata = new byte[npixel];
     byte[] b2 = new byte[2];
@@ -158,15 +140,8 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
       // line number
       if (newline) {
         bos.get(b2);
-        linenum = (DataType.unsignedByteToShort(b2[1]) << 8) + DataType.unsignedByteToShort(b2[0]);
-
-        // System.out.println("Line Number = " + linenum);
       }
 
-      // int linenum = bytesToInt(b2[0], b2[1], true);
-      // System.out.println("Line Number = " + linenum);
-      // if(linenum == 1225)
-      //   System.out.println(" HHHHH");
       short b = DataType.unsignedByteToShort(bos.get());
 
       color = b & 0xF;
@@ -211,7 +186,6 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
       System.arraycopy(rdata, 0, ldata, roffset, datarun);
       roffset = roffset + datarun;
 
-      // System.out.println("run ecode = " + ecode + " and data run " + datarun + " and totalrun " + roffset);
       // check to see if the beginning of the next line or at the end of the file
       short c0 = DataType.unsignedByteToShort(bos.get());
 
@@ -219,14 +193,8 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
         short c1 = DataType.unsignedByteToShort(bos.get());
         short c2 = DataType.unsignedByteToShort(bos.get());
 
-        // System.out.println("c1 and c2 " + c1 + " " + c2);
-
         if ((c0 == 0x00) && (c1 == 0xF0) && (c2 == 0x0C)) {
           // beginning of next line
-          //  System.out.println("linenum   " + linenum + "   and this line total " + roffset);
-          //  if (roffset != 3661) {
-          //      System.out.println("ERROR missing data, this line total only " + roffset);
-          //  }
           System.arraycopy(ldata, 0, pdata, offset, roffset);
           offset = offset + vinfo.xt;
           roffset = 0;
@@ -254,15 +222,15 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
     int base = 1;
     int i;
     int word = 0;
-    int bv[] = new int[num];
+    int[] bv = new int[num];
 
     for (i = 0; i < num; i++) {
       bv[i] = DataType.unsignedByteToShort(b[i]);
     }
 
     /*
-    * Calculate the integer value of the byte sequence
-    */
+     * Calculate the integer value of the byte sequence
+     */
     for (i = num - 1; i >= 0; i--) {
       word += base * bv[i];
       base *= 256;
@@ -298,7 +266,7 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
    * @param ddata is encoded data values
    * @return the data array of row data
    */
-  public byte[] readOneRowData(byte[] ddata, int rLen, int xt) throws IOException, InvalidRangeException {
+  public byte[] readOneRowData(byte[] ddata, int rLen, int xt) {
     int run;
     byte[] bdata = new byte[xt];
     int nbin = 0;
@@ -328,15 +296,15 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
     int base = 1;
     int i;
     int word = 0;
-    int bv[] = new int[num];
+    int[] bv = new int[num];
 
     for (i = 0; i < num; i++) {
       bv[i] = DataType.unsignedByteToShort(b[offset + i]);
     }
 
     /*
-    * Calculate the integer value of the byte sequence
-    */
+     * Calculate the integer value of the byte sequence
+     */
     for (i = num - 1; i >= 0; i--) {
       word += base * bv[i];
       base *= 256;
@@ -349,7 +317,7 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
     int base = 1;
     int i;
     int word = 0;
-    int bv[] = new int[num];
+    int[] bv = new int[num];
 
     for (i = 0; i < num; i++) {
       bv[i] = DataType.unsignedByteToShort(b[offset + i]);
@@ -361,8 +329,8 @@ public class NOWRadiosp extends AbstractIOServiceProvider {
     }
 
     /*
-    * Calculate the integer value of the byte sequence
-    */
+     * Calculate the integer value of the byte sequence
+     */
 
     for (i = num - 1; i >= 0; i--) {
       word += base * bv[i];

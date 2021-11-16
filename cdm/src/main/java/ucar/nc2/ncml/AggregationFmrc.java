@@ -13,7 +13,6 @@ import thredds.inventory.MFile;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.ft.fmrc.Fmrc;
 import ucar.nc2.util.CancelTask;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Formatter;
@@ -28,7 +27,7 @@ import java.util.Set;
  * @author caron
  */
 public class AggregationFmrc extends AggregationOuterDimension {
-  static protected Set<NetcdfDataset.Enhance> fmrcEnhanceMode = NetcdfDataset.getDefaultEnhanceMode();
+  protected static Set<NetcdfDataset.Enhance> fmrcEnhanceMode = NetcdfDataset.getDefaultEnhanceMode();
 
   private Fmrc fmrc;
   private String runMatcher; // , forecastMatcher, offsetMatcher; // scanFmrc
@@ -37,19 +36,19 @@ public class AggregationFmrc extends AggregationOuterDimension {
     super(ncd, dimName, Type.forecastModelRunCollection, recheckS);
   }
 
-  public void addDirectoryScanFmrc(String dirName, String suffix, String regexpPatternString, String subdirs, String olderThan,
-                                   String runMatcher, String forecastMatcher, String offsetMatcher) throws IOException {
+  public void addDirectoryScanFmrc(String dirName, String suffix, String regexpPatternString, String subdirs,
+      String olderThan, String runMatcher, String forecastMatcher, String offsetMatcher) {
 
     // only one
     this.runMatcher = runMatcher;
-    //this.forecastMatcher = forecastMatcher;
-    //this.offsetMatcher = offsetMatcher;
+    // this.forecastMatcher = forecastMatcher;
+    // this.offsetMatcher = offsetMatcher;
 
     // this.enhance = NetcdfDataset.getDefaultEnhanceMode();
     isDate = true;
 
-    //DatasetScanner d = new DatasetScanner(null, dirName, suffix, regexpPatternString, subdirs, olderThan);
-    //datasetManager.addDirectoryScan(d);
+    // DatasetScanner d = new DatasetScanner(null, dirName, suffix, regexpPatternString, subdirs, olderThan);
+    // datasetManager.addDirectoryScan(d);
     datasetManager.addDirectoryScan(dirName, suffix, regexpPatternString, subdirs, olderThan, null);
     if (runMatcher != null) {
       DateExtractor dateExtractor = new DateExtractorFromName(runMatcher, false);
@@ -85,30 +84,27 @@ public class AggregationFmrc extends AggregationOuterDimension {
 
     if (runMatcher != null)
       f.format("  runMatcher=%s%n", runMatcher);
-   /*  if (forecastMatcher != null)
-      f.format("  forecastMatcher=%s%n", forecastMatcher);
-    if (offsetMatcher != null)
-      f.format("  offsetMatcher=%s%n", offsetMatcher); */
+    /*
+     * if (forecastMatcher != null)
+     * f.format("  forecastMatcher=%s%n", forecastMatcher);
+     * if (offsetMatcher != null)
+     * f.format("  offsetMatcher=%s%n", offsetMatcher);
+     */
   }
 
   @Override
   protected void buildNetcdfDataset(CancelTask cancelTask) throws IOException {
-    DateExtractor dateExtractor = null;
-    if (runMatcher != null)
-      dateExtractor = new DateExtractorFromName(runMatcher, false); // uses path
-    if (dateExtractor == null && dateFormatMark != null)
-      dateExtractor = new DateExtractorFromName(dateFormatMark, true);
     fmrc = new Fmrc(datasetManager, new FeatureCollectionConfig());
 
     // fill in the ncDataset
-    fmrc.getDataset2D( ncDataset);
+    fmrc.getDataset2D(ncDataset);
 
     ncDataset.finish();
   }
 
   // we assume the variables are complete, but the time dimensions and values have to be recomputed
   @Override
-  protected void rebuildDataset() throws IOException {
+  protected void rebuildDataset() {
     throw new UnsupportedOperationException();
     // ncDataset.empty();
     // fmrc.getDataset2D(false, true, ncDataset);

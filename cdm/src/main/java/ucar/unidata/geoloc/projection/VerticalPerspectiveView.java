@@ -33,7 +33,8 @@ public class VerticalPerspectiveView extends ProjectionImpl {
 
   @Override
   public ProjectionImpl constructCopy() {
-    ProjectionImpl result =  new VerticalPerspectiveView(getOriginLat(), getOriginLon(), R, getHeight(), false_east, false_north);
+    ProjectionImpl result =
+        new VerticalPerspectiveView(getOriginLat(), getOriginLon(), R, getHeight(), false_east, false_north);
     result.setDefaultMapArea(defaultMapArea);
     result.setName(name);
     return result;
@@ -49,10 +50,10 @@ public class VerticalPerspectiveView extends ProjectionImpl {
   /**
    * Construct a VerticalPerspectiveView Projection
    *
-   * @param lat0        lat origin of the coord. system on the projection plane
-   * @param lon0        lon origin of the coord. system on the projection plane
+   * @param lat0 lat origin of the coord. system on the projection plane
+   * @param lon0 lon origin of the coord. system on the projection plane
    * @param earthRadius radius of the earth (km)
-   * @param distance    height above the earth (km)
+   * @param distance height above the earth (km)
    */
   public VerticalPerspectiveView(double lat0, double lon0, double earthRadius, double distance) {
     this(lat0, lon0, earthRadius, distance, 0, 0);
@@ -61,17 +62,15 @@ public class VerticalPerspectiveView extends ProjectionImpl {
   /**
    * Construct a VerticalPerspectiveView Projection
    *
-   * @param lat0           lat origin of the coord. system on the projection plane
-   * @param lon0           lon origin of the coord. system on the projection plane
-   * @param earthRadius    radius of the earth (km)
-   * @param distance       height above the earth  (km)
-   * @param false_easting  easting offset (km)
+   * @param lat0 lat origin of the coord. system on the projection plane
+   * @param lon0 lon origin of the coord. system on the projection plane
+   * @param earthRadius radius of the earth (km)
+   * @param distance height above the earth (km)
+   * @param false_easting easting offset (km)
    * @param false_northing northing offset (km)
    */
-  public VerticalPerspectiveView(double lat0, double lon0,
-                                 double earthRadius, double distance,
-                                 double false_easting,
-                                 double false_northing) {
+  public VerticalPerspectiveView(double lat0, double lon0, double earthRadius, double distance, double false_easting,
+      double false_northing) {
 
     super("VerticalPerspectiveView", false);
 
@@ -111,21 +110,29 @@ public class VerticalPerspectiveView extends ProjectionImpl {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
 
     VerticalPerspectiveView that = (VerticalPerspectiveView) o;
 
-    if (Double.compare(that.H, H) != 0) return false;
-    if (Double.compare(that.R, R) != 0) return false;
-    if (Double.compare(that.false_east, false_east) != 0) return false;
-    if (Double.compare(that.false_north, false_north) != 0) return false;
-    if (Double.compare(that.lat0, lat0) != 0) return false;
-    if (Double.compare(that.lon0, lon0) != 0) return false;
-    if ((defaultMapArea == null) != (that.defaultMapArea == null)) return false; // common case is that these are null
-    if (defaultMapArea != null && !that.defaultMapArea.equals(defaultMapArea)) return false;
+    if (Double.compare(that.H, H) != 0)
+      return false;
+    if (Double.compare(that.R, R) != 0)
+      return false;
+    if (Double.compare(that.false_east, false_east) != 0)
+      return false;
+    if (Double.compare(that.false_north, false_north) != 0)
+      return false;
+    if (Double.compare(that.lat0, lat0) != 0)
+      return false;
+    if (Double.compare(that.lon0, lon0) != 0)
+      return false;
+    if ((defaultMapArea == null) != (that.defaultMapArea == null))
+      return false; // common case is that these are null
+    return defaultMapArea == null || that.defaultMapArea.equals(defaultMapArea);
 
-    return true;
   }
 
   @Override
@@ -147,7 +154,7 @@ public class VerticalPerspectiveView extends ProjectionImpl {
     return result;
   }
 
-// bean properties
+  // bean properties
 
   /**
    * Get the height above the earth
@@ -176,36 +183,42 @@ public class VerticalPerspectiveView extends ProjectionImpl {
     return Math.toDegrees(lat0);
   }
 
-    //////////////////////////////////////////////
+  public double getP() {
+    return P;
+  }
+
+  //////////////////////////////////////////////
   // setters for IDV serialization - do not use except for object creating
 
 
   /**
    * Set the origin longitude.
-   * @param lon   the origin longitude.
+   * 
+   * @param lon the origin longitude.
    */
   public void setOriginLon(double lon) {
-      lon0 = Math.toRadians(lon);
-      precalculate();
+    lon0 = Math.toRadians(lon);
+    precalculate();
   }
 
   /**
    * Set the height above the earth
-   * @param height   height above the earth
+   * 
+   * @param height height above the earth
    */
   public void setHeight(double height) {
-      H = height;
-      precalculate();
+    H = height;
+    precalculate();
   }
 
   /**
    * Set the origin latitude.
    *
-   * @param lat   the origin latitude.
+   * @param lat the origin latitude.
    */
   public void setOriginLat(double lat) {
-      lat0 = Math.toRadians(lat);
-      precalculate();
+    lat0 = Math.toRadians(lat);
+    precalculate();
   }
 
   /**
@@ -228,15 +241,8 @@ public class VerticalPerspectiveView extends ProjectionImpl {
 
   @Override
   public String toString() {
-    return "VerticalPerspectiveView{" +
-            "lat0=" + lat0 +
-            ", lon0=" + lon0 +
-            ", false_east=" + false_east +
-            ", false_north=" + false_north +
-            ", R=" + R +
-            ", H=" + H +
-            ", P=" + P +
-            '}';
+    return "VerticalPerspectiveView{" + "lat0=" + lat0 + ", lon0=" + lon0 + ", false_east=" + false_east
+        + ", false_north=" + false_north + ", R=" + R + ", H=" + H + ", P=" + P + '}';
   }
 
   /**
@@ -249,77 +255,77 @@ public class VerticalPerspectiveView extends ProjectionImpl {
    */
   public boolean crossSeam(ProjectionPoint pt1, ProjectionPoint pt2) {
     // either point is infinite
-    if (ProjectionPointImpl.isInfinite(pt1)
-            || ProjectionPointImpl.isInfinite(pt2)) {
+    if (ProjectionPointImpl.isInfinite(pt1) || ProjectionPointImpl.isInfinite(pt2)) {
       return true;
     }
     // opposite signed X values, larger then 5000 km
-    return (pt1.getX() * pt2.getX() < 0)
-            && (Math.abs(pt1.getX() - pt2.getX()) > 5000.0);
+    return (pt1.getX() * pt2.getX() < 0) && (Math.abs(pt1.getX() - pt2.getX()) > 5000.0);
   }
 
 
-  /*MACROBODY
-    latLonToProj {} {
-      fromLat = Math.toRadians(fromLat);
-      double lonDiff =
-          Math.toRadians(LatLonPointImpl.lonNormal(fromLon-lon0Degrees));
-      double cosc = sinLat0*Math.sin(fromLat) + cosLat0*Math.cos(fromLat)*Math.cos(lonDiff);
-      double ksp = (P-1.0)/(P-cosc);
-      if (cosc < 1.0/P) {
-          toX = Double.POSITIVE_INFINITY;
-          toY = Double.POSITIVE_INFINITY;
-      } else {
-          toX = false_east + R*ksp*Math.cos(fromLat)*Math.sin(lonDiff);
-          toY = false_north + R*ksp*(cosLat0*Math.sin(fromLat) - sinLat0*Math.cos(fromLat)*Math.cos(lonDiff));
-      }
-    }
+  /*
+   * MACROBODY
+   * latLonToProj {} {
+   * fromLat = Math.toRadians(fromLat);
+   * double lonDiff =
+   * Math.toRadians(LatLonPointImpl.lonNormal(fromLon-lon0Degrees));
+   * double cosc = sinLat0*Math.sin(fromLat) + cosLat0*Math.cos(fromLat)*Math.cos(lonDiff);
+   * double ksp = (P-1.0)/(P-cosc);
+   * if (cosc < 1.0/P) {
+   * toX = Double.POSITIVE_INFINITY;
+   * toY = Double.POSITIVE_INFINITY;
+   * } else {
+   * toX = false_east + R*ksp*Math.cos(fromLat)*Math.sin(lonDiff);
+   * toY = false_north + R*ksp*(cosLat0*Math.sin(fromLat) - sinLat0*Math.cos(fromLat)*Math.cos(lonDiff));
+   * }
+   * }
+   * 
+   * projToLatLon {} {
+   * 
+   * fromX = fromX - false_east;
+   * fromY = fromY - false_north;
+   * double rho = Math.sqrt(fromX*fromX + fromY*fromY);
+   * double r = rho /R;
+   * double con = P - 1.0;
+   * double com = P + 1.0;
+   * double c = Math.asin((P - Math.sqrt(1.0 - (r * r * com) / con)) / (con / r + r/con));
+   * 
+   * toLon = lon0;
+   * double temp = 0;
+   * if (Math.abs(rho) > TOLERANCE) {
+   * toLat = Math.asin(Math.cos(c)*sinLat0 + (fromY*Math.sin(c)*cosLat0/rho));
+   * if (Math.abs(lat0 - PI_OVER_4) > TOLERANCE) { // not 90 or -90
+   * temp = rho*cosLat0*Math.cos(c) - fromY*sinLat0*Math.sin(c);
+   * toLon = lon0 + Math.atan(fromX*Math.sin(c)/temp);
+   * } else if (lat0 == PI_OVER_4) {
+   * toLon = lon0 + Math.atan(fromX/-fromY);
+   * temp = -fromY;
+   * } else {
+   * toLon = lon0 + Math.atan(fromX/fromY);
+   * temp = fromY;
+   * }
+   * } else {
+   * toLat = lat0;
+   * }
+   * toLat= Math.toDegrees(toLat);
+   * toLon= Math.toDegrees(toLon);
+   * if (temp < 0) toLon += 180;
+   * toLon= LatLonPointImpl.lonNormal(toLon);
+   * }
+   * 
+   * 
+   * MACROBODY
+   */
 
-    projToLatLon {} {
-
-      fromX = fromX - false_east;
-      fromY = fromY - false_north;
-      double rho = Math.sqrt(fromX*fromX + fromY*fromY);
-      double r = rho /R;
-      double con = P - 1.0;
-      double com = P + 1.0;
-      double c = Math.asin((P - Math.sqrt(1.0 - (r * r * com) / con)) / (con / r + r/con));
-
-      toLon = lon0;
-      double temp = 0;
-      if (Math.abs(rho) > TOLERANCE) {
-        toLat = Math.asin(Math.cos(c)*sinLat0 + (fromY*Math.sin(c)*cosLat0/rho));
-        if (Math.abs(lat0 - PI_OVER_4) > TOLERANCE) { // not 90 or -90
-          temp = rho*cosLat0*Math.cos(c) - fromY*sinLat0*Math.sin(c);
-          toLon = lon0 + Math.atan(fromX*Math.sin(c)/temp);
-        } else if (lat0 == PI_OVER_4) {
-          toLon = lon0 + Math.atan(fromX/-fromY);
-          temp = -fromY;
-        } else {
-          toLon = lon0 + Math.atan(fromX/fromY);
-          temp = fromY;
-        }
-      } else {
-        toLat = lat0;
-      }
-      toLat= Math.toDegrees(toLat);
-      toLon= Math.toDegrees(toLon);
-      if (temp < 0) toLon += 180;
-      toLon= LatLonPointImpl.lonNormal(toLon);
-    }
-
-
-  MACROBODY*/
-
-  /*BEGINGENERATED*/
+  /* BEGINGENERATED */
 
   /*
-  Note this section has been generated using the convert.tcl script.
-  This script, run as:
-  tcl convert.tcl VerticalPerspectiveView.java
-  takes the actual projection conversion code defined in the MACROBODY
-  section above and generates the following 6 methods
-  */
+   * Note this section has been generated using the convert.tcl script.
+   * This script, run as:
+   * tcl convert.tcl VerticalPerspectiveView.java
+   * takes the actual projection conversion code defined in the MACROBODY
+   * section above and generates the following 6 methods
+   */
 
 
   /**
@@ -329,29 +335,22 @@ public class VerticalPerspectiveView extends ProjectionImpl {
    * @param result the object to write to
    * @return the given result
    */
-  public ProjectionPoint latLonToProj(LatLonPoint latLon,
-                                      ProjectionPointImpl result) {
+  public ProjectionPoint latLonToProj(LatLonPoint latLon, ProjectionPointImpl result) {
     double toX, toY;
     double fromLat = latLon.getLatitude();
     double fromLon = latLon.getLongitude();
 
 
     fromLat = Math.toRadians(fromLat);
-    double lonDiff = Math.toRadians(LatLonPointImpl.lonNormal(fromLon
-            - lon0Degrees));
-    double cosc = sinLat0 * Math.sin(fromLat)
-            + cosLat0 * Math.cos(fromLat) * Math.cos(lonDiff);
+    double lonDiff = Math.toRadians(LatLonPointImpl.lonNormal(fromLon - lon0Degrees));
+    double cosc = sinLat0 * Math.sin(fromLat) + cosLat0 * Math.cos(fromLat) * Math.cos(lonDiff);
     double ksp = (P - 1.0) / (P - cosc);
     if (cosc < 1.0 / P) {
       toX = Double.POSITIVE_INFINITY;
       toY = Double.POSITIVE_INFINITY;
     } else {
-      toX = false_east
-              + R * ksp * Math.cos(fromLat) * Math.sin(lonDiff);
-      toY = false_north
-              + R * ksp
-              * (cosLat0 * Math.sin(fromLat)
-              - sinLat0 * Math.cos(fromLat) * Math.cos(lonDiff));
+      toX = false_east + R * ksp * Math.cos(fromLat) * Math.sin(lonDiff);
+      toY = false_north + R * ksp * (cosLat0 * Math.sin(fromLat) - sinLat0 * Math.cos(fromLat) * Math.cos(lonDiff));
     }
 
     result.setLocation(toX, toY);
@@ -362,12 +361,11 @@ public class VerticalPerspectiveView extends ProjectionImpl {
    * Convert projection coordinates to a LatLonPoint
    * Note: a new object is not created on each call for the return value.
    *
-   * @param world  convert from these projection coordinates
+   * @param world convert from these projection coordinates
    * @param result the object to write to
    * @return LatLonPoint convert to these lat/lon coordinates
    */
-  public LatLonPoint projToLatLon(ProjectionPoint world,
-                                  LatLonPointImpl result) {
+  public LatLonPoint projToLatLon(ProjectionPoint world, LatLonPointImpl result) {
     double toLat, toLon;
     double fromX = world.getX();
     double fromY = world.getY();
@@ -379,17 +377,14 @@ public class VerticalPerspectiveView extends ProjectionImpl {
     double r = rho / R;
     double con = P - 1.0;
     double com = P + 1.0;
-    double c = Math.asin((P - Math.sqrt(1.0 - (r * r * com) / con))
-            / (con / r + r / con));
+    double c = Math.asin((P - Math.sqrt(1.0 - (r * r * com) / con)) / (con / r + r / con));
 
     toLon = lon0;
     double temp = 0;
     if (Math.abs(rho) > TOLERANCE) {
-      toLat = Math.asin(Math.cos(c) * sinLat0
-              + (fromY * Math.sin(c) * cosLat0 / rho));
-      if (Math.abs(lat0 - PI_OVER_4) > TOLERANCE) {  // not 90 or -90
-        temp = rho * cosLat0 * Math.cos(c)
-                - fromY * sinLat0 * Math.sin(c);
+      toLat = Math.asin(Math.cos(c) * sinLat0 + (fromY * Math.sin(c) * cosLat0 / rho));
+      if (Math.abs(lat0 - PI_OVER_4) > TOLERANCE) { // not 90 or -90
+        temp = rho * cosLat0 * Math.cos(c) - fromY * sinLat0 * Math.sin(c);
         toLon = lon0 + Math.atan(fromX * Math.sin(c) / temp);
       } else if (Double.compare(lat0, PI_OVER_4) == 0) {
         toLon = lon0 + Math.atan(fromX / -fromY);
@@ -416,18 +411,17 @@ public class VerticalPerspectiveView extends ProjectionImpl {
   /**
    * Convert lat/lon coordinates to projection coordinates.
    *
-   * @param from     array of lat/lon coordinates: from[2][n],
-   *                 where from[0][i], from[1][i] is the (lat,lon)
-   *                 coordinate of the ith point
-   * @param to       resulting array of projection coordinates,
-   *                 where to[0][i], to[1][i] is the (x,y) coordinate
-   *                 of the ith point
+   * @param from array of lat/lon coordinates: from[2][n],
+   *        where from[0][i], from[1][i] is the (lat,lon)
+   *        coordinate of the ith point
+   * @param to resulting array of projection coordinates,
+   *        where to[0][i], to[1][i] is the (x,y) coordinate
+   *        of the ith point
    * @param latIndex index of latitude in "from"
    * @param lonIndex index of longitude in "from"
    * @return the "to" array.
    */
-  public float[][] latLonToProj(float[][] from, float[][] to, int latIndex,
-                                int lonIndex) {
+  public float[][] latLonToProj(float[][] from, float[][] to, int latIndex, int lonIndex) {
     int cnt = from[0].length;
     float[] fromLatA = from[latIndex];
     float[] fromLonA = from[lonIndex];
@@ -440,21 +434,15 @@ public class VerticalPerspectiveView extends ProjectionImpl {
       double fromLon = fromLonA[i];
 
       fromLat = Math.toRadians(fromLat);
-      double lonDiff = Math.toRadians(LatLonPointImpl.lonNormal(fromLon
-              - lon0Degrees));
-      double cosc = sinLat0 * Math.sin(fromLat)
-              + cosLat0 * Math.cos(fromLat) * Math.cos(lonDiff);
+      double lonDiff = Math.toRadians(LatLonPointImpl.lonNormal(fromLon - lon0Degrees));
+      double cosc = sinLat0 * Math.sin(fromLat) + cosLat0 * Math.cos(fromLat) * Math.cos(lonDiff);
       double ksp = (P - 1.0) / (P - cosc);
       if (cosc < 1.0 / P) {
         toX = Double.POSITIVE_INFINITY;
         toY = Double.POSITIVE_INFINITY;
       } else {
-        toX = false_east
-                + R * ksp * Math.cos(fromLat) * Math.sin(lonDiff);
-        toY = false_north
-                + R * ksp
-                * (cosLat0 * Math.sin(fromLat)
-                - sinLat0 * Math.cos(fromLat) * Math.cos(lonDiff));
+        toX = false_east + R * ksp * Math.cos(fromLat) * Math.sin(lonDiff);
+        toY = false_north + R * ksp * (cosLat0 * Math.sin(fromLat) - sinLat0 * Math.cos(fromLat) * Math.cos(lonDiff));
       }
 
       resultXA[i] = (float) toX;
@@ -467,11 +455,11 @@ public class VerticalPerspectiveView extends ProjectionImpl {
    * Convert lat/lon coordinates to projection coordinates.
    *
    * @param from array of lat/lon coordinates: from[2][n], where
-   *             (from[0][i], from[1][i]) is the (lat,lon) coordinate
-   *             of the ith point
-   * @param to   resulting array of projection coordinates: to[2][n]
-   *             where (to[0][i], to[1][i]) is the (x,y) coordinate
-   *             of the ith point
+   *        (from[0][i], from[1][i]) is the (lat,lon) coordinate
+   *        of the ith point
+   * @param to resulting array of projection coordinates: to[2][n]
+   *        where (to[0][i], to[1][i]) is the (x,y) coordinate
+   *        of the ith point
    * @return the "to" array
    */
   public float[][] projToLatLon(float[][] from, float[][] to) {
@@ -493,17 +481,14 @@ public class VerticalPerspectiveView extends ProjectionImpl {
       double r = rho / R;
       double con = P - 1.0;
       double com = P + 1.0;
-      double c = Math.asin((P - Math.sqrt(1.0 - (r * r * com) / con))
-              / (con / r + r / con));
+      double c = Math.asin((P - Math.sqrt(1.0 - (r * r * com) / con)) / (con / r + r / con));
 
       toLon = lon0;
       double temp = 0;
       if (Math.abs(rho) > TOLERANCE) {
-        toLat = Math.asin(Math.cos(c) * sinLat0
-                + (fromY * Math.sin(c) * cosLat0 / rho));
-        if (Math.abs(lat0 - PI_OVER_4) > TOLERANCE) {  // not 90 or -90
-          temp = rho * cosLat0 * Math.cos(c)
-                  - fromY * sinLat0 * Math.sin(c);
+        toLat = Math.asin(Math.cos(c) * sinLat0 + (fromY * Math.sin(c) * cosLat0 / rho));
+        if (Math.abs(lat0 - PI_OVER_4) > TOLERANCE) { // not 90 or -90
+          temp = rho * cosLat0 * Math.cos(c) - fromY * sinLat0 * Math.sin(c);
           toLon = lon0 + Math.atan(fromX * Math.sin(c) / temp);
         } else if (Double.compare(lat0, PI_OVER_4) == 0) {
           toLon = lon0 + Math.atan(fromX / -fromY);
@@ -531,18 +516,17 @@ public class VerticalPerspectiveView extends ProjectionImpl {
   /**
    * Convert lat/lon coordinates to projection coordinates.
    *
-   * @param from     array of lat/lon coordinates: from[2][n],
-   *                 where from[0][i], from[1][i] is the (lat,lon)
-   *                 coordinate of the ith point
-   * @param to       resulting array of projection coordinates,
-   *                 where to[0][i], to[1][i] is the (x,y) coordinate
-   *                 of the ith point
+   * @param from array of lat/lon coordinates: from[2][n],
+   *        where from[0][i], from[1][i] is the (lat,lon)
+   *        coordinate of the ith point
+   * @param to resulting array of projection coordinates,
+   *        where to[0][i], to[1][i] is the (x,y) coordinate
+   *        of the ith point
    * @param latIndex index of latitude in "from"
    * @param lonIndex index of longitude in "from"
    * @return the "to" array.
    */
-  public double[][] latLonToProj(double[][] from, double[][] to,
-                                 int latIndex, int lonIndex) {
+  public double[][] latLonToProj(double[][] from, double[][] to, int latIndex, int lonIndex) {
     int cnt = from[0].length;
     double[] fromLatA = from[latIndex];
     double[] fromLonA = from[lonIndex];
@@ -555,21 +539,15 @@ public class VerticalPerspectiveView extends ProjectionImpl {
       double fromLon = fromLonA[i];
 
       fromLat = Math.toRadians(fromLat);
-      double lonDiff = Math.toRadians(LatLonPointImpl.lonNormal(fromLon
-              - lon0Degrees));
-      double cosc = sinLat0 * Math.sin(fromLat)
-              + cosLat0 * Math.cos(fromLat) * Math.cos(lonDiff);
+      double lonDiff = Math.toRadians(LatLonPointImpl.lonNormal(fromLon - lon0Degrees));
+      double cosc = sinLat0 * Math.sin(fromLat) + cosLat0 * Math.cos(fromLat) * Math.cos(lonDiff);
       double ksp = (P - 1.0) / (P - cosc);
       if (cosc < 1.0 / P) {
         toX = Double.POSITIVE_INFINITY;
         toY = Double.POSITIVE_INFINITY;
       } else {
-        toX = false_east
-                + R * ksp * Math.cos(fromLat) * Math.sin(lonDiff);
-        toY = false_north
-                + R * ksp
-                * (cosLat0 * Math.sin(fromLat)
-                - sinLat0 * Math.cos(fromLat) * Math.cos(lonDiff));
+        toX = false_east + R * ksp * Math.cos(fromLat) * Math.sin(lonDiff);
+        toY = false_north + R * ksp * (cosLat0 * Math.sin(fromLat) - sinLat0 * Math.cos(fromLat) * Math.cos(lonDiff));
       }
 
       resultXA[i] = toX;
@@ -582,11 +560,11 @@ public class VerticalPerspectiveView extends ProjectionImpl {
    * Convert lat/lon coordinates to projection coordinates.
    *
    * @param from array of lat/lon coordinates: from[2][n], where
-   *             (from[0][i], from[1][i]) is the (lat,lon) coordinate
-   *             of the ith point
-   * @param to   resulting array of projection coordinates: to[2][n]
-   *             where (to[0][i], to[1][i]) is the (x,y) coordinate
-   *             of the ith point
+   *        (from[0][i], from[1][i]) is the (lat,lon) coordinate
+   *        of the ith point
+   * @param to resulting array of projection coordinates: to[2][n]
+   *        where (to[0][i], to[1][i]) is the (x,y) coordinate
+   *        of the ith point
    * @return the "to" array
    */
   public double[][] projToLatLon(double[][] from, double[][] to) {
@@ -608,17 +586,14 @@ public class VerticalPerspectiveView extends ProjectionImpl {
       double r = rho / R;
       double con = P - 1.0;
       double com = P + 1.0;
-      double c = Math.asin((P - Math.sqrt(1.0 - (r * r * com) / con))
-              / (con / r + r / con));
+      double c = Math.asin((P - Math.sqrt(1.0 - (r * r * com) / con)) / (con / r + r / con));
 
       toLon = lon0;
       double temp = 0;
       if (Math.abs(rho) > TOLERANCE) {
-        toLat = Math.asin(Math.cos(c) * sinLat0
-                + (fromY * Math.sin(c) * cosLat0 / rho));
-        if (Math.abs(lat0 - PI_OVER_4) > TOLERANCE) {  // not 90 or -90
-          temp = rho * cosLat0 * Math.cos(c)
-                  - fromY * sinLat0 * Math.sin(c);
+        toLat = Math.asin(Math.cos(c) * sinLat0 + (fromY * Math.sin(c) * cosLat0 / rho));
+        if (Math.abs(lat0 - PI_OVER_4) > TOLERANCE) { // not 90 or -90
+          temp = rho * cosLat0 * Math.cos(c) - fromY * sinLat0 * Math.sin(c);
           toLon = lon0 + Math.atan(fromX * Math.sin(c) / temp);
         } else if (Double.compare(lat0, PI_OVER_4) == 0) {
           toLon = lon0 + Math.atan(fromX / -fromY);
@@ -643,7 +618,7 @@ public class VerticalPerspectiveView extends ProjectionImpl {
     return to;
   }
 
-  /*ENDGENERATED*/
+  /* ENDGENERATED */
 
   /**
    * Create a ProjectionRect from the given LatLonRect.
@@ -653,82 +628,10 @@ public class VerticalPerspectiveView extends ProjectionImpl {
    * @return ProjectionRect, or null if no part of the LatLonRect intersects the projection plane
    */
   @Override
- public ProjectionRect latLonToProjBB(LatLonRect rect) {
+  public ProjectionRect latLonToProjBB(LatLonRect rect) {
     BoundingBoxHelper bbhelper = new BoundingBoxHelper(this, maxR);
     return bbhelper.latLonToProjBB(rect);
   }
 
-  private static void test(double lat, double lon) {
-    double radius = 6371.0;
-
-    VerticalPerspectiveView a = new VerticalPerspectiveView(0, 0, radius, 5.62 * radius);
-    ProjectionPoint p = a.latLonToProj(lat, lon);
-    System.out.println("-----\nproj point = " + p);
-    System.out.println("x/r = " + p.getX() / radius); // see snyder p 174
-    System.out.println("y/r = " + p.getY() / radius);
-
-    LatLonPoint ll = a.projToLatLon(p);
-    System.out.println(" lat = " + ll.getLatitude() + " should be= " + lat);
-    System.out.println(" lon = " + ll.getLongitude() + " should be= " + lon);
-  }
-
-
-  public static void main(String[] args) {
-    double radius = 6371.0;
-    double height = 35747.0;
-
-    VerticalPerspectiveView a = new VerticalPerspectiveView(0, 0, radius, height);
-
-    double limit = .99 * Math.sqrt((a.P - 1) / (a.P + 1));
-    System.out.println(" limit = " + limit);
-    System.out.println(" limit*90 = " + limit * 90);
-
-    /* whats the min and max lat/lon ?
-    double theta = 0;
-    while (theta <= 360) {
-      double x = limit*radius * Math.cos(Math.toRadians(theta));
-      double y = limit*radius * Math.sin(Math.toRadians(theta));
-      LatLonPointImpl llpt = (LatLonPointImpl) a.projToLatLon( new ProjectionPointImpl(x, y));
-      System.out.println(theta+" = "+llpt.toString());
-      theta += 15;
-    } */
-
-    LatLonRect rect = new LatLonRect(new LatLonPointImpl(-45.0, -45.0), -45.0, -45.0);
-    ProjectionRect r = a.latLonToProjBB(rect);
-    System.out.println(" ProjectionRect result = " + r);
-
-
-    /*  double minx, maxx, miny, maxy;
-
-    // first clip the request rectangle to the bounding box of the grid
-    LatLonRect bb = getLatLonBoundingBox();
-    rect = bb.intersect( rect);
-    if (null == rect)
-      throw new InvalidRangeException("Request Bounding box does not intersect Grid");
-
-    LatLonPointImpl llpt = rect.getLowerLeftPoint();
-    LatLonPointImpl urpt = rect.getUpperRightPoint();
-    LatLonPointImpl lrpt = rect.getLowerRightPoint();
-    LatLonPointImpl ulpt = rect.getUpperLeftPoint();
-
-    if (isLatLon()) {
-      minx = getMinOrMaxLon(llpt.getLongitude(), ulpt.getLongitude(), true);
-      miny = Math.min(llpt.getLatitude(), lrpt.getLatitude());
-      maxx = getMinOrMaxLon(urpt.getLongitude(), lrpt.getLongitude(), false);
-      maxy = Math.min(ulpt.getLatitude(), urpt.getLatitude());
-
-    } else {
-      Projection dataProjection = getProjection();
-      ProjectionPoint ll = dataProjection.latLonToProj(llpt, new ProjectionPointImpl());
-      ProjectionPoint ur = dataProjection.latLonToProj(urpt, new ProjectionPointImpl());
-      ProjectionPoint lr = dataProjection.latLonToProj(lrpt, new ProjectionPointImpl());
-      ProjectionPoint ul = dataProjection.latLonToProj(ulpt, new ProjectionPointImpl());
-
-      minx = Math.min(ll.getX(), ul.getX());
-      miny = Math.min(ll.getY(), lr.getY());
-      maxx = Math.max(ur.getX(), lr.getX());
-      maxy = Math.max(ul.getY(), ur.getY());
-    }  */
-  }
 }
 

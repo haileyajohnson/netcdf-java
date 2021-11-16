@@ -10,7 +10,6 @@ import ucar.nc2.ft.point.standard.TableConfig;
 import ucar.nc2.ft.point.standard.PointConfigXML;
 import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dataset.NetcdfDataset;
-
 import java.util.Formatter;
 import java.io.IOException;
 
@@ -23,7 +22,7 @@ import java.io.IOException;
 public class Suomi extends TableConfigurerImpl {
   public boolean isMine(FeatureType wantFeatureType, NetcdfDataset ds) {
     String center = ds.findAttValueIgnoreCase(null, "Convention", null);
-    return center != null && center.equals("Suomi-Station-CDM");
+    return "Suomi-Station-CDM".equals(center);
   }
 
   public TableConfig getConfig(FeatureType wantFeatureType, NetcdfDataset ds, Formatter errlog) throws IOException {

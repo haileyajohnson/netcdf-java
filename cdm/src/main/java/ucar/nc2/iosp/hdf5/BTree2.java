@@ -5,10 +5,9 @@
 
 package ucar.nc2.iosp.hdf5;
 
-import ucar.nc2.constants.CDM;
+import java.nio.charset.StandardCharsets;
 import ucar.nc2.util.Misc;
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,19 +23,20 @@ import java.util.List;
  * pieces of information: the number of records in the child node itself, and the total number of records in the child
  * node and all its descendents. Storing this additional information allows fast array-like indexing to locate the n'th
  * record in the B-tree.
-
- The entry into a version 2 B-tree is a header which contains global information about the structure of the B-tree.
- The root node address field in the header points to the B-tree root node, which is either an internal or leaf node,
- depending on the value in the header's depth field. An internal node consists of records plus pointers to further leaf
- or internal nodes in the tree. A leaf node consists of solely of records. The format of the records depends on the
- B-tree type (stored in the header).
-
+ * 
+ * The entry into a version 2 B-tree is a header which contains global information about the structure of the B-tree.
+ * The root node address field in the header points to the B-tree root node, which is either an internal or leaf node,
+ * depending on the value in the header's depth field. An internal node consists of records plus pointers to further
+ * leaf
+ * or internal nodes in the tree. A leaf node consists of solely of records. The format of the records depends on the
+ * B-tree type (stored in the header).
  *
+ * 
  * @author caron
  * @since 6/27/12
  */
 public class BTree2 {
-  private boolean debugBtree2 = false, debugPos = false;
+  private boolean debugBtree2, debugPos;
   private java.io.PrintStream debugOut = System.out;
 
   byte btreeType;
@@ -59,7 +59,7 @@ public class BTree2 {
     // header
     byte[] heapname = new byte[4];
     raf.readFully(heapname);
-    String magic = new String(heapname, CDM.utf8Charset);
+    String magic = new String(heapname, StandardCharsets.UTF_8);
     if (!magic.equals("BTHD"))
       throw new IllegalStateException(magic + " should equal BTHD");
 
@@ -76,8 +76,10 @@ public class BTree2 {
     int checksum = raf.readInt();
 
     if (debugBtree2) {
-      debugOut.printf("BTree2 (%s) version=%d type=%d treeDepth=%d nodeSize=%d recordSize=%d numRecordsRootNode=%d totalRecords=%d rootNodeAddress=%d%n",
-              owner, version, btreeType, treeDepth, nodeSize, recordSize, numRecordsRootNode, totalRecords, rootNodeAddress);
+      debugOut.printf(
+          "BTree2 (%s) version=%d type=%d treeDepth=%d nodeSize=%d recordSize=%d numRecordsRootNode=%d totalRecords=%d rootNodeAddress=%d%n",
+          owner, version, btreeType, treeDepth, nodeSize, recordSize, numRecordsRootNode, totalRecords,
+          rootNodeAddress);
     }
 
     if (treeDepth > 0) {
@@ -92,7 +94,8 @@ public class BTree2 {
   BTree2.Record1 getEntry1(int hugeObjectID) {
     for (Entry2 entry : entryList) {
       BTree2.Record1 record1 = (BTree2.Record1) entry.record;
-      if (record1.hugeObjectID == hugeObjectID) return record1;
+      if (record1.hugeObjectID == hugeObjectID)
+        return record1;
     }
     return null;
   }
@@ -111,12 +114,13 @@ public class BTree2 {
       this.depth = depth;
       raf.seek(h5.getFileOffset(address));
 
-      if (debugPos) debugOut.println("--Btree2 InternalNode position=" + raf.getFilePointer());
+      if (debugPos)
+        debugOut.println("--Btree2 InternalNode position=" + raf.getFilePointer());
 
       // header
       byte[] sig = new byte[4];
       raf.readFully(sig);
-      String magic = new String(sig, CDM.utf8Charset);
+      String magic = new String(sig, StandardCharsets.UTF_8);
       if (!magic.equals("BTIN"))
         throw new IllegalStateException(magic + " should equal BTIN");
 
@@ -145,7 +149,8 @@ public class BTree2 {
           e.totNrecords = h5.readVariableSizeUnsigned(2); // readVariableSizeMax(maxNumRecordsPlusDesc);
 
         if (debugBtree2)
-          debugOut.println(" BTree2 entry childAddress=" + e.childAddress + " nrecords=" + e.nrecords + " totNrecords=" + e.totNrecords);
+          debugOut.println(" BTree2 entry childAddress=" + e.childAddress + " nrecords=" + e.nrecords + " totNrecords="
+              + e.totNrecords);
       }
 
       // skip
@@ -174,12 +179,13 @@ public class BTree2 {
     LeafNode(long address, short nrecords) throws IOException {
       raf.seek(h5.getFileOffset(address));
 
-      if (debugPos) debugOut.println("--Btree2 InternalNode position=" + raf.getFilePointer());
+      if (debugPos)
+        debugOut.println("--Btree2 InternalNode position=" + raf.getFilePointer());
 
       // header
       byte[] sig = new byte[4];
       raf.readFully(sig);
-      String magic = new String(sig, CDM.utf8Charset);
+      String magic = new String(sig, StandardCharsets.UTF_8);
       if (!magic.equals("BTLF"))
         throw new IllegalStateException(magic + " should equal BTLF");
 
@@ -221,7 +227,7 @@ public class BTree2 {
       case 6:
         return new Record6();
       case 7: {
-        return new Record70();  // LOOK wrong
+        return new Record70(); // LOOK wrong
       }
       case 8:
         return new Record8();

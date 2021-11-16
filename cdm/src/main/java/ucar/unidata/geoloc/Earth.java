@@ -6,7 +6,6 @@
 package ucar.unidata.geoloc;
 
 import javax.annotation.concurrent.Immutable;
-
 import java.io.Serializable;
 import java.util.Formatter;
 
@@ -19,7 +18,7 @@ import java.util.Formatter;
 public class Earth implements Serializable {
   public static final Earth DEFAULT = new Earth();
 
-  private static final double earthRadius = 6371229.;  // canonical radius of the spherical earth in meters "WGS 84"
+  private static final double earthRadius = 6371229.; // canonical radius of the spherical earth in meters "WGS 84"
 
   /**
    * Get canonical radius of spherical earth, in meters
@@ -63,8 +62,8 @@ public class Earth implements Serializable {
    * Create an ellipsoidal earth.
    * The reciprocalFlattening is used if not zero, else the poleRadius is used.
    *
-   * @param equatorRadius        equatorial radius (semimajor axis) in meters, must be specified
-   * @param poleRadius           polar radius (semiminor axis) in meters
+   * @param equatorRadius equatorial radius (semimajor axis) in meters, must be specified
+   * @param poleRadius polar radius (semiminor axis) in meters
    * @param reciprocalFlattening inverse flattening = 1/flattening = a / (a-b)
    */
   public Earth(double equatorRadius, double poleRadius, double reciprocalFlattening) {
@@ -75,10 +74,10 @@ public class Earth implements Serializable {
   /**
    * Create an ellipsoidal earth with a name.
    *
-   * @param equatorRadius        equatorial radius (semimajor axis) in meters, must be specified
-   * @param poleRadius           polar radius (semiminor axis) in meters; if reciprocalFlattening != 0 then this is ignored
+   * @param equatorRadius equatorial radius (semimajor axis) in meters, must be specified
+   * @param poleRadius polar radius (semiminor axis) in meters; if reciprocalFlattening != 0 then this is ignored
    * @param reciprocalFlattening inverse flattening = 1/flattening = a / (a-b); if 0 use the poleRadius to calculate
-   * @param name                 name of the Earth
+   * @param name name of the Earth
    */
   public Earth(double equatorRadius, double poleRadius, double reciprocalFlattening, String name) {
     this.equatorRadius = equatorRadius;
@@ -98,38 +97,6 @@ public class Earth implements Serializable {
   public boolean isSpherical() {
     return flattening == 0.0;
   }
-
-  /**
-   * Specify earth with equatorial and polar radius.
-   *
-   * @param a semimajor (equatorial) radius, in meters.
-   * @param b semiminor (polar) radius, in meters.
-   *
-   * Earth(double a, double b) {
-   * this.equatorRadius = a;
-   * this.poleRadius = b;
-   * eccentricitySquared = 1.0 - (b * b) / (a * a);
-   * flattening = 1.0 - b / a;
-   * }
-   *
-   *
-   * Specify earth with semimajor radius a, and flattening f.
-   * b = a(1-flattening)
-   *
-   * @param a    semimajor (equatorial) radius, in meters.
-   * @param f    flattening.
-   * @param fake fake
-   *
-   * Earth(double a, double f, boolean fake) {
-   * this.equatorRadius = a;
-   * this.flattening = flattening;
-   * poleRadius = a * (1.0 - flattening);
-   * eccentricitySquared = 1.0 - (poleRadius * poleRadius) / (a * a);
-   * }
-   *
-   * @return _more_
-   */
-
 
   /**
    * Get the equatorial radius (semimajor axis) of the earth, in meters.
@@ -205,16 +172,18 @@ public class Earth implements Serializable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
 
     Earth earth = (Earth) o;
 
-    if (Double.compare(earth.equatorRadius, equatorRadius) != 0) return false;
-    if (Double.compare(earth.poleRadius, poleRadius) != 0) return false;
+    if (Double.compare(earth.equatorRadius, equatorRadius) != 0)
+      return false;
+    return Double.compare(earth.poleRadius, poleRadius) == 0;
     // if (name != null ? !name.equals(earth.name) : earth.name != null) return false;
 
-    return true;
   }
 
   @Override
@@ -232,8 +201,7 @@ public class Earth implements Serializable {
   @Override
   public String toString() {
     Formatter ff = new Formatter();
-    ff.format("equatorRadius=%f inverseFlattening=%f", equatorRadius,
-            (1.0 / flattening));
+    ff.format("equatorRadius=%f inverseFlattening=%f", equatorRadius, (1.0 / flattening));
     return ff.toString();
   }
 

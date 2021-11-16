@@ -22,10 +22,11 @@ dependencies {
     compile libraries["guava"]
     compile libraries["jcommander"]
     compile libraries["httpcore"]
-
     compile libraries["jsr305"]  // Nonnull
+    compile libraries["re2j"]
 
     compile libraries["slf4j-api"]
+    
     testRuntime libraries["logback-classic"]
 
     // These are for Spock.
@@ -34,6 +35,7 @@ dependencies {
 
     testCompile libraries["commons-io"]
     testCompile libraries["mockito"]
+    testCompile libraries["truth"]
 }
 
 jar.manifest.attributes 'Main-Class': 'ucar.nc2.NCdumpW'

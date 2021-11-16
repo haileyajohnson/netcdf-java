@@ -5,6 +5,8 @@
 
 package thredds.inventory.filter;
 
+import com.google.re2j.Matcher;
+import com.google.re2j.Pattern;
 import thredds.inventory.MFileFilter;
 import thredds.inventory.MFile;
 
@@ -15,18 +17,18 @@ import thredds.inventory.MFile;
  * @since Jun 26, 2009
  */
 public class RegExpMatchOnName implements MFileFilter {
-    private String regExpString;
-    private java.util.regex.Pattern pattern;
+  private String regExpString;
+  private Pattern pattern;
 
-    public RegExpMatchOnName(String regExpString) {
-      this.regExpString = regExpString;
-      this.pattern = java.util.regex.Pattern.compile(regExpString);
-    }
+  public RegExpMatchOnName(String regExpString) {
+    this.regExpString = regExpString;
+    this.pattern = Pattern.compile(regExpString);
+  }
 
-    public boolean accept(MFile file) {
-      java.util.regex.Matcher matcher = this.pattern.matcher(file.getName());
-      return matcher.matches();
-    }
+  public boolean accept(MFile file) {
+    Matcher matcher = this.pattern.matcher(file.getName());
+    return matcher.matches();
+  }
 
   @Override
   public String toString() {

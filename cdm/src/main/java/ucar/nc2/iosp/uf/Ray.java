@@ -4,11 +4,10 @@
  */
 package ucar.nc2.iosp.uf;
 
-import ucar.nc2.constants.CDM;
+import java.nio.charset.StandardCharsets;
 import ucar.unidata.io.RandomAccessFile;
 import ucar.ma2.Range;
 import ucar.ma2.IndexIterator;
-
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.io.IOException;
@@ -18,20 +17,20 @@ public class Ray {
   long rayOffset;
   static final int UF_MANDATORY_HEADER2_LEN = 90;
   static final int UF_FIELD_HEADER2_LEN = 50;
-  boolean debug = false;
+  boolean debug;
 
   /**
    * moment identifier
    */
-  long data_msecs = 0;
+  long data_msecs;
 
   UF_mandatory_header2 uf_header2;
   UF_optional_header uf_opt_header;
-  short numberOfFields;   // in this ray
-  short numberOfRecords;  // in this ray
-  short numberOfFieldsInRecord;   // in this record
+  short numberOfFields; // in this ray
+  short numberOfRecords; // in this ray
+  short numberOfFieldsInRecord; // in this record
 
-  Map<String, UF_field_header2> field_header_map;  // key = 2 byte "data type"
+  Map<String, UF_field_header2> field_header_map; // key = 2 byte "data type"
 
   public Ray(ByteBuffer bos, int raySize, long rayOffset) {
     this.raySize = raySize;
@@ -44,8 +43,8 @@ public class Ray {
 
     uf_header2 = new UF_mandatory_header2(data);
 
-    if (uf_header2.offset2StartOfOptionalHeader > 0 &&
-            (uf_header2.dataHeaderPosition != uf_header2.offset2StartOfOptionalHeader)) {
+    if (uf_header2.offset2StartOfOptionalHeader > 0
+        && (uf_header2.dataHeaderPosition != uf_header2.offset2StartOfOptionalHeader)) {
       data = new byte[28];
       bos.get(data);
       uf_opt_header = new UF_optional_header(data);
@@ -63,8 +62,8 @@ public class Ray {
     data = new byte[UF_FIELD_HEADER2_LEN];
     for (int i = 0; i < numberOfFields; i++) {
       bos.get(b2);
-      //int type = getShort(b2, 0);
-      String type = new String(b2, CDM.utf8Charset);
+      // int type = getShort(b2, 0);
+      String type = new String(b2, StandardCharsets.UTF_8);
       bos.get(b2);
       int offs = getShort(b2, 0);
       int position0 = bos.position();
@@ -86,60 +85,91 @@ public class Ray {
   }
 
   public String getDatatypeName(String abbrev) {
-    if (abbrev.equals("ZN") || abbrev.equals("ZS"))
-      return "Reflectivity";
-    else if (abbrev.equals("ZF") || abbrev.equals("ZX") || abbrev.equals("DR"))
-      return "Reflectivity";
-    else if (abbrev.equals("VR") || abbrev.equals("DN") || abbrev.equals("DS") || abbrev.equals("DF") || abbrev.equals("DX"))
-      return "RadialVelocity";
-    else if (abbrev.equals("VN") || abbrev.equals("VF"))
-      return "CorrectedRadialVelocity";
-    else if (abbrev.equals("SW") || abbrev.equals("WS") || abbrev.equals("WF") || abbrev.equals("WX") || abbrev.equals("WN"))
-      return "SpectrumWidth";
-    else if (abbrev.equals("PN") || abbrev.equals("PS") || abbrev.equals("PF") || abbrev.equals("PX"))
-      return "Power";
-    else if (abbrev.equals("MN") || abbrev.equals("MS") || abbrev.equals("MF") || abbrev.equals("MX"))
-      return "Power";
-    else if (abbrev.equals("PH"))
-      return "PhiDP";
-    else if (abbrev.equals("RH"))
-      return "RhoHV";
-    else if (abbrev.equals("LH"))
-      return "LdrH";
-    else if (abbrev.equals("KD"))
-      return "KDP";
-    else if (abbrev.equals("LV"))
-      return "LdrV";
-    else if (abbrev.equals("DR"))
-      return "ZDR";
-    else if (abbrev.equals("CZ"))
-      return "CorrecteddBZ";
-    else if (abbrev.equals("DZ"))
-      return "TotalReflectivity";
-    else if (abbrev.equals("DR"))
-      return "ZDR";
-    else
-      return abbrev;
+    switch (abbrev) {
+      case "ZN":
+      case "ZS":
+      case "ZF":
+      case "ZX":
+        return "Reflectivity";
+      case "VR":
+      case "DN":
+      case "DS":
+      case "DF":
+      case "DX":
+        return "RadialVelocity";
+      case "VN":
+      case "VF":
+        return "CorrectedRadialVelocity";
+      case "SW":
+      case "WS":
+      case "WF":
+      case "WX":
+      case "WN":
+        return "SpectrumWidth";
+      case "PN":
+      case "PS":
+      case "PF":
+      case "PX":
+      case "MN":
+      case "MS":
+      case "MF":
+      case "MX":
+        return "Power";
+      case "PH":
+        return "PhiDP";
+      case "RH":
+        return "RhoHV";
+      case "LH":
+        return "LdrH";
+      case "KD":
+        return "KDP";
+      case "LV":
+        return "LdrV";
+      case "CZ":
+        return "CorrecteddBZ";
+      case "DZ":
+        return "TotalReflectivity";
+      case "DR":
+        return "ZDR";
+      default:
+        return abbrev;
+    }
   }
 
   public String getDatatypeUnits(String abbrev) {
-    if (abbrev.equals("CZ") || abbrev.equals("DZ") || abbrev.equals("ZN") || abbrev.equals("ZS"))
-      return "dBz";
-    else if (abbrev.equals("ZF") || abbrev.equals("ZX"))
-      return "dBz";
-    else if (abbrev.equals("VR") || abbrev.equals("DN") || abbrev.equals("DS") || abbrev.equals("DF") || abbrev.equals("DX"))
-      return "m/s";
-    else if (abbrev.equals("VN") || abbrev.equals("VF"))
-      return "m/s";
-    else if (abbrev.equals("SW") || abbrev.equals("WS") || abbrev.equals("WF") || abbrev.equals("WX") || abbrev.equals("WN"))
-      return "m/s";
-    else if (abbrev.equals("PN") || abbrev.equals("PS") || abbrev.equals("PF") || abbrev.equals("PX"))
-      return "dBM";
-    else if (abbrev.equals("MN") || abbrev.equals("MS") || abbrev.equals("MF") || abbrev.equals("MX"))
-      return "dBM";
-
-    else
-      return abbrev;
+    switch (abbrev) {
+      case "CZ":
+      case "DZ":
+      case "ZN":
+      case "ZS":
+      case "ZF":
+      case "ZX":
+        return "dBz";
+      case "VR":
+      case "DN":
+      case "DS":
+      case "DF":
+      case "DX":
+      case "VN":
+      case "VF":
+      case "SW":
+      case "WS":
+      case "WF":
+      case "WX":
+      case "WN":
+        return "m/s";
+      case "PN":
+      case "PS":
+      case "PF":
+      case "PX":
+      case "MN":
+      case "MS":
+      case "MF":
+      case "MX":
+        return "dBM";
+      default:
+        return abbrev;
+    }
   }
 
   public short getDatatypeRangeFoldingThreshhold(String abbrev) {
@@ -245,49 +275,49 @@ public class Ray {
 
   class UF_mandatory_header2 {
     String textUF;
-    short recordSize;   // in 16-bit words
-    short offset2StartOfOptionalHeader; //, origin 1
+    short recordSize; // in 16-bit words
+    short offset2StartOfOptionalHeader; // , origin 1
     short localUseHeaderPosition;
     short dataHeaderPosition;
     short recordNumber;
-    short volumeNumber;       // on tape, n/a for disk
-    short rayNumber;          // within the volume scan
-    short recordNumber1;      // within ray (origin 1)
-    short sweepNumber;        // within the volume scan
-    String radarName;          // char[8]
-    String siteName;           // char[8]
-    short latitudeD;          // degrees (North positive, South negative)
-    short latitudeM;          // minutes
-    short latitudeS;          // seconds*64
-    short longitudeD;         // degrees (East positive, West negative)
-    short longitudeM;         // Minutes
-    short longitudeS;         // Seconds
-    short height;             // of antenna above sea level in meters
-    short year;               // (time of data acquisition)
+    short volumeNumber; // on tape, n/a for disk
+    short rayNumber; // within the volume scan
+    short recordNumber1; // within ray (origin 1)
+    short sweepNumber; // within the volume scan
+    String radarName; // char[8]
+    String siteName; // char[8]
+    short latitudeD; // degrees (North positive, South negative)
+    short latitudeM; // minutes
+    short latitudeS; // seconds*64
+    short longitudeD; // degrees (East positive, West negative)
+    short longitudeM; // Minutes
+    short longitudeS; // Seconds
+    short height; // of antenna above sea level in meters
+    short year; // (time of data acquisition)
     short month;
     short day;
     short hour;
     short minute;
     short second;
-    String timeZone;            // UT for universal  char[2]
-    short azimuth;            // (degrees*64) of midpoint of sample
-    short elevation;          // (degrees*64)
+    String timeZone; // UT for universal char[2]
+    short azimuth; // (degrees*64) of midpoint of sample
+    short elevation; // (degrees*64)
     short sweepMode;
-    //   0:Cal       1:PPI       2:Coplane 3:RHI
-    //   4:Vertical 5:Target 6:Manual 7:Idle
-    short fixedAngle;         // (degrees*64)
-    short sweepRate;          // ((degrees/second)*64)
-    short year1;              // (generation data of UF format)
+    // 0:Cal 1:PPI 2:Coplane 3:RHI
+    // 4:Vertical 5:Target 6:Manual 7:Idle
+    short fixedAngle; // (degrees*64)
+    short sweepRate; // ((degrees/second)*64)
+    short year1; // (generation data of UF format)
     short month1;
 
     short day1;
-    String nameOfUFGeneratorProgram; //  char[8]
-    short missing;             // Value stored for deleted or missing data (0x8000)
+    String nameOfUFGeneratorProgram; // char[8]
+    short missing; // Value stored for deleted or missing data (0x8000)
 
 
     UF_mandatory_header2(byte[] data) {
       // data is of length 90 bytes
-      textUF = new String(data, 0, 2, CDM.utf8Charset);
+      textUF = new String(data, 0, 2, StandardCharsets.UTF_8);
       if (debug) {
         System.out.println(textUF);
       }
@@ -300,8 +330,8 @@ public class Ray {
       rayNumber = getShort(data, 14);
       recordNumber1 = getShort(data, 16);
       sweepNumber = getShort(data, 18);
-      radarName = new String(data, 20, 8, CDM.utf8Charset).trim();
-      siteName = new String(data, 28, 8, CDM.utf8Charset).trim();
+      radarName = new String(data, 20, 8, StandardCharsets.UTF_8).trim();
+      siteName = new String(data, 28, 8, StandardCharsets.UTF_8).trim();
       latitudeD = getShort(data, 36);
       latitudeM = getShort(data, 38);
       latitudeS = getShort(data, 40);
@@ -316,18 +346,17 @@ public class Ray {
       hour = getShort(data, 56);
       minute = getShort(data, 58);
       second = getShort(data, 60);
-      timeZone = new String(data, 62, 2, CDM.utf8Charset);
+      timeZone = new String(data, 62, 2, StandardCharsets.UTF_8);
       azimuth = getShort(data, 64);
       elevation = getShort(data, 66);
       sweepMode = getShort(data, 68);
-      fixedAngle = getShort(data, 70);         // (degrees*64)
-      sweepRate = getShort(data, 72);          // ((degrees/second)*64)
-      year1 = getShort(data, 74);              // (generation data of UF format)
+      fixedAngle = getShort(data, 70); // (degrees*64)
+      sweepRate = getShort(data, 72); // ((degrees/second)*64)
+      year1 = getShort(data, 74); // (generation data of UF format)
       month1 = getShort(data, 76);
       day1 = getShort(data, 78);
-      nameOfUFGeneratorProgram = new String(data, 80, 8,
-              CDM.utf8Charset); //  char[8]
-      missing = getShort(data, 88);             // Value stored for deleted or missing data (0x8000)
+      nameOfUFGeneratorProgram = new String(data, 80, 8, StandardCharsets.UTF_8); // char[8]
+      missing = getShort(data, 88); // Value stored for deleted or missing data (0x8000)
 
     }
 
@@ -336,23 +365,23 @@ public class Ray {
 
   class UF_optional_header {
 
-    String sProjectName;   //  char[8]
+    String sProjectName; // char[8]
     short iBaselineAzimuth;
     short iBaselineelevation;
-    short iVolumeScanHour;  /* Time of start of current volume scan */
+    short iVolumeScanHour; /* Time of start of current volume scan */
     short iVolumeScanMinute;
     short iVolumeScanSecond;
-    String sFieldTapeName;  // char[8]
+    String sFieldTapeName; // char[8]
     short iFlag;
 
     UF_optional_header(byte[] data) {
-      sProjectName = new String(data, 0, 8, CDM.utf8Charset);
+      sProjectName = new String(data, 0, 8, StandardCharsets.UTF_8);
       iBaselineAzimuth = getShort(data, 8);
       iBaselineelevation = getShort(data, 10);
       iVolumeScanHour = getShort(data, 12);
       iVolumeScanMinute = getShort(data, 14);
       iVolumeScanSecond = getShort(data, 16);
-      sFieldTapeName = new String(data, 18, 8, CDM.utf8Charset);
+      sFieldTapeName = new String(data, 18, 8, StandardCharsets.UTF_8);
       iFlag = getShort(data, 26);
     }
 
@@ -361,26 +390,26 @@ public class Ray {
 
   class UF_field_header2 {
 
-    short dataOffset;   // from start of record, origin 1
-    short scaleFactor;  // met units = file value/scale
-    short startRange;   // km
-    short startRange1;   // meters
-    short binSpacing;  // in meters
+    short dataOffset; // from start of record, origin 1
+    short scaleFactor; // met units = file value/scale
+    short startRange; // km
+    short startRange1; // meters
+    short binSpacing; // in meters
     short binCount;
-    short pulseWidth;  // in meters
+    short pulseWidth; // in meters
     short HorizontalBeamWidth; // in degrees*64
     short verticalBeamWidth; // in degrees*64
     short receiverBandwidth; // in Mhz*64 ?
-    short polarization;  //:          1:horz   2:vert
-    short waveLength;  // in cm*64
+    short polarization; // : 1:horz 2:vert
+    short waveLength; // in cm*64
     short sampleSize;
-    String typeOfData;     //used to threshold  //  char[2]
+    String typeOfData; // used to threshold // char[2]
     short thresholdValue;
     short scale;
-    String editCode; //  char[2]
-    short prt;  // in microseconds
+    String editCode; // char[2]
+    short prt; // in microseconds
     short bits; // per bin, must be 16
-    //         38         12      <uf_fsi2>
+    // 38 12 <uf_fsi2>
 
     UF_field_header2(byte[] data) {
       dataOffset = getShort(data, 0);
@@ -396,10 +425,10 @@ public class Ray {
       polarization = getShort(data, 20);
       waveLength = getShort(data, 22);
       sampleSize = getShort(data, 24);
-      typeOfData = new String(data, 26, 2, CDM.utf8Charset);
+      typeOfData = new String(data, 26, 2, StandardCharsets.UTF_8);
       thresholdValue = getShort(data, 28);
       scale = getShort(data, 30);
-      editCode = new String(data, 32, 2, CDM.utf8Charset);
+      editCode = new String(data, 32, 2, StandardCharsets.UTF_8);
       prt = getShort(data, 34);
       bits = getShort(data, 36);
     }
@@ -438,11 +467,10 @@ public class Ray {
   /**
    * Read data from this ray.
    *
-   * @param raf       read from this file
-   * @param abbrev    which data type we want
+   * @param raf read from this file
+   * @param abbrev which data type we want
    * @param gateRange handles the possible subset of data to return
-   * @param ii        put the data here
-   * @throws java.io.IOException
+   * @param ii put the data here
    */
   public void readData(RandomAccessFile raf, String abbrev, Range gateRange, IndexIterator ii) throws IOException {
     long offset = rayOffset;

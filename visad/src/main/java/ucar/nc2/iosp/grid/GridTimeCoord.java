@@ -6,11 +6,9 @@
 package ucar.nc2.iosp.grid;
 
 import ucar.ma2.*;
-
 import ucar.nc2.*;
 import ucar.nc2.units.DateFormatter;
 import ucar.nc2.units.DateUnit;
-
 import java.util.*;
 
 /**
@@ -19,14 +17,14 @@ import java.util.*;
  * @author caron
  */
 public class GridTimeCoord implements Comparable<GridTimeCoord> {
-  static private org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GridTimeCoord.class);
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GridTimeCoord.class);
 
-  protected int seq = 0; // for getting a unique name
+  protected int seq; // for getting a unique name
   protected String timeUdunit;
   protected int timeUnit;
 
   protected Date baseDate; // earliest base date
-  protected boolean refDateDiffers = false;
+  protected boolean refDateDiffers;
   protected List<Date> times;
   protected List<TimeCoordWithInterval> timeIntvs; // only if interval coord
   protected int constantInterval = -1;
@@ -57,17 +55,18 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
 
       if (record.getTimeUnit() != this.timeUnit) {
         // ignore for now - 4.2 is apparently fixed
-        //throw new IllegalStateException("time units must match");
-        log.warn("time units mismatch {} != {}", record.getTimeUnit(),this.timeUnit);
+        // throw new IllegalStateException("time units must match");
+        log.warn("time units mismatch {} != {}", record.getTimeUnit(), this.timeUnit);
       }
     }
 
-     // non - interval case
+    // non - interval case
     // get list of unique valid times
-    times = new ArrayList<Date>();
+    times = new ArrayList<>();
     for (GridRecord gr : records) {
       Date validTime = gr.getValidTime();
-      if (validTime == null) validTime = gr.getReferenceTime();
+      if (validTime == null)
+        validTime = gr.getReferenceTime();
       if (!times.contains(validTime)) {
         times.add(validTime);
       }
@@ -89,7 +88,7 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
     }
 
     // first create a new list
-    List<Date> timeList = new ArrayList<Date>(records.size());
+    List<Date> timeList = new ArrayList<>(records.size());
     for (GridRecord record : records) {
       Date validTime = record.getValidTime();
       if (validTime == null)
@@ -125,7 +124,7 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
    * Add this as a dimension to a netCDF file
    *
    * @param ncfile the netCDF file
-   * @param g      the group in the file
+   * @param g the group in the file
    */
   void addDimensionsToNetcdfFile(NetcdfFile ncfile, Group g) {
     ncfile.addDimension(g, new Dimension(getName(), getNTimes(), true));
@@ -135,7 +134,7 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
    * Add this as a variable to the netCDF file
    *
    * @param ncfile the netCDF file
-   * @param g      the group in the file
+   * @param g the group in the file
    */
   void addToNetcdfFile(NetcdfFile ncfile, Group g) {
     Variable v = new Variable(ncfile, g, null, getName());
@@ -144,7 +143,7 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
     DateFormatter formatter = new DateFormatter();
     String refDate = formatter.toDateTimeStringISO(baseDate);
     String udunit = timeUdunit + " since " + refDate;
-    DateUnit dateUnit = null;
+    DateUnit dateUnit;
     try {
       dateUnit = new DateUnit(udunit);
     } catch (Exception e) {
@@ -153,14 +152,14 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
     }
 
     // create the data
-    Array coordArray = null;
+    Array coordArray;
     Array boundsArray = null;
     int ntimes = getNTimes();
     coordData = new int[ntimes];
     if (!isInterval()) {
       for (int i = 0; i < times.size(); i++)
         coordData[i] = (int) dateUnit.makeValue(times.get(i)); // LOOK why int ?
-      coordArray = Array.factory(DataType.INT, new int[]{ntimes}, coordData);
+      coordArray = Array.factory(DataType.INT, new int[] {ntimes}, coordData);
 
     } else {
       int[] boundsData = new int[ntimes * 2];
@@ -170,8 +169,8 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
         boundsData[2 * i + 1] = tintv.start + tintv.interval; // end
         boundsData[2 * i] = tintv.start; // start
       }
-      coordArray = Array.factory(DataType.INT, new int[]{ntimes}, coordData);
-      boundsArray = Array.factory(DataType.INT, new int[]{ntimes, 2}, boundsData);
+      coordArray = Array.factory(DataType.INT, new int[] {ntimes}, coordData);
+      boundsArray = Array.factory(DataType.INT, new int[] {ntimes, 2}, boundsData);
     }
 
     v.setDimensions(v.getShortName());
@@ -187,17 +186,18 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
         intervalName.format("(mixed intervals)");
       else
         intervalName.format("(%d %s intervals)", constantInterval, this.timeUdunit);
-      v.addAttribute(new Attribute("long_name", "forecast time for " + intervalName.toString()));
+      v.addAttribute(new Attribute("long_name", "forecast time for " + intervalName));
       v.addAttribute(new Attribute("units", timeUdunit + " since " + refDate));
       v.addAttribute(new Attribute("bounds", getName() + "_bounds"));
 
       // add times bound variable
-      if (g == null) g = ncfile.getRootGroup();
+      if (g == null)
+        g = ncfile.getRootGroup();
       Dimension bd = ucar.nc2.dataset.DatasetConstructor.getBoundsDimension(ncfile);
 
       Variable vb = new Variable(ncfile, g, null, getName() + "_bounds");
       vb.setDataType(DataType.INT);
-      vb.setDimensions(getName() + " "+ bd.getShortName());
+      vb.setDimensions(getName() + " " + bd.getShortName());
       vb.addAttribute(new Attribute("long_name", "bounds for " + getName()));
       vb.addAttribute(new Attribute("units", timeUdunit + " since " + refDate));
 
@@ -259,10 +259,10 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
 
   public String getCoord(int i) {
     if (timeIntvs == null)
-      return coordData[i]+" ";
+      return coordData[i] + " ";
     else {
       TimeCoordWithInterval ti = timeIntvs.get(i);
-      return coordData[i]+"=" + ti.start+"/"+ti.interval;
+      return coordData[i] + "=" + ti.start + "/" + ti.interval;
     }
   }
 
@@ -271,7 +271,7 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
     return o.getNTimes() - getNTimes(); // reverse sort on number of coords
   }
 
-  static protected class TimeCoordWithInterval implements Comparable<TimeCoordWithInterval> {
+  protected static class TimeCoordWithInterval implements Comparable<TimeCoordWithInterval> {
     public Date coord;
     public int start, interval;
 
@@ -284,17 +284,19 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
     @Override
     public int compareTo(TimeCoordWithInterval o) {
       int diff = coord.compareTo(o.coord);
-      return (diff == 0) ? (o.interval - interval) : diff;  // longer intervals first
+      return (diff == 0) ? (o.interval - interval) : diff; // longer intervals first
     }
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o)
+        return true;
+      if (o == null || getClass() != o.getClass())
+        return false;
       TimeCoordWithInterval that = (TimeCoordWithInterval) o;
-      if (interval != that.interval) return false;
-      if (!coord.equals(that.coord)) return false;
-      return true;
+      if (interval != that.interval)
+        return false;
+      return coord.equals(that.coord);
     }
 
     @Override
@@ -306,7 +308,7 @@ public class GridTimeCoord implements Comparable<GridTimeCoord> {
 
     @Override
     public String toString() {
-      return "start=" + start +", interval=" + interval;
+      return "start=" + start + ", interval=" + interval;
     }
   }
 

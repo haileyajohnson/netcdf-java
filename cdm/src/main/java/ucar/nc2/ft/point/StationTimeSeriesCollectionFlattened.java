@@ -5,9 +5,7 @@
 
 package ucar.nc2.ft.point;
 
-import java.io.IOException;
 import javax.annotation.Nonnull;
-
 import ucar.nc2.ft.PointFeatureIterator;
 import ucar.nc2.time.CalendarDateRange;
 
@@ -21,7 +19,7 @@ public class StationTimeSeriesCollectionFlattened extends PointCollectionImpl {
   protected StationTimeSeriesCollectionImpl from;
 
   public StationTimeSeriesCollectionFlattened(StationTimeSeriesCollectionImpl from, CalendarDateRange dateRange) {
-    super( from.getName(), from.getTimeUnit(), from.getAltUnits());
+    super(from.getName(), from.getTimeUnit(), from.getAltUnits());
     this.from = from;
     if (dateRange != null) {
       getInfo();
@@ -31,8 +29,8 @@ public class StationTimeSeriesCollectionFlattened extends PointCollectionImpl {
 
   @Override
   @Nonnull
-  public PointFeatureIterator getPointFeatureIterator() throws IOException {
-    return new PointIteratorFlatten( from.getPointFeatureCollectionIterator(), null, this.getCalendarDateRange());
+  public PointFeatureIterator getPointFeatureIterator() {
+    return new PointIteratorFlatten(from.getPointFeatureCollectionIterator(), null, this.getCalendarDateRange());
   }
 
 }

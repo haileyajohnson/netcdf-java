@@ -9,7 +9,7 @@
  * this software, and any derivative works thereof, and its supporting
  * documentation for any purpose whatsoever, provided that this entire
  * notice appears in all copies of the software, derivative works and
- * supporting documentation.  Further, UCAR requests that the user credit
+ * supporting documentation. Further, UCAR requests that the user credit
  * UCAR/Unidata in any publications that result from the use of this
  * software or in any product that includes this software. The names UCAR
  * and/or Unidata, however, may not be used in any advertising or publicity
@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.grib.GribIndexCache;
 import ucar.nc2.util.DiskCache2;
+import ucar.unidata.util.StringUtil2;
 import ucar.unidata.util.test.category.NeedsCdmUnitTest;
 import ucar.unidata.util.test.TestDir;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 
@@ -58,14 +58,17 @@ import java.lang.invoke.MethodHandles;
 @Category(NeedsCdmUnitTest.class)
 public class TestGribDiskCache {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
+  @Rule
+  public final TemporaryFolder tempFolder = new TemporaryFolder();
 
   @Test
   public void testDiskCache() throws Exception {
     String cacheDirName = tempFolder.newFolder().getAbsolutePath() + "/";
+    cacheDirName = StringUtil2.replace(cacheDirName, '\\', "/"); // no nasty backslash
+
     DiskCache2 cache = new DiskCache2(cacheDirName, false, 0, 0);
     cache.setAlwaysUseCache(true);
-    Assert.assertEquals(cache.getRootDirectory(), cacheDirName);
+    Assert.assertEquals(cacheDirName, cache.getRootDirectory());
     assert new File(cache.getRootDirectory()).exists();
     GribIndexCache.setDiskCache2(cache);
 
@@ -74,8 +77,10 @@ public class TestGribDiskCache {
 
     for (File data : dd.listFiles()) {
       String name = data.getName();
-      if (name.contains(".gbx")) data.delete();
-      if (name.contains(".ncx")) data.delete();
+      if (name.contains(".gbx"))
+        data.delete();
+      if (name.contains(".ncx"))
+        data.delete();
     }
 
     for (File data : dd.listFiles()) {
@@ -89,10 +94,10 @@ public class TestGribDiskCache {
       assert !name.contains(".gbx");
       assert !name.contains(".ncx");
       if (data.getName().endsWith(".grib1") || data.getName().endsWith(".grib2")) {
-        String index = data.getPath()+".ncx4";
+        String index = data.getPath() + ".ncx4";
         File indexFile = cache.getCacheFile(index);
         assert indexFile != null;
-        assert indexFile.exists() : indexFile.getPath() +" does not exist";
+        assert indexFile.exists() : indexFile.getPath() + " does not exist";
       }
     }
   }

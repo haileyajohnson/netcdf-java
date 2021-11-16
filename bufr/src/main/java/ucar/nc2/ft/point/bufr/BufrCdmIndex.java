@@ -5,12 +5,11 @@
 
 package ucar.nc2.ft.point.bufr;
 
-import ucar.nc2.constants.CDM;
+import java.nio.charset.StandardCharsets;
 import ucar.nc2.iosp.bufr.BufrConfig;
 import ucar.nc2.stream.NcStream;
 import ucar.nc2.time.CalendarDate;
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -18,29 +17,31 @@ import java.util.*;
 /**
  * Manage cdm index (ncx) for Bufr files.
  * Covers BufrCdmIndexProto
- * Never completes or in operational use, could redo as needed
+ * Never completed for operational use, could redo as needed
  *
  * @author caron
  * @since 8/14/13
  */
 public class BufrCdmIndex {
-  static private org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BufrCdmIndex.class);
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BufrCdmIndex.class);
 
   public static final String MAGIC_START = "BufrCdmIndex";
   public static final String NCX_IDX = ".ncx";
   private static final int version = 1;
 
-  public static File calcIndexFile(String bufrFilename ) {
+  public static File calcIndexFile(String bufrFilename) {
     File bufrFile = new File(bufrFilename);
     String name = bufrFile.getName();
-    File result =  new File(bufrFile.getParent(), name + BufrCdmIndex.NCX_IDX);
-    if (result.exists()) return result;
+    File result = new File(bufrFile.getParent(), name + BufrCdmIndex.NCX_IDX);
+    if (result.exists())
+      return result;
 
     int pos = name.indexOf('.');
     if (pos > 0) {
       name = name.substring(0, pos);
-      result =  new File(bufrFile.getParent(), name + BufrCdmIndex.NCX_IDX);
-      if (result.exists()) return result;
+      result = new File(bufrFile.getParent(), name + BufrCdmIndex.NCX_IDX);
+      if (result.exists())
+        return result;
     }
 
     return null;
@@ -51,9 +52,9 @@ public class BufrCdmIndex {
   }
 
   public static BufrCdmIndex readIndex(String indexFilename) throws IOException {
-    BufrCdmIndex index =  new BufrCdmIndex();
+    BufrCdmIndex index = new BufrCdmIndex();
     try (RandomAccessFile raf = RandomAccessFile.acquire(indexFilename)) {
-       index.readIndex(raf);
+      index.readIndex(raf);
     }
     return index;
   }
@@ -61,11 +62,11 @@ public class BufrCdmIndex {
   /////////////////////////////////////////////////////////////////////////////////
 
   /*
-   MAGIC_START
-   version
-   sizeIndex
-   BufrCdmIndexProto (sizeIndex bytes)
-  */
+   * MAGIC_START
+   * version
+   * sizeIndex
+   * BufrCdmIndexProto (sizeIndex bytes)
+   */
   private boolean writeIndex2(String bufrFilename, BufrConfig config, File indexFile) throws IOException {
     if (indexFile.exists()) {
       if (!indexFile.delete())
@@ -76,7 +77,7 @@ public class BufrCdmIndex {
     try (RandomAccessFile raf = new RandomAccessFile(indexFile.getPath(), "rw")) {
       raf.order(RandomAccessFile.BIG_ENDIAN);
       //// header message
-      raf.write(MAGIC_START.getBytes(CDM.utf8Charset));
+      raf.write(MAGIC_START.getBytes(StandardCharsets.UTF_8));
       raf.writeInt(version);
 
       // build it
@@ -88,9 +89,9 @@ public class BufrCdmIndex {
       indexBuilder.setEnd(config.getEnd());
       indexBuilder.setNobs(config.getNobs());
 
-      Map<String,BufrConfig.BufrStation> smaps = config.getStationMap();
+      Map<String, BufrConfig.BufrStation> smaps = config.getStationMap();
       if (smaps != null) {
-        List<BufrConfig.BufrStation> stations = new ArrayList<BufrConfig.BufrStation>(smaps.values());
+        List<BufrConfig.BufrStation> stations = new ArrayList<>(smaps.values());
         Collections.sort(stations);
         for (BufrConfig.BufrStation s : stations) {
           indexBuilder.addStations(buildStation(s));
@@ -101,9 +102,9 @@ public class BufrCdmIndex {
       BufrCdmIndexProto.BufrIndex index = indexBuilder.build();
       byte[] b = index.toByteArray();
       NcStream.writeVInt(raf, b.length); // message size
-      raf.write(b);  // message  - all in one gulp
+      raf.write(b); // message - all in one gulp
 
-      log.debug("  file size =  %d bytes", raf.length());
+      log.debug("  file size = {} bytes", raf.length());
       return true;
     }
   }
@@ -118,14 +119,14 @@ public class BufrCdmIndex {
     try (RandomAccessFile raf = new RandomAccessFile(indexFile.getPath(), "rw")) {
       raf.order(RandomAccessFile.BIG_ENDIAN);
       //// header message
-      raf.write(MAGIC_START.getBytes(CDM.utf8Charset));
+      raf.write(MAGIC_START.getBytes(StandardCharsets.UTF_8));
       raf.writeInt(version);
 
       // build it
       BufrCdmIndexProto.BufrIndex.Builder indexBuilder = BufrCdmIndexProto.BufrIndex.newBuilder();
       indexBuilder.setFilename(index.bufrFilename);
       BufrCdmIndexProto.Field rootf = buildField(root);
-      indexBuilder.setRoot( rootf);
+      indexBuilder.setRoot(rootf);
       indexBuilder.setStart(index.start);
       indexBuilder.setEnd(index.end);
       indexBuilder.setNobs(index.nobs);
@@ -140,13 +141,10 @@ public class BufrCdmIndex {
       BufrCdmIndexProto.BufrIndex indexOut = indexBuilder.build();
       byte[] b = indexOut.toByteArray();
       NcStream.writeVInt(raf, b.length); // message size
-      raf.write(b);  // message  - all in one gulp
+      raf.write(b); // message - all in one gulp
       log.debug("  write BufrCdmIndexProto= {} bytes", b.length);
 
-      //System.out.printf("  write BufrCdmIndexProto= %d bytes", b.length);
-      //showProtoRoot(rootf);
-
-      log.debug("  file size =  %d bytes", raf.length());
+      log.debug("  file size = {} bytes", raf.length());
       return true;
     }
   }
@@ -160,7 +158,7 @@ public class BufrCdmIndex {
       builder.setWmoId(s.getWmoId());
     if (s.getDescription() != null)
       builder.setDesc(s.getDescription());
-    builder.setLat( s.getLatitude());
+    builder.setLat(s.getLatitude());
     builder.setLon(s.getLongitude());
     builder.setAlt(s.getAltitude());
 
@@ -190,13 +188,13 @@ public class BufrCdmIndex {
     }
 
     if (fld.getAction() != null && fld.getAction() != BufrCdmIndexProto.FldAction.none)
-      fldBuilder.setAction( fld.getAction());
+      fldBuilder.setAction(fld.getAction());
 
     if (fld.getType() != null)
       fldBuilder.setType(fld.getType());
 
     if (fld.isSeq()) {
-      fldBuilder.setMin( fld.getMin());
+      fldBuilder.setMin(fld.getMin());
       fldBuilder.setMax(fld.getMax());
     }
 
@@ -212,7 +210,7 @@ public class BufrCdmIndex {
   public long start, end;
   public long nobs;
 
-  protected boolean readIndex(RandomAccessFile raf) throws IOException {
+  protected boolean readIndex(RandomAccessFile raf) {
     this.idxFilename = raf.getLocation();
 
     try {
@@ -220,7 +218,7 @@ public class BufrCdmIndex {
       raf.seek(0);
 
       //// header message
-      if (!NcStream.readAndTest(raf, MAGIC_START.getBytes(CDM.utf8Charset))) {
+      if (!NcStream.readAndTest(raf, MAGIC_START.getBytes(StandardCharsets.UTF_8))) {
         log.error("BufrCdmIndex {}: invalid index", raf.getLocation());
         return false;
       }
@@ -241,7 +239,7 @@ public class BufrCdmIndex {
       byte[] m = new byte[size];
       raf.readFully(m);
 
-      BufrCdmIndexProto.BufrIndex proto =  BufrCdmIndexProto.BufrIndex.parseFrom(m);
+      BufrCdmIndexProto.BufrIndex proto = BufrCdmIndexProto.BufrIndex.parseFrom(m);
       bufrFilename = proto.getFilename();
       root = proto.getRoot();
       stations = proto.getStationsList();
@@ -249,7 +247,7 @@ public class BufrCdmIndex {
       end = proto.getEnd();
       nobs = proto.getNobs();
 
-      //showProtoRoot(root);
+      // showProtoRoot(root);
 
     } catch (Throwable t) {
       log.error("Error reading index " + raf.getLocation(), t);
@@ -259,21 +257,13 @@ public class BufrCdmIndex {
     return true;
   }
 
-  static void showProtoRoot(BufrCdmIndexProto.Field fld) {
-    String act = (fld.getAction() != BufrCdmIndexProto.FldAction.defa) ? fld.getAction().toString() : "-";
-    System.out.printf("%10s %s%n", act, fld.getName());
-    for (BufrCdmIndexProto.Field child : fld.getFldsList())
-      showProtoRoot(child);
-
-  }
-
   public void showIndex(Formatter f) {
     f.format("BufrCdmIndex %n");
     f.format("  idxFilename=%s%n", idxFilename);
     f.format("  bufrFilename=%s%n", bufrFilename);
     f.format("  dates=[%s,%s]%n", CalendarDate.of(start), CalendarDate.of(end));
     f.format("  nobs=%s%n", nobs);
-    if (stations != null)  {
+    if (stations != null) {
       f.format("  # stations=%d%n", stations.size());
       int count = 0;
       for (BufrCdmIndexProto.Station s : stations)

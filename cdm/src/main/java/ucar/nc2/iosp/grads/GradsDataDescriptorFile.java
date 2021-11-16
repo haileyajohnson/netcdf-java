@@ -6,12 +6,10 @@
 package ucar.nc2.iosp.grads;
 
 
-import ucar.nc2.constants.CDM;
+import java.nio.charset.StandardCharsets;
 import ucar.unidata.io.KMPMatch;
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -192,17 +190,19 @@ public class GradsDataDescriptorFile {
    */
   public static final int ENS_TIME_TEMPLATE = 3;
 
-  static private final KMPMatch matchDSET = new KMPMatch("DSET".getBytes(CDM.utf8Charset));
-  static private final KMPMatch matchdset = new KMPMatch("dset".getBytes(CDM.utf8Charset));
-  static private final KMPMatch matchENDVARS = new KMPMatch("ENDVARS".getBytes(CDM.utf8Charset));
-  static private final KMPMatch matchendvars = new KMPMatch("endvars".getBytes(CDM.utf8Charset));
+  private static final KMPMatch matchDSET = new KMPMatch("DSET".getBytes(StandardCharsets.UTF_8));
+  private static final KMPMatch matchdset = new KMPMatch("dset".getBytes(StandardCharsets.UTF_8));
+  private static final KMPMatch matchENDVARS = new KMPMatch("ENDVARS".getBytes(StandardCharsets.UTF_8));
+  private static final KMPMatch matchendvars = new KMPMatch("endvars".getBytes(StandardCharsets.UTF_8));
+
   public static boolean failFast(RandomAccessFile raf) throws IOException {
     raf.seek(0);
     boolean ok = raf.searchForward(matchDSET, 1000); // look in first 1K
     if (!ok) {
       raf.seek(0);
       ok = raf.searchForward(matchdset, 1000); // look in first 1K
-      if (!ok) return true;
+      if (!ok)
+        return true;
     }
 
     long pos = raf.getFilePointer();
@@ -231,7 +231,7 @@ public class GradsDataDescriptorFile {
   /**
    * Is this a big endian file?
    */
-  boolean bigEndian = false;
+  boolean bigEndian;
 
   /**
    * missing data value
@@ -241,27 +241,27 @@ public class GradsDataDescriptorFile {
   /**
    * number of xy header bytes
    */
-  private int xyHeaderBytes = 0;
+  private int xyHeaderBytes;
 
   /**
    * number of file header bytes
    */
-  private int fileHeaderBytes = 0;
+  private int fileHeaderBytes;
 
   /**
    * number of time header bytes
    */
-  private int timeHeaderBytes = 0;
+  private int timeHeaderBytes;
 
   /**
    * number of time trilobytes
    */
-  private int timeTrailerBytes = 0;
+  private int timeTrailerBytes;
 
   /**
    * data type
    */
-  private String dataType = null;
+  private String dataType;
 
   /**
    * The list of variables
@@ -306,37 +306,37 @@ public class GradsDataDescriptorFile {
   /**
    * The title
    */
-  private String title = null;
+  private String title;
 
   /**
    * grids per timestep
    */
-  private int gridsPerTimeStep = 0;
+  private int gridsPerTimeStep;
 
   /**
    * timesteps per file
    */
-  private int timeStepsPerFile = 0;
+  private int timeStepsPerFile;
 
   /**
    * is this a template file
    */
-  private boolean isTemplate = false;
+  private boolean isTemplate;
 
   /**
    * type of template
    */
-  private int templateType = 0;
+  private int templateType;
 
   /**
    * is this a sequential file
    */
-  private boolean isSequential = false;
+  private boolean isSequential;
 
   /**
    * is y reversed
    */
-  private boolean yReversed = false;
+  private boolean yReversed;
 
   /**
    * the list of filenames that this ctl points to
@@ -346,17 +346,17 @@ public class GradsDataDescriptorFile {
   /**
    * defines a projection
    */
-  private boolean hasProjection = false;
+  private boolean hasProjection;
 
   /**
    * list of chsub parameters
    */
-  private List<Chsub> chsubs = null;
+  private List<Chsub> chsubs;
 
   /**
    * the path to the ddf
    */
-  private String pathToDDF = null;
+  private String pathToDDF;
 
   /**
    * Create a GradsDataDescriptorFile from the file
@@ -367,7 +367,8 @@ public class GradsDataDescriptorFile {
   public GradsDataDescriptorFile(String filename, int maxLines) throws IOException {
     ddFile = filename;
     parseDDF(maxLines);
-    if (error) return;
+    if (error)
+      return;
     getFileNames();
   }
 
@@ -378,7 +379,7 @@ public class GradsDataDescriptorFile {
    */
   private void parseDDF(int maxLines) throws IOException {
 
-    //long start2 = System.currentTimeMillis();
+    // long start2 = System.currentTimeMillis();
 
     variableList = new ArrayList<>();
     dimList = new ArrayList<>();
@@ -386,7 +387,8 @@ public class GradsDataDescriptorFile {
 
     // LOOK not using raf - opened file again
     int count = 0;
-    try (BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(ddFile), CDM.utf8Charset))) {
+    try (BufferedReader r =
+        new BufferedReader(new InputStreamReader(new FileInputStream(ddFile), StandardCharsets.UTF_8))) {
       boolean inVarSection = false;
       boolean inEnsSection = false;
       String line;
@@ -419,14 +421,14 @@ public class GradsDataDescriptorFile {
         if (inEnsSection) {
           if (line.startsWith(ENDEDEF.toLowerCase())) {
             inEnsSection = false;
-            continue;  // done skipping ensemble definitions
+            continue; // done skipping ensemble definitions
           }
           // parse the ensemble info
         }
         if (inVarSection) {
           if (line.startsWith(ENDVARS.toLowerCase())) {
             inVarSection = false;
-            continue;  // done parsing variables
+            continue; // done parsing variables
           }
           GradsVariable var = new GradsVariable(original);
           int numLevels = var.getNumLevels();
@@ -486,28 +488,28 @@ public class GradsDataDescriptorFile {
             fileHeaderBytes = Integer.parseInt(st.nextToken());
 
           } else if (label.equalsIgnoreCase(XDEF)) {
-            int xSize = Integer.valueOf(st.nextToken());
+            int xSize = Integer.parseInt(st.nextToken());
             String xMapping = st.nextToken();
             xDim = new GradsDimension(label, xSize, xMapping);
             curDim = xDim;
             dimList.add(xDim);
 
           } else if (label.equalsIgnoreCase(YDEF)) {
-            int ySize = Integer.valueOf(st.nextToken());
+            int ySize = Integer.parseInt(st.nextToken());
             String yMapping = st.nextToken();
             yDim = new GradsDimension(label, ySize, yMapping);
             curDim = yDim;
             dimList.add(yDim);
 
           } else if (label.equalsIgnoreCase(ZDEF)) {
-            int zSize = Integer.valueOf(st.nextToken());
+            int zSize = Integer.parseInt(st.nextToken());
             String zMapping = st.nextToken();
             zDim = new GradsDimension(label, zSize, zMapping);
             curDim = zDim;
             dimList.add(zDim);
 
           } else if (label.equalsIgnoreCase(TDEF)) {
-            int tSize = Integer.valueOf(st.nextToken());
+            int tSize = Integer.parseInt(st.nextToken());
             // we can read the following directly
             // since tdef never uses "levels"
             String tMapping = st.nextToken();
@@ -516,7 +518,7 @@ public class GradsDataDescriptorFile {
             dimList.add(tDim);
 
           } else if (label.equalsIgnoreCase(EDEF)) {
-            int eSize = Integer.valueOf(st.nextToken());
+            int eSize = Integer.parseInt(st.nextToken());
             // Check if EDEF entry is the short or extended version
             if (st.nextToken().equalsIgnoreCase(GradsEnsembleDimension.NAMES)) {
               inEnsSection = false;
@@ -558,17 +560,14 @@ public class GradsDataDescriptorFile {
           }
         }
 
-      }  // end parsing loop
-      //System.out.println("Time to parse file = "
-      //                   + (System.currentTimeMillis() - start2));
+      } // end parsing loop
 
       // update the units for the zDimension if they are specified as
       // an attribute
       if (zDim != null) {
         for (GradsAttribute attr : attrList) {
-          if (attr.getVariable().equalsIgnoreCase(ZDEF) &&
-                  attr.getType().equalsIgnoreCase(GradsAttribute.STRING) &&
-                  attr.getName().equalsIgnoreCase("units")) {
+          if (attr.getVariable().equalsIgnoreCase(ZDEF) && attr.getType().equalsIgnoreCase(GradsAttribute.STRING)
+              && attr.getName().equalsIgnoreCase("units")) {
             zDim.setUnit(attr.getValue());
             break;
           }
@@ -587,15 +586,12 @@ public class GradsDataDescriptorFile {
   private void swapByteOrder() {
     // NB: we are setting bigEndian to be opposite the system arch
     String arch = System.getProperty("os.arch");
-    if (arch.equals("x86") ||                    // Windows, Linux
-            arch.equals("arm") ||                // Window CE
-            arch.equals("x86_64") ||         // Windows64, Mac OS-X
-            arch.equals("amd64") ||      // Linux64?
-            arch.equals("alpha")) {  // Utrix, VAX, DECOS
-      bigEndian = true;
-    } else {
-      bigEndian = false;
-    }
+
+    bigEndian = arch.equals("x86") || // Windows, Linux
+        arch.equals("arm") || // Window CE
+        arch.equals("x86_64") || // Windows64, Mac OS-X
+        arch.equals("amd64") || // Linux64?
+        arch.equals("alpha"); // Utrix, VAX, DECOS
   }
 
   /**
@@ -716,11 +712,11 @@ public class GradsDataDescriptorFile {
     if (chsubs != null) {
       for (Chsub ch : chsubs) {
         if (filename.contains(ch.subString)) {
-          return new int[]{ch.numTimes, ch.startTimeIndex};
+          return new int[] {ch.numTimes, ch.startTimeIndex};
         }
       }
     }
-    return new int[]{timeStepsPerFile, 0};
+    return new int[] {timeStepsPerFile, 0};
   }
 
 
@@ -824,7 +820,7 @@ public class GradsDataDescriptorFile {
   }
 
   /**
-   * Get the data type.  Only support raw binary
+   * Get the data type. Only support raw binary
    *
    * @return type or null
    */
@@ -846,10 +842,10 @@ public class GradsDataDescriptorFile {
     buf.append(dataFile);
     buf.append("\n");
     for (GradsDimension dim : dimList) {
-      buf.append(dim.toString());
+      buf.append(dim);
     }
     for (GradsVariable var : variableList) {
-      buf.append(var.toString());
+      buf.append(var);
     }
 
     return buf.toString();
@@ -892,9 +888,9 @@ public class GradsDataDescriptorFile {
     if (fileNames == null) {
       fileNames = new ArrayList<>();
       timeStepsPerFile = tDim.getSize();
-      if (!isTemplate()) {  // single file
+      if (!isTemplate()) { // single file
         fileNames.add(getFullPath(getDataFile()));
-      } else {               // figure out template type
+      } else { // figure out template type
         long start = System.currentTimeMillis();
         List<String> fileSet = new ArrayList<>();
         String template = getDataFile();
@@ -904,7 +900,7 @@ public class GradsDataDescriptorFile {
           } else {
             templateType = TIME_TEMPLATE;
           }
-        } else {  // not time - either ens or chsub
+        } else { // not time - either ens or chsub
           if (template.contains(GradsEnsembleDimension.ENS_TEMPLATE_ID)) {
             templateType = ENS_TEMPLATE;
           } else {
@@ -913,15 +909,10 @@ public class GradsDataDescriptorFile {
         }
         if (templateType == ENS_TEMPLATE) {
           for (int e = 0; e < eDim.getSize(); e++) {
-            fileSet.add(
-                    getFullPath(
-                            eDim.replaceFileTemplate(template, e)));
+            fileSet.add(getFullPath(eDim.replaceFileTemplate(template, e)));
           }
-        } else if ((templateType == TIME_TEMPLATE)
-                || (templateType == ENS_TIME_TEMPLATE)) {
-          int numens = (templateType == TIME_TEMPLATE)
-                  ? 1
-                  : eDim.getSize();
+        } else if ((templateType == TIME_TEMPLATE) || (templateType == ENS_TIME_TEMPLATE)) {
+          int numens = (templateType == TIME_TEMPLATE) ? 1 : eDim.getSize();
           for (int t = 0; t < tDim.getSize(); t++) {
             for (int e = 0; e < numens; e++) {
               String file = getFileName(e, t);
@@ -931,14 +922,11 @@ public class GradsDataDescriptorFile {
             }
           }
           // this'll be a bogus number if chsub was used
-          timeStepsPerFile = tDim.getSize()
-                  / (fileSet.size() / numens);
+          timeStepsPerFile = tDim.getSize() / (fileSet.size() / numens);
         }
-        //System.out.println("Time to generate file list = "
-        //                   + (System.currentTimeMillis() - start));
         fileNames.addAll(fileSet);
       }
-      //long start2 = System.currentTimeMillis();
+      // long start2 = System.currentTimeMillis();
       // now make sure they exist
       for (String file : fileNames) {
         File f = new File(file);
@@ -947,8 +935,6 @@ public class GradsDataDescriptorFile {
           throw new IOException("File: " + f + " does not exist");
         }
       }
-      //System.out.println("Time to check file list = "
-      //                   + (System.currentTimeMillis() - start2));
     }
     return fileNames;
   }
@@ -964,9 +950,7 @@ public class GradsDataDescriptorFile {
       if (lastSlash < 0) {
         lastSlash = ddFile.lastIndexOf(File.separator);
       }
-      pathToDDF = (lastSlash < 0)
-              ? ""
-              : ddFile.substring(0, lastSlash + 1);
+      pathToDDF = (lastSlash < 0) ? "" : ddFile.substring(0, lastSlash + 1);
 
 
     }
@@ -1018,33 +1002,33 @@ public class GradsDataDescriptorFile {
     /**
      * start time index (0 based)
      */
-    protected int startTimeIndex = 0;
+    protected int startTimeIndex;
 
     /**
      * end time index (0 based)
      */
-    protected int endTimeIndex = 0;
+    protected int endTimeIndex;
 
     /**
      * number of times
      */
-    protected int numTimes = 0;
+    protected int numTimes;
 
     /**
      * substitution string
      */
-    protected String subString = null;
+    protected String subString;
 
     /**
      * Create a new Chsub
      *
      * @param start the start index (1 based)
-     * @param end   the start index (1 based)
-     * @param sub   the subsitution string
+     * @param end the start index (1 based)
+     * @param sub the subsitution string
      */
     Chsub(int start, int end, String sub) {
-      startTimeIndex = start - 1;  // zero based
-      endTimeIndex = end - 1;    // zero based
+      startTimeIndex = start - 1; // zero based
+      endTimeIndex = end - 1; // zero based
       numTimes = endTimeIndex - startTimeIndex + 1;
       subString = sub;
     }
@@ -1055,8 +1039,7 @@ public class GradsDataDescriptorFile {
      * @return a String representation of this CHSUB
      */
     public String toString() {
-      return "CHSUB " + startTimeIndex + " " + endTimeIndex + " "
-              + subString;
+      return "CHSUB " + startTimeIndex + " " + endTimeIndex + " " + subString;
     }
   }
 

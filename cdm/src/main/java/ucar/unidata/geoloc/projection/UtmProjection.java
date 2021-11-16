@@ -5,9 +5,7 @@
 package ucar.unidata.geoloc.projection;
 
 import ucar.nc2.constants.CF;
-import ucar.nc2.util.Misc;
 import ucar.unidata.geoloc.*;
-
 import java.io.Serializable;
 
 /**
@@ -48,12 +46,17 @@ public class UtmProjection extends ProjectionImpl {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o)
+        return true;
+      if (o == null || getClass() != o.getClass())
+        return false;
       SaveParams that = (SaveParams) o;
-      if (Double.compare(that.a, a) != 0) return false;
-      if (Double.compare(that.f, f) != 0) return false;
-      if (isNorth != that.isNorth) return false;
+      if (Double.compare(that.a, a) != 0)
+        return false;
+      if (Double.compare(that.f, f) != 0)
+        return false;
+      if (isNorth != that.isNorth)
+        return false;
       return zone == that.zone;
     }
 
@@ -75,7 +78,8 @@ public class UtmProjection extends ProjectionImpl {
 
   @Override
   public ProjectionImpl constructCopy() {
-    ProjectionImpl result = (saveParams == null) ? new UtmProjection(getZone(), isNorth()) : new UtmProjection(saveParams.a, saveParams.f, getZone(), isNorth());
+    ProjectionImpl result = (saveParams == null) ? new UtmProjection(getZone(), isNorth())
+        : new UtmProjection(saveParams.a, saveParams.f, getZone(), isNorth());
     result.setDefaultMapArea(defaultMapArea);
     result.setName(name);
     return result;
@@ -91,14 +95,14 @@ public class UtmProjection extends ProjectionImpl {
   /**
    * Constructor with default WGS 84 ellipsoid.
    *
-   * @param zone    the UTM zone number (1-60)
+   * @param zone the UTM zone number (1-60)
    * @param isNorth true if the UTM coordinate is in the northern hemisphere
    */
   public UtmProjection(int zone, boolean isNorth) {
     super("UtmProjection", false);
     convert2latlon = new Utm_To_Gdc_Converter(zone, isNorth);
     convert2xy = new Gdc_To_Utm_Converter(zone, isNorth);
-    saveParams = new SaveParams(convert2latlon.getA(), 1/convert2latlon.getF(), zone, isNorth);
+    saveParams = new SaveParams(convert2latlon.getA(), 1 / convert2latlon.getF(), zone, isNorth);
 
     addParameter(CF.GRID_MAPPING_NAME, GRID_MAPPING_NAME);
     addParameter(CF.SEMI_MAJOR_AXIS, convert2latlon.getA());
@@ -109,9 +113,9 @@ public class UtmProjection extends ProjectionImpl {
   /**
    * Construct a Universal Transverse Mercator Projection.
    *
-   * @param a       the semi-major axis (meters) for the ellipsoid
-   * @param f       the inverse flattening for the ellipsoid
-   * @param zone    the UTM zone number (1-60)
+   * @param a the semi-major axis (meters) for the ellipsoid
+   * @param f the inverse flattening for the ellipsoid
+   * @param zone the UTM zone number (1-60)
    * @param isNorth true if the UTM coordinate is in the northern hemisphere
    */
   public UtmProjection(double a, double f, int zone, boolean isNorth) {
@@ -155,8 +159,9 @@ public class UtmProjection extends ProjectionImpl {
   }
 
   /*
-   * Getting the central meridian in degrees.  depends on the zone
-   * @return  the central meridian in degrees.
+   * Getting the central meridian in degrees. depends on the zone
+   * 
+   * @return the central meridian in degrees.
    */
   public double getCentralMeridian() {
     return convert2xy.getCentralMeridian();
@@ -184,8 +189,10 @@ public class UtmProjection extends ProjectionImpl {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
     UtmProjection that = (UtmProjection) o;
     return saveParams.equals(that.saveParams);
   }
@@ -199,20 +206,22 @@ public class UtmProjection extends ProjectionImpl {
    * Returns true if this represents the same Projection as proj.
    *
    * @param proj projection in question
+   * 
    * @return true if this represents the same Projection as proj.
    *
-  public boolean equals(Object proj) {
-    if (!(proj instanceof UtmProjection)) {
-      return false;
-    }
-
-    UtmProjection op = (UtmProjection) proj;
-    if ((this.getDefaultMapArea() == null) != (op.defaultMapArea == null)) return false; // common case is that these are null
-    if (this.getDefaultMapArea() != null && !this.defaultMapArea.equals(op.defaultMapArea)) return false;
-
-    return op.getZone() == getZone();
-  }  */
-
+   * public boolean equals(Object proj) {
+   * if (!(proj instanceof UtmProjection)) {
+   * return false;
+   * }
+   * 
+   * UtmProjection op = (UtmProjection) proj;
+   * if ((this.getDefaultMapArea() == null) != (op.defaultMapArea == null)) return false; // common case is that these
+   * are null
+   * if (this.getDefaultMapArea() != null && !this.defaultMapArea.equals(op.defaultMapArea)) return false;
+   * 
+   * return op.getZone() == getZone();
+   * }
+   */
 
 
 
@@ -263,7 +272,7 @@ public class UtmProjection extends ProjectionImpl {
    * Convert projection coordinates to a LatLonPoint
    * Note: a new object is not created on each call for the return value.
    *
-   * @param world  convert from these projection coordinates
+   * @param world convert from these projection coordinates
    * @param result the object to write to
    * @return LatLonPoint convert to these lat/lon coordinates
    */
@@ -275,11 +284,11 @@ public class UtmProjection extends ProjectionImpl {
    * Convert projection coordinates to lat/lon coordinate.
    *
    * @param from array of projection coordinates: from[2][n], where
-   *             (from[0][i], from[1][i]) is the (x, y) coordinate
-   *             of the ith point
-   * @param to   resulting array of lat/lon coordinates: to[2][n] where
-   *             (to[0][i], to[1][i]) is the (lat, lon) coordinate of
-   *             the ith point
+   *        (from[0][i], from[1][i]) is the (x, y) coordinate
+   *        of the ith point
+   * @param to resulting array of lat/lon coordinates: to[2][n] where
+   *        (to[0][i], to[1][i]) is the (lat, lon) coordinate of
+   *        the ith point
    * @return the "to" array
    */
   public float[][] projToLatLon(float[][] from, float[][] to) {
@@ -312,36 +321,6 @@ public class UtmProjection extends ProjectionImpl {
     return convert2latlon.projToLatLon(from, to);
   }
 
-  /*
-  roszelld@usgs.gov
-  'm transforming coordinates (which are in UTM Zone 17N projection) to
-lat/lon.
-
-If I get the ProjectionImpl from the grid (stage) and use the projToLatLon
-function with {{577.8000000000001}, {2951.8}} in kilometers for example, I
-get {{26.553706785076937}, {-80.21754983617633}}, which is not very
-accurate at all when I plot them.
-
-If I use GeoTools to build a transform based on the same projection
-parameters read from the projectionimpl, I get {{26.685132668190793},
-{-80.21802662821469}} which appears to be MUCH more accurate when I plot
-them on a map.
-   */
-  public static void main(String arg[]) {
-    UtmProjection utm = new UtmProjection(17, true);
-    LatLonPoint ll = utm.projToLatLon(577.8000000000001, 2951.8);
-    System.out.printf("%15.12f %15.12f%n", ll.getLatitude(), ll.getLongitude());
-    assert Misc.nearlyEquals(ll.getLongitude(), -80.21802662821469, 1.0e-8);
-    assert Misc.nearlyEquals(ll.getLatitude(), 26.685132668190793, 1.0e-8);
-  }
-
 }
-
-
-
-
-
-
-
 
 

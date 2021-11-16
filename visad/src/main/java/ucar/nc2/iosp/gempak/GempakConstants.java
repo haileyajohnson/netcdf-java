@@ -12,118 +12,118 @@ package ucar.nc2.iosp.gempak;
  */
 public interface GempakConstants {
 
-    // Machine types
+  // Machine types
 
-    /** VAX */
-    public static final int MTVAX = 2;
+  /** VAX */
+  int MTVAX = 2;
 
-    /** Sun (SPARC) */
-    public static final int MTSUN = 3;
+  /** Sun (SPARC) */
+  int MTSUN = 3;
 
-    /** Irix */
-    public static final int MTIRIS = 4;
+  /** Irix */
+  int MTIRIS = 4;
 
-    /** APOL */
-    public static final int MTAPOL = 5;
+  /** APOL */
+  int MTAPOL = 5;
 
-    /** IBM */
-    public static final int MTIBM = 6;
+  /** IBM */
+  int MTIBM = 6;
 
-    /** Intergraph */
-    public static final int MTIGPH = 7;
+  /** Intergraph */
+  int MTIGPH = 7;
 
-    /** Ultrix */
-    public static final int MTULTX = 8;
+  /** Ultrix */
+  int MTULTX = 8;
 
-    /** HP */
-    public static final int MTHP = 9;
+  /** HP */
+  int MTHP = 9;
 
-    /** Alpha */
-    public static final int MTALPH = 10;
+  /** Alpha */
+  int MTALPH = 10;
 
-    /** Linux */
-    public static final int MTLNUX = 11;
+  /** Linux */
+  int MTLNUX = 11;
 
-    /** Integer missing value */
-    public static final int IMISSD = -9999;
+  /** Integer missing value */
+  int IMISSD = -9999;
 
-    /** float missing value */
-    public static final float RMISSD = -9999.f;
+  /** float missing value */
+  float RMISSD = -9999.f;
 
-    /** missing value fuzziness */
-    public static final float RDIFFD = 0.1f;
+  /** missing value fuzziness */
+  float RDIFFD = 0.1f;
 
-    // Data file types
+  // Data file types
 
-    /** Surface file type */
-    public static final int MFSF = 1;
+  /** Surface file type */
+  int MFSF = 1;
 
-    /** Sounding File Type */
-    public static final int MFSN = 2;
+  /** Sounding File Type */
+  int MFSN = 2;
 
-    /** Grid file type */
-    public static final int MFGD = 3;
+  /** Grid file type */
+  int MFGD = 3;
 
-    // Data types
+  // Data types
 
-    /** No packing */
-    public static final int MDREAL = 1;
+  /** No packing */
+  int MDREAL = 1;
 
-    /** Integer packing */
-    public static final int MDINTG = 2;
+  /** Integer packing */
+  int MDINTG = 2;
 
-    /** Character packing */
-    public static final int MDCHAR = 3;
+  /** Character packing */
+  int MDCHAR = 3;
 
-    /** real packing */
-    public static final int MDRPCK = 4;
+  /** real packing */
+  int MDRPCK = 4;
 
-    /** Grid packing */
-    public static final int MDGRID = 5;
+  /** Grid packing */
+  int MDGRID = 5;
 
-    // Grid params
+  // Grid params
 
-    /** Grid nav block length */
-    public static final int LLNNAV = 256;
+  /** Grid nav block length */
+  int LLNNAV = 256;
 
-    /** Grid anl block length */
-    public static final int LLNANL = 128;
+  /** Grid anl block length */
+  int LLNANL = 128;
 
-    /** Max header size */
-    public static final int LLSTHL = 20;
+  /** Max header size */
+  int LLSTHL = 20;
 
-    /** Max grid hdr length */
-    public static final int LLGDHD = 128;
+  /** Max grid hdr length */
+  int LLGDHD = 128;
 
-    // Grid packing types
+  // Grid packing types
 
-    /** no packing */
-    public static final int MDGNON = 0;
+  /** no packing */
+  int MDGNON = 0;
 
-    /** GRIB1 packing */
-    public static final int MDGGRB = 1;
+  /** GRIB1 packing */
+  int MDGGRB = 1;
 
-    /** NMC packing */
-    public static final int MDGNMC = 2;
+  /** NMC packing */
+  int MDGNMC = 2;
 
-    /** DIF packing */
-    public static final int MDGDIF = 3;
+  /** DIF packing */
+  int MDGDIF = 3;
 
-    /** decimal packing? */
-    public static final int MDGDEC = 4;
+  /** decimal packing? */
+  int MDGDEC = 4;
 
-    /** GRIB2 packing */
-    public static final int MDGRB2 = 5;
+  /** GRIB2 packing */
+  int MDGRB2 = 5;
 
-    // DM stuff
+  // DM stuff
 
-    /** row identifier */
-    public static final String ROW = "ROW";
+  /** row identifier */
+  String ROW = "ROW";
 
-    /** column identifier */
-    public static final String COL = "COL";
+  /** column identifier */
+  String COL = "COL";
 
-    /** Block size */
-    public static final int MBLKSZ = 128;
+  /** Block size */
+  int MBLKSZ = 128;
 }
 

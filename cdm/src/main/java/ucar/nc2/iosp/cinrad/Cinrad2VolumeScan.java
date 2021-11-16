@@ -8,12 +8,9 @@ package ucar.nc2.iosp.cinrad;
 import ucar.unidata.io.RandomAccessFile;
 import ucar.nc2.util.CancelTask;
 import ucar.nc2.util.DiskCache;
-import ucar.nc2.NetcdfFile;
 import ucar.nc2.iosp.nexrad2.NexradStationDB;
-
 import java.io.*;
 import java.util.*;
-
 import ucar.unidata.io.bzip2.CBZip2InputStream;
 import ucar.unidata.io.bzip2.BZip2ReadException;
 
@@ -22,7 +19,8 @@ import ucar.unidata.io.bzip2.BZip2ReadException;
  * This class reads a CINRAD level II data file.
  * It can handle NCDC archives (ARCHIVE2), as well as CRAFT/IDD compressed files (AR2V0001).
  * <p/>
- * Adapted with permission from the Java Iras software developed by David Priegnitz at NSSL.<p>
+ * Adapted with permission from the Java Iras software developed by David Priegnitz at NSSL.
+ * <p>
  * <p/>
  * Documentation on Archive Level II data format can be found at:
  * <a href="http://www.ncdc.noaa.gov/oa/radar/leveliidoc.html">
@@ -34,17 +32,17 @@ import ucar.unidata.io.bzip2.BZip2ReadException;
 public class Cinrad2VolumeScan {
 
   // data formats
-  static public final String ARCHIVE2 = "ARCHIVE2";
-  static public final String AR2V0001 = "AR2V0001";
+  public static final String ARCHIVE2 = "ARCHIVE2";
+  public static final String AR2V0001 = "AR2V0001";
 
-  static private org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Cinrad2VolumeScan.class);
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Cinrad2VolumeScan.class);
   ////////////////////////////////////////////////////////////////////////////////////
 
   // Data file
   RandomAccessFile raf;
 
-  private String dataFormat = null; // ARCHIVE2 or AR2V0001
-  private String volumeNo = null;  // volume number (1 to 999)
+  private String dataFormat; // ARCHIVE2 or AR2V0001
+  private String volumeNo; // volume number (1 to 999)
   private int title_julianDay; // days since 1/1/70
   private int title_msecs; // milliseconds since midnight
   private String stationId; // 4 letter station assigned by ICAO
@@ -60,7 +58,8 @@ public class Cinrad2VolumeScan {
   // List of List of Cinrad2Record
   private ArrayList reflectivityGroups, dopplerGroups;
 
-  private boolean showMessages = false, showData = false, debugScans = false, debugGroups2 = false, debugRadials = false;
+  private boolean showMessages = false, showData = false, debugScans = false, debugGroups2 = false,
+      debugRadials = false;
 
   Cinrad2VolumeScan(RandomAccessFile orgRaf, CancelTask cancelTask) throws IOException {
     this.raf = orgRaf;
@@ -70,7 +69,7 @@ public class Cinrad2VolumeScan {
       log.debug("Cinrad2VolumeScan on " + raf.getLocation());
 
     raf.seek(0);
-    raf.order(RandomAccessFile.LITTLE_ENDIAN); //.BIG_ENDIAN);
+    raf.order(RandomAccessFile.LITTLE_ENDIAN); // .BIG_ENDIAN);
     // try to get it from the filename LOOK
     String loc = raf.getLocation();
     stationId = getStationID(loc);
@@ -80,8 +79,9 @@ public class Cinrad2VolumeScan {
     volumeNo = raf.readString(3);
     title_julianDay = raf.readInt(); // since 1/1/70
     title_msecs = raf.readInt();
-    //stationId = raf.readString(4).trim(); // only in AR2V0001
-    if (debug) log.debug(" dataFormat= " + dataFormat + " stationId= " + stationId);
+    // stationId = raf.readString(4).trim(); // only in AR2V0001
+    if (debug)
+      log.debug(" dataFormat= " + dataFormat + " stationId= " + stationId);
 
     if (stationId.length() == 0) {
       // try to get it from the filename LOOK
@@ -94,18 +94,18 @@ public class Cinrad2VolumeScan {
       dataFormat = "CINRAD-SA";
     }
 
-    //   if(station == null) {
-    //        station = new NexradStationDB.Station();
-    //     stationId = "CHGZ";
-    //    station.id = "CHGZ";
-    //    station.name = "CHINA, GuanZhou";
-    //    station.lat = parseDegree("23:0:14");
-    //    station.lon = parseDegree("113:21:18");
-    //   station.elev = Double.parseDouble("180.3");
-    //    dataFormat = "CINRAD-SA";
-    //    }
+    // if(station == null) {
+    // station = new NexradStationDB.Station();
+    // stationId = "CHGZ";
+    // station.id = "CHGZ";
+    // station.name = "CHINA, GuanZhou";
+    // station.lat = parseDegree("23:0:14");
+    // station.lon = parseDegree("113:21:18");
+    // station.elev = Double.parseDouble("180.3");
+    // dataFormat = "CINRAD-SA";
+    // }
 
-    //see if we have to uncompress
+    // see if we have to uncompress
     if (dataFormat.equals(AR2V0001)) {
       raf.skipBytes(4);
       String BZ = raf.readString(2);
@@ -120,11 +120,13 @@ public class Cinrad2VolumeScan {
             uraf = uncompress(raf, uncompressedFile.getPath(), debug);
             uraf.flush();
           } catch (IOException e) {
-            if (uraf != null) uraf.close();
+            if (uraf != null)
+              uraf.close();
             throw e;
           }
 
-          if (debug) log.debug("flushed uncompressed file= " + uncompressedFile.getPath());
+          if (debug)
+            log.debug("flushed uncompressed file= " + uncompressedFile.getPath());
         }
         // switch to uncompressed file
         raf.close();
@@ -135,63 +137,71 @@ public class Cinrad2VolumeScan {
       raf.seek(Cinrad2Record.FILE_HEADER_SIZE);
     }
 
-    ArrayList reflectivity = new ArrayList();
-    ArrayList doppler = new ArrayList();
+    ArrayList<Cinrad2Record> reflectivity = new ArrayList<>();
+    ArrayList<Cinrad2Record> doppler = new ArrayList<>();
 
     int recno = 0;
     int sweepN = 1;
-    int [] recordNum = null;
+    int[] recordNum = null;
     int sums = 0;
     while (true) {
 
       Cinrad2Record r = Cinrad2Record.factory(raf, recno++);
-      if (r == null) break;
+      if (r == null)
+        break;
 
       // skip non-data messages
       if (r.message_type != 1) {
-        if (showMessages) r.dumpMessage(System.out, null);
+        if (showMessages)
+          r.dumpMessage(System.out, null);
         continue;
       }
 
-      if(recno == 1 && Cinrad2IOServiceProvider.isCC20){
+      if (recno == 1 && Cinrad2IOServiceProvider.isCC20) {
         sweepN = r.sweepN;
         recordNum = r.recordNum;
-        //sums = Arrays.stream(recordNum).sum();
-        for (int i = 0; i < recordNum.length; i++) {
-          sums = sums + recordNum[i];
+        // sums = Arrays.stream(recordNum).sum();
+        for (int value : recordNum) {
+          sums = sums + value;
         }
       }
-      if (showData) r.dump2(System.out);
+      if (showData)
+        r.dump2(System.out);
 
-      /* skip bad
-      if (!r.checkOk()) {
-        r.dump(System.out);
-        continue;
-      } */
+      /*
+       * skip bad
+       * if (!r.checkOk()) {
+       * r.dump(System.out);
+       * continue;
+       * }
+       */
 
       // some global params
-      if (vcp == 0) vcp = r.vcp;
-      if (first == null) first = r;
+      if (vcp == 0)
+        vcp = r.vcp;
+      if (first == null)
+        first = r;
       last = r;
 
       if (!r.checkOk()) {
         continue;
       }
-      if(Cinrad2IOServiceProvider.isCC20 && recno > sums)
+      if (Cinrad2IOServiceProvider.isCC20 && recno > sums)
         continue;
       if (r.hasReflectData)
         reflectivity.add(r);
       if (r.hasDopplerData)
         doppler.add(r);
 
-      if ((cancelTask != null) && cancelTask.isCancel()) return;
+      if ((cancelTask != null) && cancelTask.isCancel())
+        return;
     }
 
-    if(Cinrad2IOServiceProvider.isCC20){
+    if (Cinrad2IOServiceProvider.isCC20) {
       Iterator itr = reflectivity.iterator();
-      for(int i = 0; i< sweepN; i++){
-        for(int j = 0; j < recordNum[i]; j++){
-          if(itr.hasNext()) {
+      for (int i = 0; i < sweepN; i++) {
+        for (int j = 0; j < recordNum[i]; j++) {
+          if (itr.hasNext()) {
             Cinrad2Record r = (Cinrad2Record) itr.next();
             r.radial_num = (short) (j + 1);
             r.elevation_num = (short) (i);
@@ -200,7 +210,8 @@ public class Cinrad2VolumeScan {
       }
 
     }
-    if (debugRadials) System.out.println(" reflect ok= " + reflectivity.size() + " doppler ok= " + doppler.size());
+    if (debugRadials)
+      System.out.println(" reflect ok= " + reflectivity.size() + " doppler ok= " + doppler.size());
 
     reflectivityGroups = sortScans("reflect", reflectivity);
     dopplerGroups = sortScans("doppler", doppler);
@@ -210,7 +221,8 @@ public class Cinrad2VolumeScan {
     String stationID;
     // posFirst: last '/' if it exists
     int posFirst = location.lastIndexOf('/') + 1;
-    if (posFirst < 0) posFirst = 0;
+    if (posFirst < 0)
+      posFirst = 0;
     stationID = location.substring(posFirst, posFirst + 4);
     return stationID;
   }
@@ -239,9 +251,9 @@ public class Cinrad2VolumeScan {
 
     // now group by elevation_num
     HashMap groupHash = new HashMap(600);
-    for (int i = 0; i < scans.size(); i++) {
-      Cinrad2Record record = (Cinrad2Record) scans.get(i);
-      Integer groupNo = new Integer(record.elevation_num);
+    for (Object scan : scans) {
+      Cinrad2Record record = (Cinrad2Record) scan;
+      Integer groupNo = (int) record.elevation_num;
 
       ArrayList group = (ArrayList) groupHash.get(groupNo);
       if (null == group) {
@@ -254,31 +266,33 @@ public class Cinrad2VolumeScan {
 
     // sort the groups by elevation_num
     ArrayList groups = new ArrayList(groupHash.values());
-    Collections.sort(groups, new GroupComparator());
+    groups.sort(new GroupComparator());
 
     // use the maximum radials
-    for (int i = 0; i < groups.size(); i++) {
-      ArrayList group = (ArrayList) groups.get(i);
+    for (Object value : groups) {
+      ArrayList group = (ArrayList) value;
       max_radials = Math.max(max_radials, group.size());
       min_radials = Math.min(min_radials, group.size());
       testScan(name, group);
     }
     if (debugRadials) {
       System.out.println(name + " min_radials= " + min_radials + " max_radials= " + max_radials);
-      for (int i = 0; i < groups.size(); i++) {
-        ArrayList group = (ArrayList) groups.get(i);
+      for (Object o : groups) {
+        ArrayList group = (ArrayList) o;
         Cinrad2Record lastr = (Cinrad2Record) group.get(0);
         for (int j = 1; j < group.size(); j++) {
           Cinrad2Record r = (Cinrad2Record) group.get(j);
-          if (r.data_msecs < lastr.data_msecs)
+          if (r.data_msecs < lastr.data_msecs) {
             System.out.println(" out of order " + j);
+          }
           lastr = r;
         }
       }
     }
 
     testVariable(name, groups);
-    if (debugScans) System.out.println("-----------------------------");
+    if (debugScans)
+      System.out.println("-----------------------------");
 
     return groups;
   }
@@ -303,7 +317,7 @@ public class Cinrad2VolumeScan {
 
 
   private boolean testScan(String name, ArrayList group) {
-    int MAX_RADIAL = max_radials +1;
+    int MAX_RADIAL = max_radials + 1;
     int[] radial = new int[MAX_RADIAL];
     int datatype = name.equals("reflect") ? Cinrad2Record.REFLECTIVITY : Cinrad2Record.VELOCITY_HI;
     Cinrad2Record first = (Cinrad2Record) group.get(0);
@@ -311,7 +325,8 @@ public class Cinrad2VolumeScan {
     int n = group.size();
     if (debugScans) {
       boolean hasBoth = first.hasDopplerData && first.hasReflectData;
-      System.out.println(name + " " + first + " has " + n + " radials resolution= " + first.resolution + " has both = " + hasBoth);
+      System.out.println(
+          name + " " + first + " has " + n + " radials resolution= " + first.resolution + " has both = " + hasBoth);
     }
 
     boolean ok = true;
@@ -321,22 +336,26 @@ public class Cinrad2VolumeScan {
     for (int i = 0; i < MAX_RADIAL; i++)
       radial[i] = 0;
 
-    for (int i = 0; i < group.size(); i++) {
-      Cinrad2Record r = (Cinrad2Record) group.get(i);
+    for (Object o : group) {
+      Cinrad2Record r = (Cinrad2Record) o;
 
-      /* this appears to be common - seems to be ok, we put missing values in 
-      if (r.getGateCount(datatype) != first.getGateCount(datatype)) {
-        log.error(raf.getLocation()+" different number of gates ("+r.getGateCount(datatype)+
-                "!="+first.getGateCount(datatype)+") in record "+name+ " "+r);
-        ok = false;
-      } */
+      /*
+       * this appears to be common - seems to be ok, we put missing values in
+       * if (r.getGateCount(datatype) != first.getGateCount(datatype)) {
+       * log.error(raf.getLocation()+" different number of gates ("+r.getGateCount(datatype)+
+       * "!="+first.getGateCount(datatype)+") in record "+name+ " "+r);
+       * ok = false;
+       * }
+       */
 
       if (r.getGateSize(datatype) != first.getGateSize(datatype)) {
-        log.warn(raf.getLocation() + " different gate size (" + r.getGateSize(datatype) + ") in record " + name + " " + r);
+        log.warn(
+            raf.getLocation() + " different gate size (" + r.getGateSize(datatype) + ") in record " + name + " " + r);
         ok = false;
       }
       if (r.getGateStart(datatype) != first.getGateStart(datatype)) {
-        log.warn(raf.getLocation() + " different gate start (" + r.getGateStart(datatype) + ") in record " + name + " " + r);
+        log.warn(
+            raf.getLocation() + " different gate start (" + r.getGateStart(datatype) + ") in record " + name + " " + r);
         ok = false;
       }
       if (r.resolution != first.resolution) {
@@ -356,7 +375,7 @@ public class Cinrad2VolumeScan {
 
       sum += r.getElevation();
       sum2 += r.getElevation() * r.getElevation();
-      // System.out.println("  elev="+r.getElevation()+" azi="+r.getAzimuth());
+      // System.out.println(" elev="+r.getElevation()+" azi="+r.getAzimuth());
     }
 
     for (int i = 1; i < radial.length; i++) {
@@ -390,31 +409,34 @@ public class Cinrad2VolumeScan {
     dopplarResolution = firstRecord.resolution;
 
     if (debugGroups2)
-      System.out.println("Group " + Cinrad2Record.getDatatypeName(datatype) + " ngates = " + firstRecord.getGateCount(datatype) +
-              " start = " + firstRecord.getGateStart(datatype) + " size = " + firstRecord.getGateSize(datatype));
+      System.out.println(
+          "Group " + Cinrad2Record.getDatatypeName(datatype) + " ngates = " + firstRecord.getGateCount(datatype)
+              + " start = " + firstRecord.getGateStart(datatype) + " size = " + firstRecord.getGateSize(datatype));
 
     for (int i = 1; i < scans.size(); i++) {
       List scan = (List) scans.get(i);
       Cinrad2Record record = (Cinrad2Record) scan.get(0);
 
-      if ((datatype == Cinrad2Record.VELOCITY_HI) && (record.resolution != firstRecord.resolution)) { // do all velocity resolutions match ??
-        log.warn(name + " scan " + i + " diff resolutions = " + record.resolution + ", " + firstRecord.resolution +
-                " elev= " + record.elevation_num + " " + record.getElevation());
+      if ((datatype == Cinrad2Record.VELOCITY_HI) && (record.resolution != firstRecord.resolution)) { // do all velocity
+                                                                                                      // resolutions
+                                                                                                      // match ??
+        log.warn(name + " scan " + i + " diff resolutions = " + record.resolution + ", " + firstRecord.resolution
+            + " elev= " + record.elevation_num + " " + record.getElevation());
         ok = false;
         hasDifferentDopplarResolutions = true;
       }
 
       if (record.getGateSize(datatype) != firstRecord.getGateSize(datatype)) {
-        log.warn(name + " scan " + i + " diff gates size = " + record.getGateSize(datatype) + " " + firstRecord.getGateSize(datatype) +
-                " elev= " + record.elevation_num + " " + record.getElevation());
+        log.warn(name + " scan " + i + " diff gates size = " + record.getGateSize(datatype) + " "
+            + firstRecord.getGateSize(datatype) + " elev= " + record.elevation_num + " " + record.getElevation());
         ok = false;
 
       } else if (debugGroups2)
         System.out.println(" ok gates size elev= " + record.elevation_num + " " + record.getElevation());
 
       if (record.getGateStart(datatype) != firstRecord.getGateStart(datatype)) {
-        log.warn(name + " scan " + i + " diff gates start = " + record.getGateStart(datatype) + " " + firstRecord.getGateStart(datatype) +
-                " elev= " + record.elevation_num + " " + record.getElevation());
+        log.warn(name + " scan " + i + " diff gates start = " + record.getGateStart(datatype) + " "
+            + firstRecord.getGateStart(datatype) + " elev= " + record.elevation_num + " " + record.getElevation());
         ok = false;
 
       } else if (debugGroups2)
@@ -452,9 +474,9 @@ public class Cinrad2VolumeScan {
       Cinrad2Record record1 = (Cinrad2Record) group1.get(0);
       Cinrad2Record record2 = (Cinrad2Record) group2.get(0);
 
-      //if (record1.elevation_num != record2.elevation_num)
+      // if (record1.elevation_num != record2.elevation_num)
       return record1.elevation_num - record2.elevation_num;
-      //return record1.cut - record2.cut;
+      // return record1.cut - record2.cut;
     }
   }
 
@@ -477,7 +499,7 @@ public class Cinrad2VolumeScan {
   /**
    * Get the starting time in seconds since midnight.
    *
-   * @return Generation time of data in milliseconds of day past  midnight (UTC).
+   * @return Generation time of data in milliseconds of day past midnight (UTC).
    */
   public int getTitleMsecs() {
     return title_msecs;
@@ -530,18 +552,16 @@ public class Cinrad2VolumeScan {
   /**
    * Write equivilent uncompressed version of the file.
    *
-   * @param raf2      file to uncompress
+   * @param raf2 file to uncompress
    * @param ufilename write to this file
    * @return raf of uncompressed file
-   * @throws IOException
    */
   private RandomAccessFile uncompress(RandomAccessFile raf2, String ufilename, boolean debug) throws IOException {
     raf2.seek(0);
     byte[] header = new byte[Cinrad2Record.FILE_HEADER_SIZE];
     int bytesRead = raf2.read(header);
     if (bytesRead != header.length) {
-      throw new IOException("Error reading CINRAD header -- got " +
-              bytesRead + " rather than" + header.length);
+      throw new IOException("Error reading CINRAD header -- got " + bytesRead + " rather than" + header.length);
     }
     RandomAccessFile dout2 = new RandomAccessFile(ufilename, "rw");
 
@@ -557,25 +577,29 @@ public class Cinrad2VolumeScan {
         try {
           numCompBytes = raf2.readInt();
           if (numCompBytes == -1) {
-            if (debug) log.debug("  done: numCompBytes=-1 ");
+            if (debug)
+              log.debug("  done: numCompBytes=-1 ");
             break;
           }
         } catch (EOFException ee) {
-          if (debug) log.debug("  got EOFException ");
+          if (debug)
+            log.debug("  got EOFException ");
           break; // assume this is ok
         }
 
         if (debug) {
-          log.debug("reading compressed bytes " + numCompBytes + " input starts at " + raf2.getFilePointer() + "; output starts at " + dout2.getFilePointer());
+          log.debug("reading compressed bytes " + numCompBytes + " input starts at " + raf2.getFilePointer()
+              + "; output starts at " + dout2.getFilePointer());
         }
         /*
-        * For some stupid reason, the last block seems to
-        * have the number of bytes negated.  So, we just
-        * assume that any negative number (other than -1)
-        * is the last block and go on our merry little way.
-        */
+         * For some stupid reason, the last block seems to
+         * have the number of bytes negated. So, we just
+         * assume that any negative number (other than -1)
+         * is the last block and go on our merry little way.
+         */
         if (numCompBytes < 0) {
-          if (debug) log.debug("last block?" + numCompBytes);
+          if (debug)
+            log.debug("last block?" + numCompBytes);
           numCompBytes = -numCompBytes;
           eof = true;
         }
@@ -583,16 +607,16 @@ public class Cinrad2VolumeScan {
         raf2.readFully(buf);
         ByteArrayInputStream bis = new ByteArrayInputStream(buf, 2, numCompBytes - 2);
 
-        //CBZip2InputStream cbzip2 = new CBZip2InputStream(bis);
+        // CBZip2InputStream cbzip2 = new CBZip2InputStream(bis);
         cbzip2.setStream(bis);
         int total = 0;
         int nread;
         /*
-        while ((nread = cbzip2.read(ubuff)) != -1) {
-          dout2.write(ubuff, 0, nread);
-          total += nread;
-        }
-        */
+         * while ((nread = cbzip2.read(ubuff)) != -1) {
+         * dout2.write(ubuff, 0, nread);
+         * total += nread;
+         * }
+         */
         try {
           while ((nread = cbzip2.read(ubuff)) != -1) {
             if (total + nread > obuff.length) {
@@ -603,13 +627,15 @@ public class Cinrad2VolumeScan {
             System.arraycopy(ubuff, 0, obuff, total, nread);
             total += nread;
           }
-          if (obuff.length >= 0) dout2.write(obuff, 0, total);
+          if (obuff.length >= 0)
+            dout2.write(obuff, 0, total);
         } catch (BZip2ReadException ioe) {
           log.debug("Cinrad2IOSP.uncompress ", ioe);
         }
         float nrecords = (float) (total / 2432.0);
         if (debug)
-          log.debug("  unpacked " + total + " num bytes " + nrecords + " records; ouput ends at " + dout2.getFilePointer());
+          log.debug(
+              "  unpacked " + total + " num bytes " + nrecords + " records; ouput ends at " + dout2.getFilePointer());
       }
       dout2.flush();
     } catch (EOFException e) {
@@ -625,16 +651,15 @@ public class Cinrad2VolumeScan {
   // check if compressed file seems ok
   // LOOK While the IOSP seems to read files fine, this function seems terribly
   // broken on the data in our cdmUnitTests/formats/cinrad directory.
-  static public long testValid(String ufilename) throws IOException {
+  public static long testValid(String ufilename) throws IOException {
     boolean lookForHeader = false;
 
     // gotta make it
     try (RandomAccessFile raf = new RandomAccessFile(ufilename, "r")) {
-      raf.order(RandomAccessFile.LITTLE_ENDIAN); //.BIG_ENDIAN);
+      raf.order(RandomAccessFile.LITTLE_ENDIAN); // .BIG_ENDIAN);
       raf.seek(0);
       String test = raf.readString(8);
-      if (test.equals(Cinrad2VolumeScan.ARCHIVE2) || test.equals
-              (Cinrad2VolumeScan.AR2V0001)) {
+      if (test.equals(Cinrad2VolumeScan.ARCHIVE2) || test.equals(Cinrad2VolumeScan.AR2V0001)) {
         System.out.println("--Good header= " + test);
         raf.seek(24);
       } else {
@@ -674,7 +699,8 @@ public class Cinrad2VolumeScan {
         if (numCompBytes < 0) {
           System.out.println("\n--last block " + numCompBytes);
           numCompBytes = -numCompBytes;
-          if (!lookForHeader) eof = true;
+          if (!lookForHeader)
+            eof = true;
         }
 
         raf.skipBytes(numCompBytes);

@@ -12,7 +12,6 @@ import ucar.nc2.util.CancelTask;
 import ucar.nc2.ncml.NcMLReader;
 import ucar.nc2.dataset.conv.*;
 import ucar.ma2.DataType;
-
 import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 import java.io.IOException;
@@ -27,61 +26,62 @@ import java.util.*;
  * <p>
  * <p>
  * Subclasses Info:
+ * 
  * <pre>
  * // identify which variables are coordinate axes
  * // default: 1) coordinate variables 2) variables with _coordinateAxisType attribute 3) variables listed
  * // in a coordinates attribute on another variable.
- * findCoordinateAxes( ncDataset);
+ * findCoordinateAxes(ncDataset);
  *
  * // identify which variables are used to describe coordinate system
- * findCoordinateSystems( ncDataset);
+ * findCoordinateSystems(ncDataset);
  * // identify which variables are used to describe coordinate transforms
- * findCoordinateTransforms( ncDataset);
+ * findCoordinateTransforms(ncDataset);
  * // turn Variables into CoordinateAxis objects
- * makeCoordinateAxes( ncDataset);
+ * makeCoordinateAxes(ncDataset);
  * // make Coordinate Systems for all Coordinate Systems Variables
- * makeCoordinateSystems( ncDataset);
+ * makeCoordinateSystems(ncDataset);
  *
  * // Assign explicit CoordinateSystem objects to variables
- * assignExplicitCoordinateSystems( ncDataset);
- * makeCoordinateSystemsImplicit( ncDataset);
+ * assignExplicitCoordinateSystems(ncDataset);
+ * makeCoordinateSystemsImplicit(ncDataset);
  * if (useMaximalCoordSys)
- * makeCoordinateSystemsMaximal( ncDataset);
+ *   makeCoordinateSystemsMaximal(ncDataset);
  *
- * makeCoordinateTransforms( ncDataset);
- * assignCoordinateTransforms( ncDataset);
+ * makeCoordinateTransforms(ncDataset);
+ * assignCoordinateTransforms(ncDataset);
  * </pre>
  *
  * @author caron
  */
 
 /*
-  Implementation notes:
-
-  Generally, subclasses should add the _Coordinate conventions, see
-    http://www.unidata.ucar.edu/software/netcdf-java/CoordinateAttributes.html
-  Then let this class do the rest of the work.
-
-  How to add Coordinate Transforms:
-    A.
-    1) create a dummy Variable called the Coordinate Transform Variable.
-      This Coordinate Transform variable always has a name that identifies the transform,
-      and any attributes needed for the transformation.
-    2) explicitly point to it by adding a _CoordinateTransform attribute to a Coordinate System Variable
-       _CoordinateTransforms = "LambertProjection HybridSigmaVerticalTransform"
-
-    B. You could explicitly add it by overriding assignCoordinateTransforms()
+ * Implementation notes:
+ * 
+ * Generally, subclasses should add the _Coordinate conventions, see
+ * http://www.unidata.ucar.edu/software/netcdf-java/CoordinateAttributes.html
+ * Then let this class do the rest of the work.
+ * 
+ * How to add Coordinate Transforms:
+ * A.
+ * 1) create a dummy Variable called the Coordinate Transform Variable.
+ * This Coordinate Transform variable always has a name that identifies the transform,
+ * and any attributes needed for the transformation.
+ * 2) explicitly point to it by adding a _CoordinateTransform attribute to a Coordinate System Variable
+ * _CoordinateTransforms = "LambertProjection HybridSigmaVerticalTransform"
+ * 
+ * B. You could explicitly add it by overriding assignCoordinateTransforms()
  */
 
 
 public class CoordSysBuilder implements CoordSysBuilderIF {
-  static public final String resourcesDir = "resources/nj22/coords/"; // resource path
-  static protected org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CoordSysBuilder.class);
+  public static final String resourcesDir = "resources/nj22/coords/"; // resource path
+  protected static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CoordSysBuilder.class);
 
-  static private List<Convention> conventionList = new ArrayList<>();
-  static private Map<String, String> ncmlHash = new HashMap<>();
-  static private boolean useMaximalCoordSys = true;
-  static private boolean userMode = false;
+  private static List<Convention> conventionList = new ArrayList<>();
+  private static Map<String, String> ncmlHash = new HashMap<>();
+  private static boolean useMaximalCoordSys = true;
+  private static boolean userMode;
 
   /**
    * Allow plug-ins to determine if it owns a file based on the file's Convention attribute.
@@ -103,10 +103,12 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
     // ours
     registerConvention(_Coordinate.Convention, CoordSysBuilder.class, null);
     registerConvention("CF-1.", CF1Convention.class, (convName, wantName) -> {
-      if (convName.startsWith(wantName)) return true;
+      if (convName.startsWith(wantName))
+        return true;
       List<String> names = breakupConventionNames(convName);
       for (String name : names)
-        if (name.startsWith(wantName)) return true;
+        if (name.startsWith(wantName))
+          return true;
       return false;
     });
     registerConvention("CDM-Extended-CF", CF1Convention.class);
@@ -128,7 +130,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
     registerConvention("AWIPS-Sat", AWIPSsatConvention.class, null);
     registerConvention("WRF", WRFConvention.class, null);
 
-    //registerConvention("M3IOVGGrid", M3IOVGGridConvention.class, null);
+    // registerConvention("M3IOVGGrid", M3IOVGGridConvention.class, null);
     registerConvention("M3IO", M3IOConvention.class, null);
     registerConvention("IFPS", IFPSConvention.class, null);
     registerConvention("ARPS/ADAS", ADASConvention.class, null);
@@ -159,10 +161,10 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * It is then processed by CoordSysBuilder, using the _Coordinate attributes.
    *
    * @param conventionName name of Convention, must be in the "Conventions" global attribute.
-   * @param ncmlLocation   location of NcML file, may be local file or URL.
+   * @param ncmlLocation location of NcML file, may be local file or URL.
    * @see ucar.nc2.ncml.NcMLReader#wrapNcML
    */
-  static public void registerNcML(String conventionName, String ncmlLocation) {
+  public static void registerNcML(String conventionName, String ncmlLocation) {
     ncmlHash.put(conventionName, ncmlLocation);
   }
 
@@ -170,11 +172,11 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * Register a class that implements a Convention. Will match (ignoring case) the COnvention name.
    *
    * @param conventionName name of Convention.
-   *                       This name will be used to look in the "Conventions" global attribute.
-   *                       Otherwise, you must implement the isMine() static method.
-   * @param c              implementation of CoordSysBuilderIF that parses those kinds of netcdf files.
+   *        This name will be used to look in the "Conventions" global attribute.
+   *        Otherwise, you must implement the isMine() static method.
+   * @param c implementation of CoordSysBuilderIF that parses those kinds of netcdf files.
    */
-  static public void registerConvention(String conventionName, Class c) {
+  public static void registerConvention(String conventionName, Class c) {
     registerConvention(conventionName, c, null);
   }
 
@@ -182,21 +184,23 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * Register a class that implements a Convention.
    *
    * @param conventionName name of Convention.
-   *                       This name will be used to look in the "Conventions" global attribute.
-   *                       Otherwise, you must implement the isMine() static method.
-   * @param match          pass in your own matcher. if null, equalsIgnoreCase() will be used.
-   * @param c              implementation of CoordSysBuilderIF that parses those kinds of netcdf files.
+   *        This name will be used to look in the "Conventions" global attribute.
+   *        Otherwise, you must implement the isMine() static method.
+   * @param match pass in your own matcher. if null, equalsIgnoreCase() will be used.
+   * @param c implementation of CoordSysBuilderIF that parses those kinds of netcdf files.
    */
-  static public void registerConvention(String conventionName, Class c, ConventionNameOk match) {
+  public static void registerConvention(String conventionName, Class c, ConventionNameOk match) {
 
     if (!(CoordSysBuilderIF.class.isAssignableFrom(c)))
-      throw new IllegalArgumentException("CoordSysBuilderIF Class " + c.getName() + " must implement CoordSysBuilderIF");
+      throw new IllegalArgumentException(
+          "CoordSysBuilderIF Class " + c.getName() + " must implement CoordSysBuilderIF");
 
     // fail fast - check newInstance works
     try {
       c.newInstance();
     } catch (InstantiationException e) {
-      throw new IllegalArgumentException("CoordSysBuilderIF Class " + c.getName() + " cannot instantiate, probably need default Constructor");
+      throw new IllegalArgumentException(
+          "CoordSysBuilderIF Class " + c.getName() + " cannot instantiate, probably need default Constructor");
     } catch (IllegalAccessException e) {
       throw new IllegalArgumentException("CoordSysBuilderIF Class " + c.getName() + " is not accessible");
     }
@@ -208,10 +212,12 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
       conventionList.add(new Convention(conventionName, c, match));
   }
 
-  static private Class matchConvention(String convName) {
+  private static Class matchConvention(String convName) {
     for (Convention c : conventionList) {
-      if ((c.match == null) && c.convName.equalsIgnoreCase(convName)) return c.convClass;
-      if ((c.match != null) && c.match.isMatch(convName, c.convName)) return c.convClass;
+      if ((c.match == null) && c.convName.equalsIgnoreCase(convName))
+        return c.convClass;
+      if ((c.match != null) && c.match.isMatch(convName, c.convName))
+        return c.convClass;
     }
     return null;
   }
@@ -220,12 +226,12 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * Register a class that implements a Convention.
    *
    * @param conventionName name of Convention.
-   *                       This name will be used to look in the "Conventions" global attribute.
-   *                       Otherwise, you must implement the isMine() static method.
-   * @param className      name of class that implements CoordSysBuilderIF.
+   *        This name will be used to look in the "Conventions" global attribute.
+   *        Otherwise, you must implement the isMine() static method.
+   * @param className name of class that implements CoordSysBuilderIF.
    * @throws ClassNotFoundException if class could not be loaded
    */
-  static public void registerConvention(String conventionName, String className) throws ClassNotFoundException {
+  public static void registerConvention(String conventionName, String className) throws ClassNotFoundException {
     Class c = Class.forName(className);
     registerConvention(conventionName, c, null);
   }
@@ -237,7 +243,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * @param b true if if you want to guess at Coordinate Systems
    * @see #makeCoordinateSystemsMaximal
    */
-  static public void setUseMaximalCoordSys(boolean b) {
+  public static void setUseMaximalCoordSys(boolean b) {
     useMaximalCoordSys = b;
   }
 
@@ -246,7 +252,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    *
    * @return whether to make records into Structures.
    */
-  static public boolean getUseMaximalCoordSys() {
+  public static boolean getUseMaximalCoordSys() {
     return useMaximalCoordSys;
   }
 
@@ -256,7 +262,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * @param convAttValue original value of Convention attribute
    * @return list of Convention names
    */
-  static public List<String> breakupConventionNames(String convAttValue) {
+  public static List<String> breakupConventionNames(String convAttValue) {
     List<String> names = new ArrayList<>();
 
     if ((convAttValue.indexOf(',') > 0) || (convAttValue.indexOf(';') > 0)) {
@@ -288,14 +294,15 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * @param convAtts list of others, onbly use "extra" Conventions
    * @return comma separated list of Conventions
    */
-  static public String buildConventionAttribute(String mainConv, String... convAtts) {
+  public static String buildConventionAttribute(String mainConv, String... convAtts) {
     List<String> result = new ArrayList<>();
     result.add(mainConv);
     for (String convs : convAtts) {
-      if (convs == null) continue;
+      if (convs == null)
+        continue;
       List<String> ss = breakupConventionNames(convs); // may be a list
       for (String s : ss) {
-        if (matchConvention(s) == null)  // only add extra ones, not ones that compete with mainConv
+        if (matchConvention(s) == null) // only add extra ones, not ones that compete with mainConv
           result.add(s);
       }
     }
@@ -316,19 +323,19 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
   /**
    * Get a CoordSysBuilder whose job it is to add Coordinate information to a NetcdfDataset.
    *
-   * @param ds         the NetcdfDataset to modify
+   * @param ds the NetcdfDataset to modify
    * @param cancelTask allow user to bail out.
    * @return the builder used
    * @throws java.io.IOException on io error
-   * @see ucar.nc2.dataset.NetcdfDataset#enhance
    */
-  static public @Nonnull
-  CoordSysBuilderIF factory(NetcdfDataset ds, CancelTask cancelTask) throws IOException {
+  @Nonnull
+  public static CoordSysBuilderIF factory(NetcdfDataset ds, CancelTask cancelTask) throws IOException {
 
     // look for the Conventions attribute
     String convName = ds.findAttValueIgnoreCase(null, CDM.CONVENTIONS, null);
     if (convName == null)
-      convName = ds.findAttValueIgnoreCase(null, "Convention", null); // common mistake Convention instead of Conventions
+      convName = ds.findAttValueIgnoreCase(null, "Convention", null); // common mistake Convention instead of
+                                                                      // Conventions
     if (convName != null)
       convName = convName.trim();
 
@@ -350,7 +357,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
       // now look for comma or semicolon or / delimited list
       if (convClass == null) {
         List<String> names = breakupConventionNames(convName);
-        if (names.size() > 0) {
+        if (!names.isEmpty()) {
           // search the registered conventions, in order
           for (Convention conv : conventionList) {
             for (String name : names) {
@@ -359,7 +366,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
                 convName = name;
               }
             }
-            if (convClass != null) break;
+            if (convClass != null)
+              break;
           }
         }
       }
@@ -373,7 +381,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
         Method m;
 
         try {
-          m = c.getMethod("isMine", NetcdfFile.class);   // LOOK cant we test if method exists ?
+          m = c.getMethod("isMine", NetcdfFile.class); // LOOK cant we test if method exists ?
         } catch (NoSuchMethodException ex) {
           continue;
         }
@@ -443,7 +451,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
     return builder;
   }
 
-  static private class Convention {
+  private static class Convention {
     String convName;
     Class convClass;
     ConventionNameOk match;
@@ -463,7 +471,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
   protected Formatter parseInfo = new Formatter();
   protected Formatter userAdvice = new Formatter();
 
-  protected boolean debug = false;
+  protected boolean debug;
 
   @Override
   public void setConventionUsed(String convName) {
@@ -494,8 +502,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
   // subclasses can override any of these routines
 
   @Override
-  public void augmentDataset(NetcdfDataset ncDataset, CancelTask cancelTask) throws IOException {
-  }
+  public void augmentDataset(NetcdfDataset ncDataset, CancelTask cancelTask) throws IOException {}
 
   /**
    * Identify what kind of AxisType the named variable is.
@@ -503,7 +510,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * Default null - subclasses can override.
    *
    * @param ncDataset for this dataset
-   * @param v         a variable alreaddy identified as a Coodinate Axis
+   * @param v a variable alreaddy identified as a Coodinate Axis
    * @return AxisType or null if unknown.
    */
   protected AxisType getAxisType(NetcdfDataset ncDataset, VariableEnhanced v) {
@@ -549,8 +556,6 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
 
     // assign Coordinate Transforms
     assignCoordinateTransforms(ncDataset);
-
-    if (debug) System.out.println("parseInfo = \n" + parseInfo.toString());
   }
 
   private void addVariables(NetcdfDataset ncDataset, List<Variable> varList, List<VarProcess> varProcessList) {
@@ -652,8 +657,10 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
               parseInfo.format(" CoordinateTransform = %s added; referenced from var= %s%n", vname, vp.v.getFullName());
             ap.isCoordinateTransform = true;
           } else {
-            parseInfo.format("***Cant find CoordinateTransform %s referenced from var= %s%n", vname, vp.v.getFullName());
-            userAdvice.format("***Cant find CoordinateTransform %s referenced from var= %s%n", vname, vp.v.getFullName());
+            parseInfo.format("***Cant find CoordinateTransform %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
+            userAdvice.format("***Cant find CoordinateTransform %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
           }
         }
       }
@@ -708,13 +715,17 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
           String vname = stoker.nextToken();
           VarProcess ap = findVarProcess(vname, vp);
           if (ap == null) {
-            parseInfo.format("***Cant find Coordinate System variable %s referenced from var= %s%n", vname, vp.v.getFullName());
-            userAdvice.format("***Cant find Coordinate System variable %s referenced from var= %s%n", vname, vp.v.getFullName());
+            parseInfo.format("***Cant find Coordinate System variable %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
+            userAdvice.format("***Cant find Coordinate System variable %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
             continue;
           }
           if (ap.cs == null) {
-            parseInfo.format("***Not a Coordinate System variable %s referenced from var= %s%n", vname, vp.v.getFullName());
-            userAdvice.format("***Not a Coordinate System variable %s referenced from var= %s%n", vname, vp.v.getFullName());
+            parseInfo.format("***Not a Coordinate System variable %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
+            userAdvice.format("***Not a Coordinate System variable %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
             continue;
           }
 
@@ -736,8 +747,10 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
         String dname = stoker.nextToken();
         Dimension dim = ncDataset.getRootGroup().findDimension(dname);
         if (dim == null) {
-          parseInfo.format("***Cant find Dimension %s referenced from CoordSys var= %s%n", dname, csVar.v.getFullName());
-          userAdvice.format("***Cant find Dimension %s referenced from CoordSys var= %s%n", dname, csVar.v.getFullName());
+          parseInfo.format("***Cant find Dimension %s referenced from CoordSys var= %s%n", dname,
+              csVar.v.getFullName());
+          userAdvice.format("***Cant find Dimension %s referenced from CoordSys var= %s%n", dname,
+              csVar.v.getFullName());
         } else
           dimList.add(dim);
       }
@@ -746,7 +759,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
       for (VarProcess vp : varList) {
         if (!vp.hasCoordinateSystem() && vp.isData() && (csVar.cs != null)) {
           VariableEnhanced ve = (VariableEnhanced) vp.v;
-          if (CoordinateSystem.isSubset(dimList, vp.v.getDimensionsAll()) && CoordinateSystem.isSubset(vp.v.getDimensionsAll(), dimList))
+          if (CoordinateSystem.isSubset(dimList, vp.v.getDimensionsAll())
+              && CoordinateSystem.isSubset(vp.v.getDimensionsAll(), dimList))
             ve.addCoordinateSystem(csVar.cs);
         }
       }
@@ -783,7 +797,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
       VarProcess ap = findVarProcess(vname, vp);
       if (ap != null) {
         CoordinateAxis axis = ap.makeIntoCoordinateAxis();
-        if (!axesList.contains(axis)) axesList.add(axis);
+        if (!axesList.contains(axis))
+          axesList.add(axis);
       } else {
         parseInfo.format("***Cant find Coordinate Axis %s referenced from var= %s%n", vname, varName);
         userAdvice.format("***Cant find Coordinate Axis %s referenced from var= %s%n", vname, varName);
@@ -795,7 +810,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
   /**
    * Make implicit CoordinateSystem objects for variables that dont already have one, by using the
    * variables' list of coordinate axes, and any coordinateVariables for it. Must be at least 2 axes.
-   * All of a variable's _Coordinate Variables_ plus any variables listed in a *__CoordinateAxes_* or *_coordinates_* attribute
+   * All of a variable's _Coordinate Variables_ plus any variables listed in a *__CoordinateAxes_* or *_coordinates_*
+   * attribute
    * will be made into an *_implicit_* Coordinate System.
    * If there are at least two axes, and the coordinate system uses all of the variable's dimensions,
    * it will be asssigned to the data variable.
@@ -835,12 +851,14 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    */
   protected void makeCoordinateSystemsMaximal(NetcdfDataset ncDataset) {
 
-    boolean requireCompleteCoordSys = !ncDataset.getEnhanceMode().contains(NetcdfDataset.Enhance.IncompleteCoordSystems);
+    boolean requireCompleteCoordSys =
+        !ncDataset.getEnhanceMode().contains(NetcdfDataset.Enhance.IncompleteCoordSystems);
 
     for (VarProcess vp : varList) {
       VariableEnhanced ve = (VariableEnhanced) vp.v;
 
-      if (vp.hasCoordinateSystem() || !vp.isData()) continue;
+      if (vp.hasCoordinateSystem() || !vp.isData())
+        continue;
 
       // look through all axes that fit
       List<CoordinateAxis> axisList = new ArrayList<>();
@@ -850,7 +868,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
           axisList.add(axis);
       }
 
-      if (axisList.size() < 2) continue;
+      if (axisList.size() < 2)
+        continue;
 
       String csName = CoordinateSystem.makeName(axisList);
       CoordinateSystem cs = ncDataset.findCoordinateSystem(csName);
@@ -896,7 +915,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
    * If char variable, last dimension is left out.
    *
    * @param axis check if this axis is ok for the given variable
-   * @param v    the given variable
+   * @param v the given variable
    * @return true if all of the dimensions in the axis also appear in the variable.
    */
   protected boolean isCoordinateAxisForVariable(Variable axis, VariableEnhanced v) {
@@ -954,12 +973,16 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
               vp.addCoordinateTransform(ap.ct);
               parseInfo.format(" assign explicit coordTransform %s to CoordSys= %s%n", ap.ct, vp.cs);
             } else {
-              parseInfo.format("***Cant find coordTransform in %s referenced from var= %s%n", vname, vp.v.getFullName());
-              userAdvice.format("***Cant find coordTransform in %s referenced from var= %s%n", vname, vp.v.getFullName());
+              parseInfo.format("***Cant find coordTransform in %s referenced from var= %s%n", vname,
+                  vp.v.getFullName());
+              userAdvice.format("***Cant find coordTransform in %s referenced from var= %s%n", vname,
+                  vp.v.getFullName());
             }
           } else {
-            parseInfo.format("***Cant find coordTransform variable= %s referenced from var= %s%n", vname, vp.v.getFullName());
-            userAdvice.format("***Cant find coordTransform variable= %s referenced from var= %s%n", vname, vp.v.getFullName());
+            parseInfo.format("***Cant find coordTransform variable= %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
+            userAdvice.format("***Cant find coordTransform variable= %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
           }
         }
       }
@@ -973,8 +996,10 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
           String vname = stoker.nextToken();
           VarProcess vcs = findVarProcess(vname, vp);
           if (vcs == null) {
-            parseInfo.format("***Cant find coordSystem variable= %s referenced from var= %s%n", vname, vp.v.getFullName());
-            userAdvice.format("***Cant find coordSystem variable= %s referenced from var= %s%n", vname, vp.v.getFullName());
+            parseInfo.format("***Cant find coordSystem variable= %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
+            userAdvice.format("***Cant find coordSystem variable= %s referenced from var= %s%n", vname,
+                vp.v.getFullName());
           } else {
             vcs.addCoordinateTransform(vp.ct);
             parseInfo.format("***assign explicit coordTransform %s to CoordSys=  %s%n", vp.ct, vp.cs);
@@ -988,7 +1013,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
       if (vp.isCoordinateTransform && (vp.ct != null) && (vp.coordAxes != null)) {
         List<CoordinateAxis> dataAxesList = vp.findCoordinateAxes(false);
 
-        if (dataAxesList.size() > 0) {
+        if (!dataAxesList.isEmpty()) {
           for (CoordinateSystem cs : ncDataset.getCoordinateSystems()) {
             if (cs.containsAxes(dataAxesList)) {
               cs.addCoordinateTransform(vp.ct);
@@ -1010,7 +1035,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
           if (null != (atype = AxisType.getType(name)))
             axisTypesList.add(atype);
         }
-        if (axisTypesList.size() > 0) {
+        if (!axisTypesList.isEmpty()) {
           for (CoordinateSystem cs : ncDataset.getCoordinateSystems()) {
             if (cs.containsAxisTypes(axisTypesList)) {
               cs.addCoordinateTransform(vp.ct);
@@ -1024,7 +1049,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
   }
 
   protected VarProcess findVarProcess(String name, VarProcess from) {
-    if (name == null) return null;
+    if (name == null)
+      return null;
 
     // compare full name
     for (VarProcess vp : varList) {
@@ -1050,7 +1076,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
   }
 
   protected VarProcess findCoordinateAxis(String name) {
-    if (name == null) return null;
+    if (name == null)
+      return null;
 
     for (VarProcess vp : varList) {
       if (name.equals(vp.v.getFullName()) && (vp.isCoordinateVariable || vp.isCoordinateAxis))
@@ -1061,11 +1088,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
 
   // track coordinate variables
   protected void addCoordinateVariable(Dimension dim, VarProcess vp) {
-    List<VarProcess> list = coordVarMap.get(dim);
-    if (list == null) {
-      list = new ArrayList<>();
-      coordVarMap.put(dim, list);
-    }
+    List<VarProcess> list = coordVarMap.computeIfAbsent(dim, k -> new ArrayList<>());
     if (!list.contains(vp))
       list.add(vp);
   }
@@ -1102,7 +1125,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
      * Process all _Coordinate attributes.
      *
      * @param ds dataset container
-     * @param v  wrap this Variable
+     * @param v wrap this Variable
      */
     private VarProcess(NetcdfDataset ds, Variable v) {
       this.ds = ds;
@@ -1134,12 +1157,15 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
           if (coordDim != null) {
             Dimension vDim = v.getDimension(0);
             if (!coordDim.equals(vDim)) {
-              parseInfo.format("**ERROR Coordinate Variable Alias %s names wrong dimension %s%n", v.getFullName(), coordVarAlias);
-              userAdvice.format("**ERROR Coordinate Variable Alias %s names wrong dimension %s%n", v.getFullName(), coordVarAlias);
+              parseInfo.format("**ERROR Coordinate Variable Alias %s names wrong dimension %s%n", v.getFullName(),
+                  coordVarAlias);
+              userAdvice.format("**ERROR Coordinate Variable Alias %s names wrong dimension %s%n", v.getFullName(),
+                  coordVarAlias);
             } else {
               isCoordinateAxis = true;
               addCoordinateVariable(coordDim, this);
-              parseInfo.format(" Coordinate Variable Alias added = %s for dimension= %s%n", v.getFullName(), coordVarAlias);
+              parseInfo.format(" Coordinate Variable Alias added = %s for dimension= %s%n", v.getFullName(),
+                  coordVarAlias);
             }
           }
         }
@@ -1151,7 +1177,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
       else {
         isCoordinateAxis = true;
         positive = positive.trim();
-        parseInfo.format(" Coordinate Axis added(from positive attribute ) = %s for dimension= %s%n", v.getFullName(), coordVarAlias);
+        parseInfo.format(" Coordinate Axis added(from positive attribute ) = %s for dimension= %s%n", v.getFullName(),
+            coordVarAlias);
       }
 
       coordAxes = ds.findAttValueIgnoreCase(v, _Coordinate.Axes, null);
@@ -1174,7 +1201,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
     }
 
     public boolean hasCoordinateSystem() {
-      return ((VariableEnhanced) v).getCoordinateSystems().size() > 0;
+      return !((VariableEnhanced) v).getCoordinateSystems().isEmpty();
     }
 
     public String toString() {
@@ -1197,8 +1224,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
         axis.setAxisType(axisType);
         axis.addAttribute(new Attribute(_Coordinate.AxisType, axisType.toString()));
 
-        if (((axisType == AxisType.Height) || (axisType == AxisType.Pressure) || (axisType == AxisType.GeoZ)) &&
-                (positive != null)) {
+        if (((axisType == AxisType.Height) || (axisType == AxisType.Pressure) || (axisType == AxisType.GeoZ))
+            && (positive != null)) {
           axis.setPositive(positive);
           axis.addAttribute(new Attribute(_Coordinate.ZisPositive, positive));
         }
@@ -1221,7 +1248,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
           VarProcess ap = findVarProcess(vname, this);
           if (ap != null) {
             CoordinateAxis axis = ap.makeIntoCoordinateAxis();
-            if (!axesList.contains(axis)) axesList.add(axis);
+            if (!axesList.contains(axis))
+              axesList.add(axis);
           } else {
             parseInfo.format(" Cant find axes %s for Coordinate System %s%n", vname, v.getFullName());
             userAdvice.format(" Cant find axes %s for Coordinate System %s%n", vname, v.getFullName());
@@ -1229,7 +1257,7 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
         }
       }
 
-      if (axesList.size() == 0) {
+      if (axesList.isEmpty()) {
         parseInfo.format(" No axes found for Coordinate System %s%n", v.getFullName());
         userAdvice.format(" No axes found for Coordinate System %s%n", v.getFullName());
         return;
@@ -1261,7 +1289,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
           VarProcess ap = findVarProcess(vname, this);
           if (ap != null) {
             CoordinateAxis axis = ap.makeIntoCoordinateAxis();
-            if (!axesList.contains(axis)) axesList.add(axis);
+            if (!axesList.contains(axis))
+              axesList.add(axis);
           }
         }
       } else if (coordinates != null) { // CF partial listing of axes
@@ -1271,7 +1300,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
           VarProcess ap = findVarProcess(vname, this);
           if (ap != null) {
             CoordinateAxis axis = ap.makeIntoCoordinateAxis(); // LOOK check if its legal
-            if (!axesList.contains(axis)) axesList.add(axis);
+            if (!axesList.contains(axis))
+              axesList.add(axis);
           }
         }
       }
@@ -1279,10 +1309,12 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
       if (addCoordVariables) {
         for (Dimension d : v.getDimensions()) {
           List<VarProcess> coordVars = coordVarMap.get(d);
-          if (coordVars == null) continue;
+          if (coordVars == null)
+            continue;
           for (VarProcess vp : coordVars) {
             CoordinateAxis axis = vp.makeIntoCoordinateAxis();
-            if (!axesList.contains(axis)) axesList.add(axis);
+            if (!axesList.contains(axis))
+              axesList.add(axis);
           }
         }
       }
@@ -1292,7 +1324,8 @@ public class CoordSysBuilder implements CoordSysBuilderIF {
 
     void addCoordinateTransform(CoordinateTransform ct) {
       if (cs == null) {
-        parseInfo.format("  %s: no CoordinateSystem for CoordinateTransformVariable: %s%n", v.getFullName(), ct.getName());
+        parseInfo.format("  %s: no CoordinateSystem for CoordinateTransformVariable: %s%n", v.getFullName(),
+            ct.getName());
         return;
       }
       cs.addCoordinateTransform(ct);

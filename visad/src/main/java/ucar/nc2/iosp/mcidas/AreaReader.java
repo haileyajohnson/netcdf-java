@@ -17,7 +17,6 @@ import edu.wisc.ssec.mcidas.CalibratorException;
 import edu.wisc.ssec.mcidas.CalibratorFactory;
 import edu.wisc.ssec.mcidas.McIDASException;
 import edu.wisc.ssec.mcidas.McIDASUtil;
-
 import ucar.ma2.Array;
 import ucar.ma2.ArrayChar;
 import ucar.ma2.ArrayInt;
@@ -26,26 +25,19 @@ import ucar.ma2.Index;
 import ucar.ma2.InvalidRangeException;
 import ucar.ma2.Range;
 import ucar.ma2.Section;
-
 import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
-
 import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.CF;
 import ucar.nc2.constants.FeatureType;
 import ucar.nc2.units.DateFormatter;
-
 import ucar.unidata.geoloc.ProjectionImpl;
-
 import ucar.unidata.io.RandomAccessFile;
 import ucar.unidata.util.Parameter;
-
 import java.io.IOException;
-
 import java.util.ArrayList;
-
 import java.util.Date;
 import java.util.List;
 
@@ -87,12 +79,12 @@ public class AreaReader {
   /**
    * The calibrator
    */
-  Calibrator calibrator = null;
+  Calibrator calibrator;
 
   /**
-   * list  of bands
+   * list of bands
    */
-  int[] bandMap = null;
+  int[] bandMap;
 
   /**
    * calibration scale
@@ -104,17 +96,11 @@ public class AreaReader {
    */
   private String calUnit;
 
-  /**
-   * Default ctor
-   */
-  public AreaReader() {
-  }
-
 
   /**
    * initialize; note that the file is reopened here
    *
-   * @param location    the AREA file to open
+   * @param location the AREA file to open
    * @param ncfile the netCDF file to fill out
    * @return true if successful
    * @throws AreaFileException problem opening the area file
@@ -123,7 +109,7 @@ public class AreaReader {
 
     af = new AreaFile(location);
 
-    //read metadata
+    // read metadata
     dirBlock = af.getDir();
     ad = af.getAreaDirectory();
     int numElements = ad.getElements();
@@ -142,18 +128,13 @@ public class AreaReader {
     String calName = McIDASUtil.intBitsToString(dirBlock[AreaFile.AD_CALTYPE]);
     int calType = getCalType(calName);
 
-    // TODO:  Need to support calibrated data.
-    if ((af.getCal() != null)
-            && CalibratorFactory.hasCalibrator(sensor)) {
-      //System.out.println("can calibrate");
+    // TODO: Need to support calibrated data.
+    if ((af.getCal() != null) && CalibratorFactory.hasCalibrator(sensor)) {
       try {
         calibrator = CalibratorFactory.getCalibrator(sensor, calType, af.getCal());
       } catch (CalibratorException ce) {
-        // System.out.println("can't make calibrator");
         calibrator = null;
       }
-      //System.out.println("calibrator = " + calibrator);
-
     }
     calUnit = ad.getCalibrationUnitName();
     calScale = (1.0f / ad.getCalibrationScaleFactor());
@@ -163,8 +144,7 @@ public class AreaReader {
     Dimension lines = new Dimension("lines", numLines, true);
     Dimension bands = new Dimension("bands", numBands, true);
     Dimension time = new Dimension("time", 1, true);
-    Dimension dirDim = new Dimension("dirSize", AreaFile.AD_DIRSIZE,
-            true);
+    Dimension dirDim = new Dimension("dirSize", AreaFile.AD_DIRSIZE, true);
     Dimension navDim = new Dimension("navSize", navBlock.length, true);
     List<Dimension> image = new ArrayList<>();
     image.add(time);
@@ -187,9 +167,7 @@ public class AreaReader {
     Variable timeVar = new Variable(ncfile, null, null, "time");
     timeVar.setDataType(DataType.INT);
     timeVar.setDimensions("time");
-    timeVar.addAttribute(new Attribute(CDM.UNITS,
-            "seconds since "
-                    + df.toDateTimeString(nomTime)));
+    timeVar.addAttribute(new Attribute(CDM.UNITS, "seconds since " + df.toDateTimeString(nomTime)));
     timeVar.addAttribute(new Attribute("long_name", "time"));
     varArray = new ArrayInt.D1(1, false);
     ((ArrayInt.D1) varArray).set(0, 0);
@@ -201,14 +179,11 @@ public class AreaReader {
     Variable lineVar = new Variable(ncfile, null, null, "lines");
     lineVar.setDataType(DataType.INT);
     lineVar.setDimensions("lines");
-    //lineVar.addAttribute(new Attribute(CDM.UNITS, "km"));
-    lineVar.addAttribute(new Attribute("standard_name",
-            "projection_y_coordinate"));
+    // lineVar.addAttribute(new Attribute(CDM.UNITS, "km"));
+    lineVar.addAttribute(new Attribute("standard_name", "projection_y_coordinate"));
     varArray = new ArrayInt.D1(numLines, false);
     for (int i = 0; i < numLines; i++) {
-      int pos = nav.isFlippedLineCoordinates()
-              ? i
-              : numLines - i - 1;
+      int pos = nav.isFlippedLineCoordinates() ? i : numLines - i - 1;
       ((ArrayInt.D1) varArray).set(i, pos);
     }
     lineVar.setCachedData(varArray, false);
@@ -217,9 +192,8 @@ public class AreaReader {
     Variable elementVar = new Variable(ncfile, null, null, "elements");
     elementVar.setDataType(DataType.INT);
     elementVar.setDimensions("elements");
-    //elementVar.addAttribute(new Attribute(CDM.UNITS, "km"));
-    elementVar.addAttribute(new Attribute("standard_name",
-            "projection_x_coordinate"));
+    // elementVar.addAttribute(new Attribute(CDM.UNITS, "km"));
+    elementVar.addAttribute(new Attribute("standard_name", "projection_x_coordinate"));
     varArray = new ArrayInt.D1(numElements, false);
     for (int i = 0; i < numElements; i++) {
       ((ArrayInt.D1) varArray).set(i, i);
@@ -232,8 +206,7 @@ public class AreaReader {
     Variable bandVar = new Variable(ncfile, null, null, "bands");
     bandVar.setDataType(DataType.INT);
     bandVar.setDimensions("bands");
-    bandVar.addAttribute(new Attribute("long_name",
-            "spectral band number"));
+    bandVar.addAttribute(new Attribute("long_name", "spectral band number"));
     bandVar.addAttribute(new Attribute("axis", "Z"));
     Array bandArray = new ArrayInt.D1(numBands, false);
     for (int i = 0; i < numBands; i++) {
@@ -247,8 +220,7 @@ public class AreaReader {
     imageVar.setDataType(DataType.INT);
     imageVar.setDimensions(image);
     setCalTypeAttributes(imageVar, getCalType(calName));
-    imageVar.addAttribute(new Attribute(getADDescription(AreaFile.AD_CALTYPE),
-            calName));
+    imageVar.addAttribute(new Attribute(getADDescription(AreaFile.AD_CALTYPE), calName));
     imageVar.addAttribute(new Attribute("bands", bandArray));
     imageVar.addAttribute(new Attribute("grid_mapping", "AREAnav"));
     ncfile.addVariable(null, imageVar);
@@ -289,12 +261,12 @@ public class AreaReader {
 
     // For now, we have to overwrite the parameter versions of thes
     proj.addAttribute(new Attribute("grid_mapping_name", McIDASAreaProjection.GRID_MAPPING_NAME));
-        /*
-        proj.addAttribute(new Attribute(McIDASAreaProjection.ATTR_AREADIR,
-                                        dirArray));
-        proj.addAttribute(new Attribute(McIDASAreaProjection.ATTR_NAVBLOCK,
-                                        navArray));
-        */
+    /*
+     * proj.addAttribute(new Attribute(McIDASAreaProjection.ATTR_AREADIR,
+     * dirArray));
+     * proj.addAttribute(new Attribute(McIDASAreaProjection.ATTR_NAVBLOCK,
+     * navArray));
+     */
     varArray = new ArrayChar.D0();
     ((ArrayChar.D0) varArray).set(' ');
     proj.setCachedData(varArray, false);
@@ -309,7 +281,7 @@ public class AreaReader {
     String encStr = "netCDF encoded on " + df.toDateTimeString(new Date());
     ncfile.addAttribute(null, new Attribute("history", encStr));
 
-    //Lastly, finish the file
+    // Lastly, finish the file
     ncfile.finish();
     return true;
   }
@@ -324,12 +296,13 @@ public class AreaReader {
     String fileName = raf.getLocation();
     AreaFile af = null;
     try {
-      af = new AreaFile(fileName);  // LOOK opening again not ok for isValidFile
+      af = new AreaFile(fileName); // LOOK opening again not ok for isValidFile
       return true;
     } catch (AreaFileException e) {
-      return false;                 // barfola
+      return false; // barfola
     } finally {
-      if (af != null) af.close();  // LOOK need to look at this code
+      if (af != null)
+        af.close(); // LOOK need to look at this code
     }
   }
 
@@ -337,17 +310,17 @@ public class AreaReader {
   /**
    * Read the values for a variable
    *
-   * @param v2      the variable
+   * @param v2 the variable
    * @param section the section info (time,x,y range);
    * @return the data
-   * @throws IOException           problem reading file
+   * @throws IOException problem reading file
    * @throws InvalidRangeException range doesn't match data
    */
   public Array readVariable(Variable v2, Section section) throws IOException, InvalidRangeException {
     // not sure why timeRange isn't used...will comment out
     // for now
     // TODO: use timeRange in readVariable
-    //Range timeRange = null;
+    // Range timeRange = null;
     Range bandRange = null;
     Range geoXRange = null;
     Range geoYRange = null;
@@ -358,12 +331,12 @@ public class AreaReader {
 
     } else if (section.getRank() > 0) {
       if (section.getRank() > 3) {
-        //timeRange = (Range) section.getRange(0);
+        // timeRange = (Range) section.getRange(0);
         bandRange = section.getRange(1);
         geoYRange = section.getRange(2);
         geoXRange = section.getRange(3);
       } else if (section.getRank() > 2) {
-        //timeRange = (Range) section.getRange(0);
+        // timeRange = (Range) section.getRange(0);
         geoYRange = section.getRange(1);
         geoXRange = section.getRange(2);
       } else if (section.getRank() > 1) {
@@ -397,7 +370,7 @@ public class AreaReader {
           pixel[1][0] = (double) geoYRange.element(j);
           latLon = nav.toLatLon(pixel);
 
-          if (varname.equals("lat")) {
+          if (varname.equals("latitude")) {
             dataArray.setFloat(dataIndex.set(j, i), (float) (latLon[0][0]));
           } else {
             dataArray.setFloat(dataIndex.set(j, i), (float) (latLon[1][0]));
@@ -411,14 +384,11 @@ public class AreaReader {
         int[][] pixelData;
         if (bandRange != null) {
           for (int k = 0; k < bandRange.length(); k++) {
-            int bandIndex = bandRange.element(k) + 1;  // band numbers in McIDAS are 1 based
+            int bandIndex = bandRange.element(k) + 1; // band numbers in McIDAS are 1 based
             for (int j = 0; j < geoYRange.length(); j++) {
               for (int i = 0; i < geoXRange.length(); i++) {
-                pixelData = af.getData(geoYRange.element(j),
-                        geoXRange.element(i), 1, 1,
-                        bandIndex);
-                dataArray.setInt(dataIndex.set(0, k, j, i),
-                        (pixelData[0][0]));
+                pixelData = af.getData(geoYRange.element(j), geoXRange.element(i), 1, 1, bandIndex);
+                dataArray.setInt(dataIndex.set(0, k, j, i), (pixelData[0][0]));
               }
             }
           }
@@ -429,10 +399,8 @@ public class AreaReader {
 
           for (int j = 0; j < geoYRange.length(); j++) {
             for (int i = 0; i < geoXRange.length(); i++) {
-              pixelData = af.getData(geoYRange.element(j),
-                      geoXRange.element(i), 1, 1);
-              dataArray.setInt(dataIndex.set(0, j, i),
-                      (pixelData[0][0]));
+              pixelData = af.getData(geoYRange.element(j), geoXRange.element(i), 1, 1);
+              dataArray.setInt(dataIndex.set(0, j, i), (pixelData[0][0]));
             }
           }
         }
@@ -471,9 +439,7 @@ public class AreaReader {
     if ((navBlock == null) || (ad == null)) {
       return;
     }
-    v.addAttribute(
-            new Attribute(
-                    "navigation_type", McIDASUtil.intBitsToString(navBlock[0])));
+    v.addAttribute(new Attribute("navigation_type", McIDASUtil.intBitsToString(navBlock[0])));
   }
 
   // TODO: Move to use edu.wisc.ssec.mcidas.AreaDirectory.getDescription
@@ -644,16 +610,22 @@ public class AreaReader {
    */
   private int getCalType(String calName) {
     int calTypeOut = Calibrator.CAL_NONE;
-    if (calName.trim().equals("ALB")) {
-      calTypeOut = Calibrator.CAL_ALB;
-    } else if (calName.trim().equals("BRIT")) {
-      calTypeOut = Calibrator.CAL_BRIT;
-    } else if (calName.trim().equals("RAD")) {
-      calTypeOut = Calibrator.CAL_RAD;
-    } else if (calName.trim().equals("RAW")) {
-      calTypeOut = Calibrator.CAL_RAW;
-    } else if (calName.trim().equals("TEMP")) {
-      calTypeOut = Calibrator.CAL_TEMP;
+    switch (calName.trim()) {
+      case "ALB":
+        calTypeOut = Calibrator.CAL_ALB;
+        break;
+      case "BRIT":
+        calTypeOut = Calibrator.CAL_BRIT;
+        break;
+      case "RAD":
+        calTypeOut = Calibrator.CAL_RAD;
+        break;
+      case "RAW":
+        calTypeOut = Calibrator.CAL_RAW;
+        break;
+      case "TEMP":
+        calTypeOut = Calibrator.CAL_TEMP;
+        break;
     }
     return calTypeOut;
   }
@@ -661,17 +633,17 @@ public class AreaReader {
   /**
    * Set the long name and units for the calibration type
    *
-   * @param image   image variable
+   * @param image image variable
    * @param calType calibration type
    */
   private void setCalTypeAttributes(Variable image, int calType) {
     String longName = "image values";
-    //String unit     = "";
+    // String unit = "";
     switch (calType) {
 
       case Calibrator.CAL_ALB:
         longName = "albedo";
-        //unit     = "%";
+        // unit = "%";
         break;
 
       case Calibrator.CAL_BRIT:
@@ -680,12 +652,12 @@ public class AreaReader {
 
       case Calibrator.CAL_TEMP:
         longName = "temperature";
-        //unit     = "K";
+        // unit = "K";
         break;
 
       case Calibrator.CAL_RAD:
         longName = "pixel radiance values";
-        //unit     = "mW/m2/sr/cm-1";
+        // unit = "mW/m2/sr/cm-1";
         break;
 
       case Calibrator.CAL_RAW:
@@ -707,14 +679,8 @@ public class AreaReader {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-            .add("af", af)
-            .add("nav", nav)
-            .add("ad", ad)
-            .add("calibrator", calibrator)
-            .add("calScale", calScale)
-            .add("calUnit", calUnit)
-            .toString();
+    return MoreObjects.toStringHelper(this).add("af", af).add("nav", nav).add("ad", ad).add("calibrator", calibrator)
+        .add("calScale", calScale).add("calUnit", calUnit).toString();
   }
 }
 

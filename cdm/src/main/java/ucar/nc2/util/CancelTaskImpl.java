@@ -12,11 +12,11 @@ package ucar.nc2.util;
  * @since 4/10/13
  */
 public class CancelTaskImpl implements CancelTask {
-  protected boolean done = false;
-  protected boolean success = false;
-  protected boolean cancel = false;
-  protected String error = null;
-  protected String note = null;
+  protected boolean done;
+  protected boolean success;
+  protected boolean cancel;
+  protected String error;
+  protected String note;
   protected int progress;
 
   /**
@@ -88,14 +88,18 @@ public class CancelTaskImpl implements CancelTask {
   @Override
   public void setProgress(String msg, int progress) {
     this.note = msg;
-    if (progress > 0) this.progress = progress;
+    if (progress > 0)
+      this.progress = progress;
   }
 
   @Override
   public String toString() {
-    if (cancel) return "was canceled";
-    if (isError()) return "error= "+error;
-    if (success) return "success";
-    return "finished="+done;
+    if (cancel)
+      return "was canceled";
+    if (isError())
+      return "error= " + error;
+    if (success)
+      return "success";
+    return "finished=" + done;
   }
 }

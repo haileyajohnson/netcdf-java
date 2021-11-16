@@ -35,7 +35,7 @@ public abstract class PointCollectionImpl extends DsgCollectionImpl implements P
   }
 
   @Override
-  public PointFeatureCollection subset(LatLonRect boundingBox, CalendarDateRange dateRange) throws IOException {
+  public PointFeatureCollection subset(LatLonRect boundingBox, CalendarDateRange dateRange) {
     return new PointCollectionSubset(this, boundingBox, dateRange);
   }
 
@@ -75,7 +75,8 @@ public abstract class PointCollectionImpl extends DsgCollectionImpl implements P
 
   @Override
   public boolean hasNext() throws IOException {
-    if (localIterator == null) resetIteration();
+    if (localIterator == null)
+      resetIteration();
     return localIterator.hasNext();
   }
 
@@ -86,7 +87,7 @@ public abstract class PointCollectionImpl extends DsgCollectionImpl implements P
   }
 
   @Override
-  public PointFeature next() throws IOException {
+  public PointFeature next() {
     return localIterator.next();
   }
 

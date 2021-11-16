@@ -28,6 +28,7 @@ buildscript {
         classpath libraries["coveralls-gradle-plugin"]
         classpath libraries["sonarqube-gradle-plugin"]
         classpath libraries["license-gradle-plugin"]
+        classpath libraries["spotless"]
 
         classpath libraries["guava"]  // For various utility methods used in the build scripts.
         classpath libraries['nexus']
@@ -41,8 +42,11 @@ allprojects {
     // Matches Maven's "project.version". Used in MANIFEST.MF for "Implementation-Version".
     // We try to follow semantic versioning, and thus we use <major>.<minor>.<patch>-<prerelease version>
     // <prerelease version> may be SNAPSHOT, alphax, betax, etc.
-    version = '5.0.0'
+    // Note - if bumping to a new major or minor version, be sure to update the docs (see step 1 in
+    // docs/src/private/internal/release.md for details)
+    version = '5.1.0'
     // Eventually, we'll stop appending "SNAPSHOT" to our versions and just use this.
+    //status = 'development'
     status = 'release'
 }
 
@@ -105,3 +109,6 @@ ext {
                                                      // JacocoReport task from root/coverage.gradle
 //apply from: "$rootDir/gradle/any/archiving.gradle"   // Modifies Jar tasks created in fatJars.gradle
 //apply from: "$rootDir/gradle/any/publishing.gradle"  // Modifies pubs created in root/publishing.gradle
+//apply from: "$rootDir/gradle/any/spotless.gradle"
+
+

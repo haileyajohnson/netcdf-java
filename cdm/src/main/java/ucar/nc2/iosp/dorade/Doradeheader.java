@@ -9,41 +9,37 @@ package ucar.nc2.iosp.dorade;
 
 
 import ucar.nc2.*;
-
 import ucar.nc2.constants.*;
 import ucar.ma2.Array;
 import ucar.ma2.DataType;
 import ucar.ma2.MAMath;
-
 import ucar.atd.dorade.*;
-
 import java.io.*;
 import java.util.*;
 
 public class Doradeheader {
-  private boolean debug = false;
   private ucar.nc2.NetcdfFile ncfile;
   private float[] lat_min, lat_max, lon_min, lon_max, hi_max, hi_min;
 
-  static public boolean isValidFile(ucar.unidata.io.RandomAccessFile raf) {
+  public static boolean isValidFile(ucar.unidata.io.RandomAccessFile raf) {
     try {
       java.io.RandomAccessFile file = raf.getRandomAccessFile();
-      if (file == null) return false;
+      if (file == null)
+        return false;
       boolean t = DoradeSweep.isDoradeSweep(file);
-      if (!t) return false;
+      if (!t)
+        return false;
     } catch (DoradeSweep.DoradeSweepException ex) {
       return false;
     }
     return true;
   }
 
-  void read(DoradeSweep mySweep, ucar.nc2.NetcdfFile ncfile, PrintStream out) throws IOException {
+  void read(DoradeSweep mySweep, ucar.nc2.NetcdfFile ncfile, PrintStream out) {
 
     this.ncfile = ncfile;
     DoradePARM[] parms = mySweep.getParamList();
     int nRays = mySweep.getNRays();
-
-    if (debug) System.out.println(parms.length + " params in file");
 
     int numSensor = mySweep.getNSensors();
     int[] ncells = new int[numSensor];
@@ -59,20 +55,19 @@ public class Doradeheader {
       }
     }
 
-    ArrayList[] dims = new ArrayList[numSensor];
-    ArrayList dims1 = new ArrayList();
-    ArrayList[] dims2 = new ArrayList[numSensor];
-    int nCells = mySweep.getNCells(0);
+    ArrayList<Dimension>[] dims = new ArrayList[numSensor];
+    ArrayList<Dimension> dims1 = new ArrayList<>();
+    ArrayList<Dimension>[] dims2 = new ArrayList[numSensor];
+    int nCells;
 
-    //  Dimension sensorDim = new Dimension("sensor", numSensor, true);
-    //  ncfile.addDimension( null, sensorDim);
+    // Dimension sensorDim = new Dimension("sensor", numSensor, true);
+    // ncfile.addDimension( null, sensorDim);
     Dimension radialDim = new Dimension("radial", nRays);
     ncfile.addDimension(null, radialDim);
 
-
     for (int i = 0; i < numSensor; i++) {
-      dims[i] = new ArrayList();
-      dims2[i] = new ArrayList();
+      dims[i] = new ArrayList<>();
+      dims2[i] = new ArrayList<>();
       dims[i].add(radialDim);
       dims[i].add(gateDim[i]);
       dims2[i].add(gateDim[i]);
@@ -112,7 +107,8 @@ public class Doradeheader {
       latMinMax[i] = getMinMaxData(latitudes[i]);
       lonMinMax[i] = getMinMaxData(longitudes[i]);
       hiMinMax[i] = getMinMaxData(altitudes[i]);
-      float dis = (float) ((mySweep.getRangeToFirstCell(i) + (mySweep.getNCells(i) - 1) * mySweep.getCellSpacing(i)) * 1.853 / 111.26 / 1000);
+      float dis = (float) ((mySweep.getRangeToFirstCell(i) + (mySweep.getNCells(i) - 1) * mySweep.getCellSpacing(i))
+          * 1.853 / 111.26 / 1000);
       lat_min[i] = (float) (latMinMax[i].min - dis);
       lat_max[i] = (float) (latMinMax[i].max + dis);
       lon_min[i] = (float) (lonMinMax[i].min + dis * Math.cos(latitudes[i][0]));
@@ -121,7 +117,7 @@ public class Doradeheader {
       hi_max[i] = (float) hiMinMax[i].max;
     }
 
-    //adding the global nc attribute
+    // adding the global nc attribute
     addNCAttributes(ncfile, mySweep);
 
 
@@ -136,7 +132,6 @@ public class Doradeheader {
     lName = "azimuth angle in degrees: 0 = true north, 90 = east";
     att = new Attribute(_Coordinate.AxisType, AxisType.RadialAzimuth.toString());
     addParameter(vName, lName, ncfile, dims1, att, DataType.FLOAT, "degrees");
-
 
     // add gate coordinate variable
     for (int i = 0; i < numSensor; i++) {
@@ -214,13 +209,15 @@ public class Doradeheader {
     lName = "Beam Width";
     addParameter(vName, lName, ncfile, null, null, DataType.FLOAT, "degrees");
 
-    /* Variable ct = new Variable(ncfile, null, null, "radialCoordinateTransform");
-      ct.setDataType(DataType.CHAR);
-      ct.setDimensions(""); // scalar
-      ct.addAttribute( new Attribute("transform_type", "Radial"));
-      ct.addAttribute( new Attribute("_CoordinateTransformType", "Radial"));
-      ct.addAttribute( new Attribute("_CoordinateAxes", "elevation azimuth distance_1"));
-      ncfile.addVariable(null, ct);   */
+    /*
+     * Variable ct = new Variable(ncfile, null, null, "radialCoordinateTransform");
+     * ct.setDataType(DataType.CHAR);
+     * ct.setDimensions(""); // scalar
+     * ct.addAttribute( new Attribute("transform_type", "Radial"));
+     * ct.addAttribute( new Attribute("_CoordinateTransformType", "Radial"));
+     * ct.addAttribute( new Attribute("_CoordinateAxes", "elevation azimuth distance_1"));
+     * ncfile.addVariable(null, ct);
+     */
 
     try {
       for (int p = 0; p < parms.length; p++) {
@@ -228,7 +225,6 @@ public class Doradeheader {
         nCells = parms[p].getNCells();
         int ii = getGateDimsIndex(nCells, gateDim, numSensor);
 
-        if (debug) System.out.println("Param " + p + " name " + pval + " and ncel " + nCells);
         addVariable(ncfile, dims[ii], parms[p]);
       }
     } catch (Exception ex) {
@@ -261,8 +257,8 @@ public class Doradeheader {
 
 
   private void makeCoordinateData(Variable elev, Variable azim, DoradeSweep mySweep) {
-    Object ele =  mySweep.getElevations();
-    Object azi =  mySweep.getAzimuths();
+    Object ele = mySweep.getElevations();
+    Object azi = mySweep.getAzimuths();
 
     Array elevData = Array.factory(elev.getDataType(), elev.getShape(), ele);
     Array aziData = Array.factory(azim.getDataType(), azim.getShape(), azi);
@@ -271,12 +267,16 @@ public class Doradeheader {
     azim.setCachedData(aziData, false);
   }
 
-  void addParameter(String pName, String longName, NetcdfFile nc, ArrayList dims, Attribute att, DataType dtype, String ut) {
+  void addParameter(String pName, String longName, NetcdfFile nc, ArrayList dims, Attribute att, DataType dtype,
+      String ut) {
     Variable vVar = new Variable(nc, null, null, pName);
     vVar.setDataType(dtype);
-    if (dims != null) vVar.setDimensions(dims);
-    else vVar.setDimensions("");
-    if (att != null) vVar.addAttribute(att);
+    if (dims != null)
+      vVar.setDimensions(dims);
+    else
+      vVar.setDimensions("");
+    if (att != null)
+      vVar.addAttribute(att);
     vVar.addAttribute(new Attribute(CDM.UNITS, ut));
     vVar.addAttribute(new Attribute(CDM.LONG_NAME, longName));
     nc.addVariable(null, vVar);
@@ -293,24 +293,23 @@ public class Doradeheader {
     v.addAttribute(new Attribute(CDM.UNITS, dparm.getUnits()));
     String coordinates = "elevation azimuth distance_1 " + "latitudes_1 longitudes_1 altitudes_1";
     v.addAttribute(new Attribute(_Coordinate.Axes, coordinates));
-      /*
-      v.addAttribute( new Attribute(CDM.MISSING_VALUE, new Float(dparm.getBadDataFlag())));
-      v.addAttribute( new Attribute("_FillValue", new Float(dparm.getBadDataFlag())));
-      v.addAttribute( new Attribute("scale_factor", dparm.getUnits()));
-      v.addAttribute( new Attribute("polarization", dparm.getUnits()));
-      v.addAttribute( new Attribute("Frequencies_GHz", dparm.getUnits()));
-      v.addAttribute( new Attribute("InterPulsePeriods_secs", dparm.getUnits()));
-      v.addAttribute( new Attribute("ThresholdValue", new Float(dparm.getThresholdValue())));
-      v.addAttribute( new Attribute("ThresholdParamName", dparm.getthresholdParamName()));
-      v.addAttribute( new Attribute("usedPRTs", new Integer(dparm.getusedPRTs())));
-      v.addAttribute( new Attribute("usedFrequencies", new Integer(dparm.getusedFrequencies())));
-       */
+    /*
+     * v.addAttribute( new Attribute(CDM.MISSING_VALUE, new Float(dparm.getBadDataFlag())));
+     * v.addAttribute( new Attribute("_FillValue", new Float(dparm.getBadDataFlag())));
+     * v.addAttribute( new Attribute("scale_factor", dparm.getUnits()));
+     * v.addAttribute( new Attribute("polarization", dparm.getUnits()));
+     * v.addAttribute( new Attribute("Frequencies_GHz", dparm.getUnits()));
+     * v.addAttribute( new Attribute("InterPulsePeriods_secs", dparm.getUnits()));
+     * v.addAttribute( new Attribute("ThresholdValue", new Float(dparm.getThresholdValue())));
+     * v.addAttribute( new Attribute("ThresholdParamName", dparm.getthresholdParamName()));
+     * v.addAttribute( new Attribute("usedPRTs", new Integer(dparm.getusedPRTs())));
+     * v.addAttribute( new Attribute("usedFrequencies", new Integer(dparm.getusedFrequencies())));
+     */
   }
 
-
-  void addNCAttributes(NetcdfFile nc, DoradeSweep mySweep) throws DoradeSweep.DoradeSweepException {
-    nc.addAttribute(null, new Attribute("summary", "Dorade radar data " +
-            "from radar " + mySweep.getSensorName(0) + " in the project " + mySweep.getProjectName()));
+  void addNCAttributes(NetcdfFile nc, DoradeSweep mySweep) {
+    nc.addAttribute(null, new Attribute("summary", "Dorade radar data " + "from radar " + mySweep.getSensorName(0)
+        + " in the project " + mySweep.getProjectName()));
     nc.addAttribute(null, new Attribute("radar_name", mySweep.getSensorName(0)));
     nc.addAttribute(null, new Attribute("project_name", mySweep.getProjectName()));
     nc.addAttribute(null, new Attribute("keywords_vocabulary", "dorade"));
@@ -341,86 +340,4 @@ public class Doradeheader {
     else
       nc.addAttribute(null, new Attribute("IsStationary", "1"));
   }
-
-  // Return the string of entity ID for the Dorade image file
-  DataType getDataType(int format) {
-    DataType p;
-
-    switch (format) {
-      case 1:    // 8-bit signed integer format.
-        p = DataType.SHORT;
-        break;
-      case 2:  // 16-bit signed integer format.
-        p = DataType.FLOAT;
-        break;
-      case 3:    // 32-bit signed integer format.
-        p = DataType.LONG;
-        break;
-      case 4:   // 32-bit IEEE float format.
-        p = DataType.FLOAT;
-        break;
-      case 5:   //  16-bit IEEE float format.
-        p = DataType.DOUBLE;
-        break;
-      default:
-        p = null;
-        break;
-    } //end of switch
-    return p;
-  }
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
-/* Change History:
-   $Log: Doradeheader.java,v $
-   Revision 1.5  2006/04/19 20:24:09  yuanho
-   radial dataset sweep for all radar dataset
-
-   Revision 1.4  2005/08/08 22:45:32  yuanho
-   spelling bug fix
-
-   Revision 1.3  2005/08/03 21:50:45  yuanho
-   called IsDoradeSweep to check input file, adding global atts.
-
-   Revision 1.2  2005/05/11 00:10:03  caron
-   refactor StuctureData, dt.point
-
-   Revision 1.1  2005/04/26 19:39:06  yuanho
-   iosp for dorade format radar data
-
-   Revision 1.8  2004/12/15 22:35:25  caron
-   add _unsigned
-
-   Revision 1.7  2004/12/07 22:13:28  yuanho
-   add phyElem for 1hour and total precipitation
-
-   Revision 1.6  2004/12/07 22:13:15  yuanho
-   add phyElem for 1hour and total precipitation
-
-   Revision 1.5  2004/12/07 01:29:31  caron
-   redo convention parsing, use _Coordinate encoding.
-
-   Revision 1.4  2004/10/29 00:14:11  caron
-   no message
-
-   Revision 1.3  2004/10/19 15:17:22  yuanho
-   Dorade header DxKm update
-
-   Revision 1.2  2004/10/15 23:18:34  yuanho
-   Dorade projection update
-
-   Revision 1.1  2004/10/13 22:57:57  yuanho
-   no message
-
-   Revision 1.4  2004/08/16 20:53:45  caron
-   2.2 alpha (2)
-
-   Revision 1.3  2004/07/12 23:40:17  caron
-   2.2 alpha 1.0 checkin
-
-   Revision 1.2  2004/07/06 19:28:10  caron
-   pre-alpha checkin
-
-   Revision 1.1.1.1  2003/12/04 21:05:27  caron
-   checkin 2.2
-
- */

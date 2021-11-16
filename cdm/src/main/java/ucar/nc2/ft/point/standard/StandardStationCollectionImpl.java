@@ -7,7 +7,6 @@ package ucar.nc2.ft.point.standard;
 
 import java.io.IOException;
 import javax.annotation.Nonnull;
-
 import ucar.ma2.StructureData;
 import ucar.ma2.StructureDataIterator;
 import ucar.nc2.ft.PointFeatureIterator;
@@ -32,7 +31,7 @@ import ucar.nc2.time.CalendarDateUnit;
 public class StandardStationCollectionImpl extends StationTimeSeriesCollectionImpl {
   private NestedTable ft;
 
-  StandardStationCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) throws IOException {
+  StandardStationCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) {
     super(ft.getName(), timeUnit, altUnits);
     this.ft = ft;
     this.extras = ft.getExtras();
@@ -42,12 +41,13 @@ public class StandardStationCollectionImpl extends StationTimeSeriesCollectionIm
    * Make a Station from the station data structure.
    *
    * @param stationData station data structure
-   * @param recnum      station data recnum within table
+   * @param recnum station data recnum within table
    * @return Station or null, skip this Station
    */
   public StationTimeSeriesFeature makeStation(StructureData stationData, int recnum) {
     StationFeature s = ft.makeStation(stationData);
-    if (s == null) return null;
+    if (s == null)
+      return null;
     return new StandardStationFeatureImpl(s, timeUnit, stationData, recnum);
   }
 

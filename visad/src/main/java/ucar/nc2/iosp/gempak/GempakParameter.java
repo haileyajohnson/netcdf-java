@@ -10,7 +10,7 @@ import ucar.unidata.util.StringUtil2;
 
 
 /**
- * Class which represents a GEMPAK parameter.  Add on decimal scale
+ * Class which represents a GEMPAK parameter. Add on decimal scale
  * and numeric flag to the superclass.
  */
 
@@ -19,23 +19,17 @@ public class GempakParameter extends GridParameter {
   /**
    * decimal scale
    */
-  private int decimalScale = 0;
+  private int decimalScale;
 
 
   /**
    * numeric or char
    */
-  private boolean isNumeric = true;
+  private boolean isNumeric;
 
 
   /**
    * Create a new numeric GEMPAK parameter
-   *
-   * @param number
-   * @param name
-   * @param description
-   * @param unit        of parameter
-   * @param scale       decimal (10E*) scaling factor
    */
   public GempakParameter(int number, String name, String description, String unit, int scale) {
     this(number, name, description, unit, scale, true);
@@ -44,15 +38,14 @@ public class GempakParameter extends GridParameter {
   /**
    * Create a new GEMPAK parameter
    *
-   * @param number
-   * @param name
-   * @param description
-   * @param unit        of parameter
-   * @param scale       decimal (10E*) scaling factor
-   * @param isNumeric   flag for numeric
+   * @param number parameter number
+   * @param name name
+   * @param description description
+   * @param unit of parameter
+   * @param scale decimal (10E*) scaling factor
+   * @param isNumeric flag for numeric
    */
-  public GempakParameter(int number, String name, String description,
-                         String unit, int scale, boolean isNumeric) {
+  public GempakParameter(int number, String name, String description, String unit, int scale, boolean isNumeric) {
     super(number, name, description, unit);
     decimalScale = scale;
     this.isNumeric = isNumeric;
@@ -86,18 +79,6 @@ public class GempakParameter extends GridParameter {
   public void setIsNumeric(boolean yesorno) {
     isNumeric = yesorno;
   }
-
-  /**
-   * Return a String representation of this object
-   *
-   * @return a String representation of this object
-   * public String toString() {
-   *   StringBuffer buf = new StringBuffer(super.toString());
-   *   buf.append(" scale: ");
-   *   buf.append(getDecimalScale());
-   *   return buf.toString();
-   * }
-   */
 
   /**
    * Return a String representation of this object

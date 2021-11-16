@@ -4,33 +4,39 @@
  */
 package thredds.inventory;
 
+import com.google.re2j.Matcher;
+import com.google.re2j.Pattern;
 import ucar.unidata.util.StringUtil2;
-
 import javax.annotation.concurrent.ThreadSafe;
 import java.io.File;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.Formatter;
-import java.util.regex.Pattern;
 
 /**
  * Parses the collection specification string.
- * <p>the idea  is that one copies the full path of an example dataset, then edits it</p>
- * <p>Example: "/data/ldm/pub/native/grid/NCEP/GFS/Alaska_191km/** /GFS_Alaska_191km_#yyyyMMdd_HHmm#\.grib1$"</p>
+ * <p>
+ * the idea is that one copies the full path of an example dataset, then edits it
+ * </p>
+ * <p>
+ * Example: "/data/ldm/pub/native/grid/NCEP/GFS/Alaska_191km/** /GFS_Alaska_191km_#yyyyMMdd_HHmm#\.grib1$"
+ * </p>
  * <ul>
- * <li> rootDir ="/data/ldm/pub/native/grid/NCEP/GFS/Alaska_191km"/</li>
- * <li>    subdirs=true (because ** is present) </li>
- * <li>    dateFormatMark="GFS_Alaska_191km_#yyyyMMdd_HHmm"</li>
- * <li>    regExp='GFS_Alaska_191km_.............\.grib1$</li>
+ * <li>rootDir ="/data/ldm/pub/native/grid/NCEP/GFS/Alaska_191km"/</li>
+ * <li>subdirs=true (because ** is present)</li>
+ * <li>dateFormatMark="GFS_Alaska_191km_#yyyyMMdd_HHmm"</li>
+ * <li>regExp='GFS_Alaska_191km_.............\.grib1$</li>
  * </ul>
- * <p>Example: "Q:/grid/grib/grib1/data/agg/.*\.grb"</p>
+ * <p>
+ * Example: "Q:/grid/grib/grib1/data/agg/.*\.grb"
+ * </p>
  * <ul>
- * <li> rootDir ="Q:/grid/grib/grib1/data/agg/"/</li>
- * <li>    subdirs=false</li>
- * <li>    dateFormatMark=null</li>
- * <li>    useName=yes</li>
- * <li>    regexp= ".*\.grb" (anything ending with .grb)</li>
+ * <li>rootDir ="Q:/grid/grib/grib1/data/agg/"/</li>
+ * <li>subdirs=false</li>
+ * <li>dateFormatMark=null</li>
+ * <li>useName=yes</li>
+ * <li>regexp= ".*\.grb" (anything ending with .grb)</li>
  * </ul>
  *
  * @see "http://www.unidata.ucar.edu/projects/THREDDS/tech/tds4.2/reference/collections/CollectionSpecification.html"
@@ -43,13 +49,14 @@ public class CollectionSpecParser {
   private final String rootDir;
   private final boolean subdirs; // recurse into subdirectories under the root dir
   private final boolean filterOnName; // filter on name, else on entire path
-  private final java.util.regex.Pattern filter; // regexp filter
+  private final Pattern filter; // regexp filter
   private final String dateFormatMark;
 
   /**
    * Single spec : "/topdir/** /#dateFormatMark#regExp"
    * This only allows the dateFormatMark to be in the file name, not anywhere else in the filename path,
-   *  and you cant use any part of the dateFormat to filter on.
+   * and you cant use any part of the dateFormat to filter on.
+   * 
    * @param collectionSpec the collection Spec
    * @param errlog put error messages here, may be null
    */
@@ -96,17 +103,17 @@ public class CollectionSpecParser {
           for (int i = posFormat; i < posFormat2 - 1; i++)
             sb.setCharAt(i, '.');
           String regExp = sb.toString();
-          this.filter = java.util.regex.Pattern.compile(regExp);
+          this.filter = Pattern.compile(regExp);
 
         } else { // one hash
           dateFormatMark = filter; // everything
           String regExp = filter.substring(0, posFormat) + "*";
-          this.filter = java.util.regex.Pattern.compile(regExp);
+          this.filter = Pattern.compile(regExp);
         }
 
       } else { // no hash (dateFormatMark)
         dateFormatMark = null;
-        this.filter = java.util.regex.Pattern.compile(filter);
+        this.filter = Pattern.compile(filter);
       }
     } else {
       dateFormatMark = null;
@@ -119,14 +126,14 @@ public class CollectionSpecParser {
   public CollectionSpecParser(String rootDir, String regExp, Formatter errlog) {
     this.rootDir = StringUtil2.removeFromEnd(rootDir, '/');
     this.subdirs = true;
-    this.spec = this.rootDir +"/" + regExp;
-    this.filter = java.util.regex.Pattern.compile(spec);
+    this.spec = this.rootDir + "/" + regExp;
+    this.filter = Pattern.compile(spec);
     this.dateFormatMark = null;
     this.filterOnName = false;
   }
 
   public PathMatcher getPathMatcher() {
-    if (spec.startsWith("regex:") || spec.startsWith("glob:")) {  // experimental
+    if (spec.startsWith("regex:") || spec.startsWith("glob:")) { // experimental
       return FileSystems.getDefault().getPathMatcher(spec);
     } else {
       return new BySpecp();
@@ -136,7 +143,7 @@ public class CollectionSpecParser {
   private class BySpecp implements java.nio.file.PathMatcher {
     @Override
     public boolean matches(Path path) {
-      java.util.regex.Matcher matcher = filter.matcher(path.getFileName().toString());
+      Matcher matcher = filter.matcher(path.getFileName().toString());
       return matcher.matches();
     }
   }
@@ -163,60 +170,9 @@ public class CollectionSpecParser {
 
   @Override
   public String toString() {
-    return "CollectionSpecParser{" +
-            "\n   topDir='" + rootDir + '\'' +
-            "\n   subdirs=" + subdirs +
-            "\n   regExp='" + filter + '\'' +
-            "\n   dateFormatMark='" + dateFormatMark + '\'' +
-  //          "\n   useName=" + useName +
-            "\n}";
+    return "CollectionSpecParser{" + "\n   topDir='" + rootDir + '\'' + "\n   subdirs=" + subdirs + "\n   regExp='"
+        + filter + '\'' + "\n   dateFormatMark='" + dateFormatMark + '\'' +
+        // "\n useName=" + useName +
+        "\n}";
   }
-
-  /////////////////////////////////////////////////////////
-  // debugging
-
-  /* private static void doit2(String spec, String timePart, Formatter errlog) {
-    CollectionSpecParser specp = new CollectionSpecParser(spec, timePart, errlog);
-    System.out.printf("spec= %s timePart=%s%n%s%n", spec, timePart, specp);
-    String err = errlog.toString();
-    if (err.length() > 0)
-      System.out.printf("%s%n", err);
-    System.out.printf("-----------------------------------%n");
-  }
-
-
-  public static void main(String arg[]) {
-    doit2("G:/nomads/cfsr/timeseries/** /.*grb2$", "G:/nomads/cfsr/#timeseries/#yyyyMM", new Formatter());
-    //doit("C:/data/formats/gempak/surface/#yyyyMMdd#_sao\\.gem", new Formatter());
-    // doit("Q:/station/ldm/metar/Surface_METAR_#yyyyMMdd_HHmm#.nc", new Formatter());
-  }  */
-
-  private static void doit(String spec, Formatter errlog) {
-    CollectionSpecParser specp = new CollectionSpecParser(spec, errlog);
-    System.out.printf("spec= %s%n%s%n", spec, specp);
-    String err = errlog.toString();
-    if (err.length() > 0)
-      System.out.printf("%s%n", err);
-    System.out.printf("-----------------------------------%n");
-  }
-
-
-  public static void main(String arg[]) {
-    doit("/u00/FNMOC/NAVGEM/pressure/**/US058GMET-GR1mdl.0018_0056_00000F0..#yyyyMMddHH#_0102_000000-000000pres$", new Formatter());
-
-    doit("/data/ldm/pub/native/grid/NCEP/GFS/Alaska_191km/**/GFS_Alaska_191km_#yyyyMMdd_HHmm#\\.grib1$", new Formatter());
-    doit("Q:/grid/grib/grib1/data/agg/.*\\.grb", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/**/Surface_METAR_#yyyyMMdd_HHmm#\\.nc", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/**/Surface_METAR_#yyyyMMdd_HHmm#.nc", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/**/Surface_METAR_#yyyyMMdd_HHmm", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/Surface_METAR_#yyyyMMdd_HHmm", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/Surface_METAR_#yyyyMMdd_HHmm#.nc", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/Surface_METAR_yyyyMMdd_HHmm.nc", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/**/", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/**/*", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/*", new Formatter());
-    doit("/data/ldm/pub/decoded/netcdf/surface/metar/T*.T", new Formatter());
-  }
-
 }

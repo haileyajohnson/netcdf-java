@@ -5,7 +5,6 @@
 package ucar.ma2;
 
 import javax.annotation.concurrent.Immutable;
-
 import java.util.*;
 
 /**
@@ -20,7 +19,7 @@ public class RangeComposite implements RangeIterator {
   private final List<RangeIterator> ranges;
   private final String name;
 
-  public RangeComposite(String name, List<RangeIterator> ranges) throws InvalidRangeException {
+  public RangeComposite(String name, List<RangeIterator> ranges) {
     this.name = name;
     this.ranges = ranges;
   }
@@ -36,19 +35,15 @@ public class RangeComposite implements RangeIterator {
 
   @Override
   public RangeIterator setName(String name) {
-    if (name.equals(this.getName())) return this;
-    try {
-      return new RangeComposite(name, ranges);
-    } catch (InvalidRangeException e) {
-      throw new RuntimeException(e); // cant happen
-    }
+    if (name.equals(this.getName()))
+      return this;
+    return new RangeComposite(name, ranges);
   }
 
   @Override
   public java.util.Iterator<Integer> iterator() {
     Collection<Iterable<Integer>> iters = new ArrayList<>();
-    for (RangeIterator r : ranges)
-      iters.add(r);
+    iters.addAll(ranges);
 
     return new CompositeIterator<>(iters);
   }
@@ -62,7 +57,7 @@ public class RangeComposite implements RangeIterator {
   }
 
   // generic could be moved to utils
-  static private class CompositeIterator<T> implements Iterator<T> {
+  private static class CompositeIterator<T> implements Iterator<T> {
     Iterator<Iterable<T>> iters;
     Iterator<T> current;
 
@@ -73,8 +68,10 @@ public class RangeComposite implements RangeIterator {
 
     @Override
     public boolean hasNext() {
-      if (current.hasNext()) return true;
-      if (!iters.hasNext()) return false;
+      if (current.hasNext())
+        return true;
+      if (!iters.hasNext())
+        return false;
       current = iters.next().iterator();
       return hasNext();
     }

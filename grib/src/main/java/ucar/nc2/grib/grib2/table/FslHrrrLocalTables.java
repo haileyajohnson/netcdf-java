@@ -6,10 +6,9 @@
 package ucar.nc2.grib.grib2.table;
 
 import com.google.common.collect.ImmutableList;
-import ucar.nc2.constants.CDM;
+import java.nio.charset.StandardCharsets;
 import ucar.nc2.grib.GribTables;
 import ucar.nc2.grib.grib2.Grib2Parameter;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,13 +27,14 @@ public class FslHrrrLocalTables extends NcepLocalTables {
   public static final int center_id = 59;
 
   FslHrrrLocalTables(Grib2TableConfig config) {
-    super(config);   // default resource path
+    super(config); // default resource path
     initLocalTable(null);
   }
 
   @Override
   public String getParamTablePathUsedFor(int discipline, int category, int number) {
-    if ((category <= 191) && (number <= 191)) return super.getParamTablePathUsedFor(discipline, category, number);
+    if ((category <= 191) && (number <= 191))
+      return super.getParamTablePathUsedFor(discipline, category, number);
     return config.getPath();
   }
 
@@ -42,13 +42,13 @@ public class FslHrrrLocalTables extends NcepLocalTables {
   public ImmutableList<Parameter> getParameters() {
     return getLocalParameters();
   }
-  
+
   @Override
   public GribTables.Parameter getParameterRaw(int discipline, int category, int number) {
     return localParams.get(makeParamId(discipline, category, number));
-   }
+  }
 
-  // LOOK  maybe combine grib1, grib2 and bufr ??
+  // LOOK maybe combine grib1, grib2 and bufr ??
   @Override
   public String getSubCenterName(int center, int subcenter) {
 
@@ -123,8 +123,9 @@ public class FslHrrrLocalTables extends NcepLocalTables {
 
     ClassLoader cl = getClass().getClassLoader();
     try (InputStream is = cl.getResourceAsStream(resourcePath)) {
-      if (is == null) throw new IllegalStateException("Cant find " + resourcePath);
-      try (BufferedReader br = new BufferedReader(new InputStreamReader(is, CDM.utf8Charset))) {
+      if (is == null)
+        throw new IllegalStateException("Cant find " + resourcePath);
+      try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
         HashMap<String, Grib2Parameter> names = new HashMap<>(200);
 
         while (true) {
@@ -142,12 +143,13 @@ public class FslHrrrLocalTables extends NcepLocalTables {
           if (line == null) {
             break;
           }
-          if ((line.length() == 0) || line.startsWith("#")) {
+          if ((line.isEmpty()) || line.startsWith("#")) {
             continue;
           }
           String[] flds = line.split(",");
 
-          //RecordNumber,	TableNumber,	DisciplineNumber,	CategoryNumber,	ParameterNumber,	WGrib2Name,	NCLName,				FieldType,			Description,													Units,
+          // RecordNumber, TableNumber, DisciplineNumber, CategoryNumber, ParameterNumber, WGrib2Name, NCLName,
+          // FieldType, Description, Units,
           String recordNumber = flds[0].trim();
           int tableNumber = Integer.parseInt(flds[1].trim());
           int disciplineNumber = Integer.parseInt(flds[2].trim());
@@ -160,14 +162,13 @@ public class FslHrrrLocalTables extends NcepLocalTables {
           String Description = flds[8].trim();
           String Units = flds[9].trim();
           if (f != null) {
-            f.format("%3s %3d %3d %3d %3d %-10s %-25s %-30s %-100s %-20s%n", recordNumber,
-                tableNumber, disciplineNumber, categoryNumber, parameterNumber,
-                WGrib2Name, NCLName, FieldType, Description, Units);
+            f.format("%3s %3d %3d %3d %3d %-10s %-25s %-30s %-100s %-20s%n", recordNumber, tableNumber,
+                disciplineNumber, categoryNumber, parameterNumber, WGrib2Name, NCLName, FieldType, Description, Units);
           }
 
           String name = !WGrib2Name.equals("var") ? WGrib2Name : FieldType;
-          Grib2Parameter s = new Grib2Parameter(disciplineNumber, categoryNumber, parameterNumber,
-              name, Units, null, Description);
+          Grib2Parameter s =
+              new Grib2Parameter(disciplineNumber, categoryNumber, parameterNumber, name, Units, null, Description);
           // s.desc = Description;
           result.put(makeParamId(disciplineNumber, categoryNumber, parameterNumber), s);
           if (f != null) {

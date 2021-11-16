@@ -6,11 +6,9 @@
 package ucar.nc2.iosp.bufr.writer;
 
 import ucar.nc2.*;
-import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.iosp.netcdf3.N3iosp;
 import ucar.nc2.iosp.bufr.BufrIosp2;
 import ucar.ma2.*;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
@@ -43,7 +41,8 @@ public class Write2ncRect {
         useAtt = ncfile.addGlobalAttribute(useName, att.getStringValue());
       else
         useAtt = ncfile.addGlobalAttribute(useName, att.getNumericValue());
-      if (debug) System.out.println("add gatt= " + useAtt);
+      if (debug)
+        System.out.println("add gatt= " + useAtt);
     }
 
     // global dimensions
@@ -52,14 +51,17 @@ public class Write2ncRect {
       String useName = N3iosp.makeValidNetcdfObjectName(oldD.getShortName());
       boolean isRecord = useName.equals("record");
       Dimension newD = ncfile.addDimension(useName, oldD.getLength());
-      if (isRecord) recordDim = newD;
-      if (debug) System.out.println("add dim= " + newD);
+      if (isRecord)
+        recordDim = newD;
+      if (debug)
+        System.out.println("add dim= " + newD);
     }
 
     // Variables
     Structure recordStruct = (Structure) bufr.findVariable(BufrIosp2.obsRecord);
     for (Variable oldVar : recordStruct.getVariables()) {
-      if (oldVar.getDataType() == DataType.STRUCTURE) continue;
+      if (oldVar.getDataType() == DataType.STRUCTURE)
+        continue;
 
       String varName = N3iosp.makeValidNetcdfObjectName(oldVar.getShortName());
       DataType newType = oldVar.getDataType();
@@ -71,7 +73,8 @@ public class Write2ncRect {
       }
 
       Variable newVar = ncfile.addVariable(null, varName, newType, newDims);
-      if (debug) System.out.println("add var= " + newVar);
+      if (debug)
+        System.out.println("add var= " + newVar);
 
       // attributes
       List<Attribute> attList = oldVar.getAttributes();
@@ -86,13 +89,14 @@ public class Write2ncRect {
       }
     }
 
-    //int max_seq = countSeq(recordStruct);
-    //Dimension seqD = ncfile.addDimension("level", max_seq);
+    // int max_seq = countSeq(recordStruct);
+    // Dimension seqD = ncfile.addDimension("level", max_seq);
 
     for (Variable v : recordStruct.getVariables()) {
-      if (v.getDataType() != DataType.STRUCTURE) continue;
+      if (v.getDataType() != DataType.STRUCTURE)
+        continue;
       String structName = N3iosp.makeValidNetcdfObjectName(v.getShortName());
-      int shape[] = v.getShape();
+      int[] shape = v.getShape();
 
       Dimension structDim = ncfile.addDimension(structName, shape[0]);
 
@@ -109,7 +113,8 @@ public class Write2ncRect {
         }
 
         Variable newVar = ncfile.addVariable(null, varName, newType, newDims);
-        if (debug) System.out.println("add var= " + newVar);
+        if (debug)
+          System.out.println("add var= " + newVar);
 
         // attributes
         List<Attribute> attList = seqVar.getAttributes();
@@ -128,7 +133,7 @@ public class Write2ncRect {
     // create the file
     ncfile.create();
     if (debug)
-      System.out.println("File Out= " + ncfile.toString());
+      System.out.println("File Out= " + ncfile);
 
     // boolean ok = (Boolean) ncfile.sendIospMessage(NetcdfFile.IOSP_MESSAGE_ADD_RECORD_STRUCTURE);
 
@@ -138,7 +143,8 @@ public class Write2ncRect {
     ncfile.close();
   }
 
-  private double copyVarData(NetcdfFileWriter ncfile, Structure recordStruct) throws IOException, InvalidRangeException {
+  private double copyVarData(NetcdfFileWriter ncfile, Structure recordStruct)
+      throws IOException, InvalidRangeException {
     int nrecs = (int) recordStruct.getSize();
     int sdataSize = recordStruct.getElementSize();
 
@@ -168,7 +174,8 @@ public class Write2ncRect {
                 origin[1] = countLevel;
 
                 String mname = seqm.getName() + "-" + m.getName();
-                if (debug && (count == 0) && (countLevel == 0)) System.out.println("write to = " + mname);
+                if (debug && (count == 0) && (countLevel == 0))
+                  System.out.println("write to = " + mname);
                 ncfile.write(mname, origin, data.reshape(newShape));
               }
               countLevel++;
@@ -185,7 +192,8 @@ public class Write2ncRect {
           int[] origin = new int[data.getRank() + 1];
           origin[0] = count;
 
-          if (debug && (count == 0)) System.out.println("write to = " + m.getName());
+          if (debug && (count == 0))
+            System.out.println("write to = " + m.getName());
           ncfile.write(m.getName(), origin, data.reshape(newShape));
         }
       }
@@ -194,19 +202,9 @@ public class Write2ncRect {
 
     total += totalRecordBytes;
     totalRecordBytes /= 1000 * 1000;
-    if (debug) System.out.println("write record var; total = " + totalRecordBytes + " Mbytes # recs=" + nrecs);
+    if (debug)
+      System.out.println("write record var; total = " + totalRecordBytes + " Mbytes # recs=" + nrecs);
 
     return total;
   }
-
-  public static void main(String args[]) throws Exception {
-
-    //String fileIn = "C:/data/bufr/edition3/newIdd/IcingTropopause/IcingTropopause_20080529_0000.bufr";
-    String fileIn = "C:\\data\\bufr\\edition3\\meteosat\\METEOSAT7-MVIRI-MTPHRWW-NA-1-20080405123005.000000000Z-909326.bfr ";
-    try (NetcdfFile ncf = NetcdfDataset.openFile(fileIn, null)) {
-      System.out.println(ncf.toString());
-      new Write2ncRect(ncf, "C:/data/bufr2nc.meteosat.nc", true);
-    }
-  }
-
 }

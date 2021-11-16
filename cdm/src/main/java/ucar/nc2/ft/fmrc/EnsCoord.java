@@ -6,7 +6,6 @@
 package ucar.nc2.ft.fmrc;
 
 import ucar.nc2.dataset.CoordinateAxis1D;
-
 import java.util.List;
 import java.util.ArrayList;
 
@@ -17,7 +16,7 @@ import java.util.ArrayList;
  * @since Jan 12, 2010
  */
 public class EnsCoord implements Comparable {
-  private String name; //, units;
+  private String name; // , units;
   private int id; // unique id for XML
 
   // ??
@@ -25,8 +24,7 @@ public class EnsCoord implements Comparable {
   public int pdn;
   public int[] ensTypes;
 
-  EnsCoord() {
-  }
+  EnsCoord() {}
 
   EnsCoord(CoordinateAxis1D axis, int[] einfo) {
     this.name = axis.getFullName();
@@ -112,8 +110,9 @@ public class EnsCoord implements Comparable {
   }
 
   ////////////////
-  static public EnsCoord findEnsCoord(List<EnsCoord> ensCoords, EnsCoord want) {
-    if (want == null) return null;
+  public static EnsCoord findEnsCoord(List<EnsCoord> ensCoords, EnsCoord want) {
+    if (want == null)
+      return null;
 
     for (EnsCoord ec : ensCoords) {
       if (want.equalsData(ec))
@@ -126,13 +125,13 @@ public class EnsCoord implements Comparable {
     return result;
   }
 
-   /**
+  /**
    * Extend result with all the values in the list of EnsCoord
    *
    * @param result extend this coord
    * @param ecList list of EnsCoord, may be empty
    */
-  static public void normalize(EnsCoord result, List<EnsCoord> ecList) {
+  public static void normalize(EnsCoord result, List<EnsCoord> ecList) {
     List<EnsCoord> extra = new ArrayList<>();
     for (EnsCoord ec : ecList) {
       if (!result.equalsData(ec)) {
@@ -140,7 +139,7 @@ public class EnsCoord implements Comparable {
         extra.add(ec);
       }
     }
-    if (extra.size() == 0)
+    if (extra.isEmpty())
       return;
     for (EnsCoord ec : extra) {
       if (ec.getNEnsembles() < result.getNEnsembles())

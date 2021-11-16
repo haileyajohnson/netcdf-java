@@ -11,8 +11,6 @@ import ucar.nc2.Attribute;
 import ucar.nc2.Variable;
 import ucar.nc2.constants._Coordinate;
 import ucar.nc2.util.CancelTask;
-
-import java.io.IOException;
 import java.util.StringTokenizer;
 
 /**
@@ -22,15 +20,15 @@ import java.util.StringTokenizer;
  */
 
 public class MADISStation extends CoordSysBuilder {
-  
+
   public MADISStation() {
     this.conventionName = "MADIS_Station_1.0";
   }
 
-  public void augmentDataset( NetcdfDataset ds, CancelTask cancelTask) throws IOException {
+  public void augmentDataset(NetcdfDataset ds, CancelTask cancelTask) {
 
     String timeVars = ds.findAttValueIgnoreCase(null, "timeVariables", "");
-    StringTokenizer stoker = new StringTokenizer( timeVars, ", ");
+    StringTokenizer stoker = new StringTokenizer(timeVars, ", ");
     while (stoker.hasMoreTokens()) {
       String vname = stoker.nextToken();
       Variable v = ds.findVariable(vname);
@@ -42,7 +40,7 @@ public class MADISStation extends CoordSysBuilder {
     }
 
     String locVars = ds.findAttValueIgnoreCase(null, "stationLocationVariables", "");
-    stoker = new StringTokenizer( locVars, ", ");
+    stoker = new StringTokenizer(locVars, ", ");
     int count = 0;
     while (stoker.hasMoreTokens()) {
       String vname = stoker.nextToken();
@@ -51,7 +49,7 @@ public class MADISStation extends CoordSysBuilder {
         AxisType atype = count == 0 ? AxisType.Lat : count == 1 ? AxisType.Lon : AxisType.Height;
         v.addAttribute(new Attribute(_Coordinate.AxisType, atype.toString()));
       } else {
-        parseInfo.format(" cant find time variable %s%n",vname);
+        parseInfo.format(" cant find time variable %s%n", vname);
       }
       count++;
     }

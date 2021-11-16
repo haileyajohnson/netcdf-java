@@ -11,15 +11,10 @@ import ucar.nc2.Variable;
 import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.CF;
 import ucar.nc2.constants.FeatureType;
-import ucar.nc2.dataset.CoordSysBuilder;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dataset.VariableDS;
 import ucar.nc2.ft.point.standard.Evaluator;
-import ucar.nc2.ft.point.standard.TableConfig;
-
-import java.io.IOException;
 import java.util.Formatter;
-import java.util.List;
 
 /**
  * CFpointObs using extended model, namely netcdf-4 Structures
@@ -32,19 +27,20 @@ public class CFpointObsExt extends CFpointObs {
   @Override
   public boolean isMine(FeatureType wantFeatureType, NetcdfDataset ds) {
     String conv = ds.findAttValueIgnoreCase(null, CDM.CONVENTIONS, null);
-    return conv != null && (conv.equalsIgnoreCase(CDM.CF_EXTENDED));
+    return CDM.CF_EXTENDED.equalsIgnoreCase(conv);
   }
 
   @Override
-  protected boolean identifyEncodingStation(NetcdfDataset ds, EncodingInfo info, CF.FeatureType ftype, Formatter errlog) {
-    Structure obs =  info.time.getParentStructure();
+  protected boolean identifyEncodingStation(NetcdfDataset ds, EncodingInfo info, CF.FeatureType ftype,
+      Formatter errlog) {
+    Structure obs = info.time.getParentStructure();
     if (obs.getRank() == 0) {
       errlog.format("CFpointObs: must have a non-scalar Time coordinate%n");
       return false;
     }
     Dimension obsDim = obs.getDimension(0);
 
-    Structure station =  info.lat.getParentStructure();
+    Structure station = info.lat.getParentStructure();
     if (station.getRank() == 0) { // could be scalar
       info.set(Encoding.single, null, obsDim);
     }
@@ -61,11 +57,12 @@ public class CFpointObsExt extends CFpointObs {
   @Override
   protected boolean identifyEncodingProfile(NetcdfDataset ds, EncodingInfo info, Formatter errlog) {
     Evaluator.VarAtt varatt = Evaluator.findVariableWithAttribute(ds, CF.SAMPLE_DIMENSION);
-    if (varatt == null) return false;
+    if (varatt == null)
+      return false;
     String dimName = varatt.att.getStringValue();
     Dimension obsDim = ds.findDimension(dimName);
 
-    Structure profile =  info.lat.getParentStructure();
+    Structure profile = info.lat.getParentStructure();
     if (profile.getRank() == 0) { // could be scalar
       info.set(Encoding.single, null, obsDim);
     }
@@ -85,12 +82,12 @@ public class CFpointObsExt extends CFpointObs {
   @Override
   protected boolean identifyEncodingTraj(NetcdfDataset ds, EncodingInfo info, Formatter errlog) {
     // find the obs structure
-    info.childStruct =  info.lat.getParentStructure();
+    info.childStruct = info.lat.getParentStructure();
     Dimension obsDim = info.childStruct.getDimension(0);
 
     // find the traj structure
     Variable varatt = Evaluator.findVariableWithAttributeValue(ds, CF.CF_ROLE, CF.TRAJECTORY_ID);
-    Structure traj =  varatt.getParentStructure();
+    Structure traj = varatt.getParentStructure();
     if (traj.getRank() == 0) { // could be scalar
       info.set(Encoding.single, null, obsDim);
     }
@@ -105,17 +102,19 @@ public class CFpointObsExt extends CFpointObs {
 
 
   @Override
-  protected boolean identifyEncodingTimeSeriesProfile(NetcdfDataset ds, EncodingInfo info, CF.FeatureType ftype, Formatter errlog) {
+  protected boolean identifyEncodingTimeSeriesProfile(NetcdfDataset ds, EncodingInfo info, CF.FeatureType ftype,
+      Formatter errlog) {
     // find the obs structure
     Evaluator.VarAtt varatt = Evaluator.findVariableWithAttribute(ds, CF.SAMPLE_DIMENSION);
-    if (varatt == null) return false;
+    if (varatt == null)
+      return false;
     String dimName = varatt.att.getStringValue();
     info.grandChildDim = ds.findDimension(dimName);
     info.grandChildStruct = Evaluator.findStructureWithDimensions(ds, info.grandChildDim, null);
 
-   // find the station structure
+    // find the station structure
     Variable stdId = Evaluator.findVariableWithAttributeValue(ds, CF.CF_ROLE, CF.TIMESERIES_ID);
-    Structure stn =  stdId.getParentStructure();
+    Structure stn = stdId.getParentStructure();
     if (stn.getRank() == 0) { // could be scalar
       info.set(Encoding.single, null, info.grandChildDim);
     }
@@ -124,7 +123,7 @@ public class CFpointObsExt extends CFpointObs {
 
     // find the profile structure
     Variable profileId = Evaluator.findVariableWithAttributeValue(ds, CF.CF_ROLE, CF.PROFILE_ID);
-    Structure profile =  profileId.getParentStructure();
+    Structure profile = profileId.getParentStructure();
     info.childDim = profile.getDimension(0);
     info.childStruct = profile;
 
@@ -145,17 +144,19 @@ public class CFpointObsExt extends CFpointObs {
   }
 
   @Override
-  protected boolean identifyEncodingSection(NetcdfDataset ds, EncodingInfo info, CF.FeatureType ftype, Formatter errlog) {
+  protected boolean identifyEncodingSection(NetcdfDataset ds, EncodingInfo info, CF.FeatureType ftype,
+      Formatter errlog) {
     // find the obs structure
     Evaluator.VarAtt varatt = Evaluator.findVariableWithAttribute(ds, CF.SAMPLE_DIMENSION);
-    if (varatt == null) return false;
+    if (varatt == null)
+      return false;
     String dimName = varatt.att.getStringValue();
     info.grandChildDim = ds.findDimension(dimName);
     info.grandChildStruct = Evaluator.findStructureWithDimensions(ds, info.grandChildDim, null);
 
-   // find the traj structure
+    // find the traj structure
     Variable trajId = Evaluator.findVariableWithAttributeValue(ds, CF.CF_ROLE, CF.TRAJECTORY_ID);
-    Structure traj =  trajId.getParentStructure();
+    Structure traj = trajId.getParentStructure();
     if (traj.getRank() == 0) { // could be scalar
       info.set(Encoding.single, null, info.grandChildDim);
     }
@@ -164,7 +165,7 @@ public class CFpointObsExt extends CFpointObs {
 
     // find the profile structure
     Variable profileId = Evaluator.findVariableWithAttributeValue(ds, CF.CF_ROLE, CF.PROFILE_ID);
-    Structure profile =  profileId.getParentStructure();
+    Structure profile = profileId.getParentStructure();
     info.childDim = profile.getDimension(0);
     info.childStruct = profile;
 
@@ -180,7 +181,7 @@ public class CFpointObsExt extends CFpointObs {
     }
     info.alt = z;
 
-        // raggeds
+    // raggeds
     if (identifyDoubleRaggeds(ds, info, errlog))
       return true;
 

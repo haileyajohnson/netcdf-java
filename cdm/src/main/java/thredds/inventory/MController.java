@@ -18,28 +18,31 @@ public interface MController {
 
   /**
    * Returns all leaves in collection, recursing into subdirectories.
+   * 
    * @param mc defines the collection to scan
    * @param recheck if false, may use cached results. otherwise must sync with File OS
    * @return iterator over Mfiles, or null if collection does not exist
    */
-  public Iterator<MFile> getInventoryAll(CollectionConfig mc, boolean recheck);
+  Iterator<MFile> getInventoryAll(CollectionConfig mc, boolean recheck);
 
   /**
    * Returns all leaves in top collection, not recursing into subdirectories.
+   * 
    * @param mc defines the collection to scan
    * @param recheck if false, may use cached results. otherwise must sync with File OS
    * @return iterator over Mfiles, or null if collection does not exist
    */
-  public Iterator<MFile> getInventoryTop(CollectionConfig mc, boolean recheck) throws IOException;
+  Iterator<MFile> getInventoryTop(CollectionConfig mc, boolean recheck) throws IOException;
 
   /**
    * Returns all subdirectories in top collection.
+   * 
    * @param mc defines the collection to scan
    * @param recheck if false, may use cached results. otherwise must sync with File OS
    * @return iterator over Mfiles, or null if collection does not exist
    */
-  public Iterator<MFile> getSubdirs(CollectionConfig mc, boolean recheck);
+  Iterator<MFile> getSubdirs(CollectionConfig mc, boolean recheck);
 
-  public void close();
+  void close();
 
 }

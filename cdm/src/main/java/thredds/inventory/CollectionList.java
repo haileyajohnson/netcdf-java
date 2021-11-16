@@ -8,7 +8,6 @@ package thredds.inventory;
 import org.slf4j.Logger;
 import thredds.filesystem.MFileOS;
 import ucar.nc2.util.CloseableIterator;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,7 +33,8 @@ public class CollectionList extends CollectionAbstract {
     String[] files = list.split(";");
     for (String s : files) {
       String filename = s.trim();
-      if (filename.length() == 0) continue;
+      if (filename.isEmpty())
+        continue;
       Path p = Paths.get(filename);
       if (Files.exists(p)) {
         MFileOS mfile = new MFileOS(filename);
@@ -64,11 +64,11 @@ public class CollectionList extends CollectionAbstract {
   }
 
   @Override
-  public CloseableIterator<MFile> getFileIterator() throws IOException {
+  public CloseableIterator<MFile> getFileIterator() {
     return new MFileIterator(mfiles.iterator(), null);
   }
 
   @Override
-  public void close() {  }
+  public void close() {}
 
 }

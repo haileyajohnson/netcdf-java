@@ -5,9 +5,8 @@
 
 package ucar.atd.dorade;
 
+import java.nio.charset.StandardCharsets;
 import ucar.atd.dorade.DoradeDescriptor.DescriptorException;
-import ucar.nc2.constants.CDM;
-
 import java.io.RandomAccessFile;
 import java.io.IOException;
 import java.util.Date;
@@ -50,11 +49,8 @@ public class DoradeSweep {
    * Construct a <code>DoradeSweep</code> using the named DORADE sweep file.
    *
    * @param filename the DORADE sweepfile to load
-   * @throws DoradeSweepException
-   * @throws java.io.FileNotFoundException
    */
-  public DoradeSweep(String filename)
-          throws DoradeSweepException, java.io.FileNotFoundException {
+  public DoradeSweep(String filename) throws DoradeSweepException {
 
     try (RandomAccessFile file = new RandomAccessFile(filename, "r")) {
       littleEndian = DoradeDescriptor.sweepfileIsLittleEndian(file);
@@ -67,9 +63,7 @@ public class DoradeSweep {
     }
   }
 
-  public DoradeSweep(RandomAccessFile file)
-          throws DoradeSweepException, java.io.FileNotFoundException {
-    //file = new RandomAccessFile(filename, "r");
+  public DoradeSweep(RandomAccessFile file) throws DoradeSweepException {
     try {
       littleEndian = DoradeDescriptor.sweepfileIsLittleEndian(file);
 
@@ -105,7 +99,7 @@ public class DoradeSweep {
    *
    * @param name the name of the desired parameter
    * @return the <code>DoradePARM</code> from this sweep with the given name,
-   * or <code>null</code> if no such parameter exists.
+   *         or <code>null</code> if no such parameter exists.
    */
   public DoradePARM lookupParamIgnoreCase(String name) {
     DoradePARM[] list = getParamList();
@@ -150,10 +144,9 @@ public class DoradeSweep {
    *
    * @param which the index of the sensor of interest
    * @return whether the selected sensor is moving
-   * @throws DoradeSweepException
    * @see #getNSensors
    */
-  public boolean sensorIsMoving(int which) throws DoradeSweepException {
+  public boolean sensorIsMoving(int which) {
     try {
       getLatitude(which);
       getLongitude(which);
@@ -176,14 +169,14 @@ public class DoradeSweep {
    */
   public float getLatitude(int which) throws MovingSensorException {
     //
-    // Look for per-ray latitudes first.  Return the fixed sensor latitude
+    // Look for per-ray latitudes first. Return the fixed sensor latitude
     // if no per-ray positions are available.
     //
     float[] lats = mySWIB.getLatitudes();
     if (lats == null)
       return myVOLD.getRADD(which).getLatitude();
     //
-    // We have per-ray locations.  Loop through them, and return
+    // We have per-ray locations. Loop through them, and return
     // null if this is not a static platform
     //
     for (int r = 1; r < lats.length; r++)
@@ -205,14 +198,14 @@ public class DoradeSweep {
    */
   public float getLongitude(int which) throws MovingSensorException {
     //
-    // Look for per-ray longitudes first.  Return the fixed sensor longitude
+    // Look for per-ray longitudes first. Return the fixed sensor longitude
     // if no per-ray positions are available.
     //
     float[] lons = mySWIB.getLongitudes();
     if (lons == null)
       return myVOLD.getRADD(which).getLongitude();
     //
-    // We have per-ray locations.  Loop through them, and return
+    // We have per-ray locations. Loop through them, and return
     // null if this is not a static platform
     //
     for (int r = 1; r < lons.length; r++)
@@ -234,14 +227,14 @@ public class DoradeSweep {
    */
   public float getAltitude(int which) throws MovingSensorException {
     //
-    // Look for per-ray altitudes first.  Return the fixed sensor altitude
+    // Look for per-ray altitudes first. Return the fixed sensor altitude
     // if no per-ray positions are available.
     //
     float[] alts = mySWIB.getAltitudes();
     if (alts == null)
       return myVOLD.getRADD(which).getAltitude();
     //
-    // We have per-ray locations.  Loop through them, and return
+    // We have per-ray locations. Loop through them, and return
     // null if this is not a static platform
     //
     for (int r = 1; r < alts.length; r++)
@@ -367,17 +360,15 @@ public class DoradeSweep {
    * Get the array of data for the given parameter and ray.
    *
    * @param param the parameter of interest
-   * @param ray   the index of the ray of interest
+   * @param ray the index of the ray of interest
    * @return an array containing unpacked values for every cell for the given
-   * parameter and ray.  Cells having bad or missing data will hold the
-   * value <code>BAD_VALUE</code>
-   * @throws DoradeSweepException
+   *         parameter and ray. Cells having bad or missing data will hold the
+   *         value <code>BAD_VALUE</code>
    * @see #getNCells
    * @see #getNRays
    * @see #BAD_VALUE
    */
-  public float[] getRayData(DoradePARM param, int ray)
-          throws DoradeSweepException {
+  public float[] getRayData(DoradePARM param, int ray) throws DoradeSweepException {
     return getRayData(param, ray, null);
   }
 
@@ -385,19 +376,17 @@ public class DoradeSweep {
   /**
    * Get the array of data for the given parameter and ray.
    *
-   * @param param        the parameter of interest
-   * @param ray          the index of the ray of interest
+   * @param param the parameter of interest
+   * @param ray the index of the ray of interest
    * @param workingArray If non-null and the same length as what is needed use this instead.
    * @return an array containing unpacked values for every cell for the given
-   * parameter and ray.  Cells having bad or missing data will hold the
-   * value <code>BAD_VALUE</code>
-   * @throws DoradeSweepException
+   *         parameter and ray. Cells having bad or missing data will hold the
+   *         value <code>BAD_VALUE</code>
    * @see #getNCells
    * @see #getNRays
    * @see #BAD_VALUE
    */
-  public float[] getRayData(DoradePARM param, int ray, float[] workingArray)
-          throws DoradeSweepException {
+  public float[] getRayData(DoradePARM param, int ray, float[] workingArray) throws DoradeSweepException {
     try {
       return mySWIB.getRayData(param, ray, workingArray);
     } catch (DescriptorException ex) {
@@ -410,7 +399,7 @@ public class DoradeSweep {
    *
    * @param which index of the sensor of interest
    * @return range to the leading edge of the first cell for the given sensor,
-   * in meters
+   *         in meters
    * @see #getNSensors
    */
   public float getRangeToFirstCell(int which) {
@@ -423,7 +412,7 @@ public class DoradeSweep {
    *
    * @param which index of the sensor of interest
    * @return the constant cell spacing in meters, or -1 if the cell spacing
-   * varies
+   *         varies
    * @see #getNSensors
    */
   public float getCellSpacing(int which) {
@@ -485,39 +474,6 @@ public class DoradeSweep {
     return DoradeDescriptor.formatDate(date);
   }
 
-  /**
-   * <code>DoradeSweep</code> class test method.  Usage:
-   * <blockquote><code>
-   * $ java ucar.atd.dorade.DoradeSweep &lt;DORADE_sweepfile&gt;
-   * </code></blockquote>
-   */
-  public static void main(String[] args) {
-    try {
-      if (args.length == 0) {
-        System.err.println("Usage: DoradeSweep <filename>");
-        System.exit(1);
-      }
-
-      DoradeSweep sweepfile = new DoradeSweep(args[0]);
-      DoradePARM[] params = sweepfile.getParamList();
-      System.out.println(params.length + " params in file");
-      for (DoradePARM param : params) mainGetParam(sweepfile, param);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-  }
-
-  private static void mainGetParam(DoradeSweep sweepfile, DoradePARM param) throws DoradeSweepException {
-    System.out.print("getting " + param.getName());
-    for (int r = 0; r < sweepfile.getNRays(); r++) {
-      float[] vals = sweepfile.getRayData(param, r);
-      int nCells = vals.length;
-      if (r == 0)
-        System.out.println(" (" + nCells + " cells x " +
-                sweepfile.getNRays() + " rays)");
-    }
-  }
-
   public ScanMode getScanMode() {
     return myVOLD.getRADD(0).getScanMode();
   }
@@ -539,17 +495,17 @@ public class DoradeSweep {
   private static boolean findName(RandomAccessFile file, String expectedName) throws IOException {
     byte[] nameBytes = new byte[4];
 
-    //try {
-      long filepos = file.getFilePointer();
-      file.seek(0);
-      if (file.read(nameBytes, 0, 4) == -1)
-        return false;  // EOF
-      file.seek(filepos);
-    //} catch (Exception ex) {
-    //  throw new IOException();
-    //}
+    // try {
+    long filepos = file.getFilePointer();
+    file.seek(0);
+    if (file.read(nameBytes, 0, 4) == -1)
+      return false; // EOF
+    file.seek(filepos);
+    // } catch (Exception ex) {
+    // throw new IOException();
+    // }
 
-    return expectedName.equals(new String(nameBytes, CDM.utf8Charset));
+    return expectedName.equals(new String(nameBytes, StandardCharsets.UTF_8));
   }
 
   // unidata added
@@ -562,7 +518,7 @@ public class DoradeSweep {
     return myVOLD.getRADD(which).getUnambiguousVelocity();
   }
 
-  //unidata added
+  // unidata added
   public float getunambiguousRange(int which) {
     return myVOLD.getRADD(which).getunambiguousRange();
   }

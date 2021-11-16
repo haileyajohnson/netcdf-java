@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import thredds.featurecollection.FeatureCollectionConfig;
 import thredds.featurecollection.FeatureCollectionType;
 import thredds.inventory.CollectionAbstract;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +18,10 @@ import java.util.List;
  * @since 11/11/13
  */
 public class FeatureCollectionReader {
-  static private final Logger logger = LoggerFactory.getLogger(FeatureCollectionReader.class);
+  private static final Logger logger = LoggerFactory.getLogger(FeatureCollectionReader.class);
 
-    // input is xml file with just the <featureCollection>
-  static public FeatureCollectionConfig getConfigFromSnippet(String filename) {
+  // input is xml file with just the <featureCollection>
+  public static FeatureCollectionConfig getConfigFromSnippet(String filename) {
 
     org.jdom2.Document doc;
     try {
@@ -39,17 +38,18 @@ public class FeatureCollectionReader {
 
   /**
    * Read a catalog and extract a FeatureCollectionConfig from it
+   * 
    * @param catalogAndPath catalog filename, or catalog#featureName
    * @return FeatureCollectionConfig or null
    */
-  static public FeatureCollectionConfig readFeatureCollection(String catalogAndPath) {
+  public static FeatureCollectionConfig readFeatureCollection(String catalogAndPath) {
     String catFilename;
     String fcName = null;
 
     int pos = catalogAndPath.indexOf("#");
     if (pos > 0) {
       catFilename = catalogAndPath.substring(0, pos);
-      fcName = catalogAndPath.substring(pos+1);
+      fcName = catalogAndPath.substring(pos + 1);
     } else {
       catFilename = catalogAndPath;
     }
@@ -77,7 +77,7 @@ public class FeatureCollectionReader {
     return null;
   }
 
-  static private void findFeatureCollection(Element parent, String name, List<Element> fcElems) {
+  private static void findFeatureCollection(Element parent, String name, List<Element> fcElems) {
     List<Element> elist = parent.getChildren("featureCollection", InvCatalogFactory10.defNS);
     if (name == null)
       fcElems.addAll(elist);
@@ -91,21 +91,22 @@ public class FeatureCollectionReader {
       findFeatureCollection(child, name, fcElems);
   }
 
-  static public FeatureCollectionConfig readFeatureCollection(Element featureCollectionElement) {
+  public static FeatureCollectionConfig readFeatureCollection(Element featureCollectionElement) {
     String name = featureCollectionElement.getAttributeValue("name");
     String path = featureCollectionElement.getAttributeValue("path");
     String fcTypeS = featureCollectionElement.getAttributeValue("featureType");
 
     FeatureCollectionType fcType = FeatureCollectionType.valueOf(fcTypeS);
     if (fcType == null) {
-      logger.error( "featureCollection "+name+" must have a valid FeatureCollectionType attribute, found '"+fcTypeS+"'");
+      logger.error(
+          "featureCollection " + name + " must have a valid FeatureCollectionType attribute, found '" + fcTypeS + "'");
       return null;
     }
 
     // collection element required
-    Element collElem = featureCollectionElement.getChild( "collection", InvCatalogFactory10.defNS );
+    Element collElem = featureCollectionElement.getChild("collection", InvCatalogFactory10.defNS);
     if (collElem == null) {
-      logger.error( "featureCollection "+name+" must have a <collection> element." );
+      logger.error("featureCollection " + name + " must have a <collection> element.");
       return null;
     }
     String collectionName = collElem.getAttributeValue("name");
@@ -119,32 +120,32 @@ public class FeatureCollectionReader {
     String rootDir = collElem.getAttributeValue("rootDir");
     String regExp = collElem.getAttributeValue("regExp");
     if (spec == null && rootDir == null) {
-      logger.error( "featureCollection "+name+" must have a spec or rootDir attribute." );
+      logger.error("featureCollection " + name + " must have a spec or rootDir attribute.");
       return null;
     }
-    Element innerNcml = featureCollectionElement.getChild( "netcdf", InvCatalogFactory10.ncmlNS );
-    FeatureCollectionConfig config = new FeatureCollectionConfig(name, path, fcType, spec, collectionName, dateFormatMark, olderThan,
-            timePartition, innerNcml);
+    Element innerNcml = featureCollectionElement.getChild("netcdf", InvCatalogFactory10.ncmlNS);
+    FeatureCollectionConfig config = new FeatureCollectionConfig(name, path, fcType, spec, collectionName,
+        dateFormatMark, olderThan, timePartition, innerNcml);
     config.setFilter(rootDir, regExp);
 
     // tds and update elements
-    Element tdmElem = featureCollectionElement.getChild( "tdm", InvCatalogFactory10.defNS );
-    config.tdmConfig = readUpdateElement( tdmElem);
-    Element updateElem = featureCollectionElement.getChild( "update", InvCatalogFactory10.defNS );
-    config.updateConfig = readUpdateElement( updateElem);
+    Element tdmElem = featureCollectionElement.getChild("tdm", InvCatalogFactory10.defNS);
+    config.tdmConfig = readUpdateElement(tdmElem);
+    Element updateElem = featureCollectionElement.getChild("update", InvCatalogFactory10.defNS);
+    config.updateConfig = readUpdateElement(updateElem);
 
     // protoDataset element
-    Element protoElem = featureCollectionElement.getChild( "protoDataset", InvCatalogFactory10.defNS );
+    Element protoElem = featureCollectionElement.getChild("protoDataset", InvCatalogFactory10.defNS);
     if (protoElem != null) {
       String choice = protoElem.getAttributeValue("choice");
       String change = protoElem.getAttributeValue("change");
       String param = protoElem.getAttributeValue("param");
-      Element ncmlElem = protoElem.getChild( "netcdf", InvCatalogFactory10.ncmlNS );
+      Element ncmlElem = protoElem.getChild("netcdf", InvCatalogFactory10.ncmlNS);
       config.protoConfig = new FeatureCollectionConfig.ProtoConfig(choice, change, param, ncmlElem);
     }
 
     // fmrcConfig element
-    Element fmrcElem = featureCollectionElement.getChild( "fmrcConfig", InvCatalogFactory10.defNS );
+    Element fmrcElem = featureCollectionElement.getChild("fmrcConfig", InvCatalogFactory10.defNS);
     if (fmrcElem != null) {
       String regularize = fmrcElem.getAttributeValue("regularize");
       config.fmrcConfig = new FeatureCollectionConfig.FmrcConfig(regularize);
@@ -153,7 +154,7 @@ public class FeatureCollectionReader {
       if (null != datasetTypes)
         config.fmrcConfig.addDatasetType(datasetTypes);
 
-      List<Element> bestElems = fmrcElem.getChildren( "dataset", InvCatalogFactory10.defNS );
+      List<Element> bestElems = fmrcElem.getChildren("dataset", InvCatalogFactory10.defNS);
       for (Element best : bestElems) {
         String bestName = best.getAttributeValue("name");
         String offs = best.getAttributeValue("offsetsGreaterEqual");
@@ -163,7 +164,7 @@ public class FeatureCollectionReader {
     }
 
     // pointConfig element optional
-    Element pointElem = featureCollectionElement.getChild( "pointConfig", InvCatalogFactory10.defNS );
+    Element pointElem = featureCollectionElement.getChild("pointConfig", InvCatalogFactory10.defNS);
     if (pointElem != null) {
       String datasetTypes = pointElem.getAttributeValue("datasetTypes");
       if (null != datasetTypes)
@@ -171,7 +172,7 @@ public class FeatureCollectionReader {
     }
 
     // gribConfig element optional
-    Element gribConfig = featureCollectionElement.getChild( "gribConfig", InvCatalogFactory10.defNS );
+    Element gribConfig = featureCollectionElement.getChild("gribConfig", InvCatalogFactory10.defNS);
     if (gribConfig != null) {
       config.gribConfig.configFromXml(gribConfig, InvCatalogFactory10.defNS);
     }
@@ -182,7 +183,7 @@ public class FeatureCollectionReader {
     return config;
   }
 
-  static private FeatureCollectionConfig.UpdateConfig readUpdateElement(Element updateElem) {
+  private static FeatureCollectionConfig.UpdateConfig readUpdateElement(Element updateElem) {
     if (updateElem == null) {
       return new FeatureCollectionConfig.UpdateConfig(); // default
     }

@@ -10,7 +10,6 @@ import thredds.client.catalog.Dataset;
 import thredds.client.catalog.tools.CatalogCrawler;
 import thredds.client.catalog.tools.DataFactory;
 import ucar.nc2.units.DateType;
-
 import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,7 +27,7 @@ import java.util.List;
 public class CollectionManagerCatalog extends CollectionManagerAbstract implements CatalogCrawler.Listener {
   private final String catalogUrl;
   private long lastScanned;
-  private boolean debug = false;
+  private boolean debug;
   private List<MFile> mfiles;
 
   public CollectionManagerCatalog(String collectionName, String collectionSpec, String olderThan, Formatter errlog) {
@@ -39,7 +38,7 @@ public class CollectionManagerCatalog extends CollectionManagerAbstract implemen
 
     int pos = collectionSpec.indexOf('?');
     if (pos > 0) {
-      this.dateExtractor = new DateExtractorFromName(collectionSpec.substring(pos + 1), true);  // WTF ?
+      this.dateExtractor = new DateExtractorFromName(collectionSpec.substring(pos + 1), true); // WTF ?
       collectionSpec = collectionSpec.substring(0, pos);
     }
 
@@ -77,7 +76,8 @@ public class CollectionManagerCatalog extends CollectionManagerAbstract implemen
       crawler.crawl(catalogUrl);
     } finally {
       long took = (System.currentTimeMillis() - start);
-      if (debug) System.out.format("***Done " + catalogUrl + " took = " + took + " msecs%n");
+      if (debug)
+        System.out.format("***Done " + catalogUrl + " took = " + took + " msecs%n");
     }
 
     lastScanned = System.currentTimeMillis();
@@ -128,7 +128,7 @@ public class CollectionManagerCatalog extends CollectionManagerAbstract implemen
     }
 
     @Override
-    public MFile getParent() throws IOException {
+    public MFile getParent() {
       return null;
     }
 
@@ -156,24 +156,15 @@ public class CollectionManagerCatalog extends CollectionManagerAbstract implemen
     if (ds.hasAccess()) {
       DataFactory tdataFactory = new DataFactory();
       Access access = tdataFactory.chooseDatasetAccess(ds.getAccess());
-      if (access == null) throw new IllegalStateException();
+      if (access == null)
+        throw new IllegalStateException();
       MFileRemote mfile = new MFileRemote(access);
-      if (mfile.getPath().endsWith(".xml")) return; // eliminate latest.xml  LOOK kludge-o-rama
+      if (mfile.getPath().endsWith(".xml"))
+        return; // eliminate latest.xml LOOK kludge-o-rama
       mfiles.add(mfile);
-      if (debug) System.out.format("add %s %n", mfile.getPath());
+      if (debug)
+        System.out.format("add %s %n", mfile.getPath());
     }
   }
-
-
-  /* public static void main(String arg[]) throws IOException {
-    Formatter errlog = new Formatter();
-    String catUrl = "http://thredds.ucar.edu/thredds/catalog/fmrc/NCEP/NDFD/CONUS_5km/files/catalog.xml";
-    CollectionManagerCatalog man = new CollectionManagerCatalog("test", catUrl, null, errlog);
-    man.debug = true;
-    man.scan(true);
-    Fmrc fmrc = Fmrc.open(MFileCollectionManager.CATALOG+catUrl, errlog);
-    System.out.printf("errlog = %s %n", errlog);
-  }  */
-
 
 }

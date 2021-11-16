@@ -2,7 +2,6 @@
 package ucar.nc2;
 
 import ucar.nc2.util.Indent;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Formatter;
@@ -44,7 +43,8 @@ public class AttributeContainerHelper implements AttributeContainer {
 
   @Override
   public Attribute addAttribute(Attribute att) {
-    if (att == null) return null;
+    if (att == null)
+      return null;
     for (int i = 0; i < atts.size(); i++) {
       Attribute a = atts.get(i);
       if (att.getShortName().equals(a.getShortName())) {
@@ -59,7 +59,8 @@ public class AttributeContainerHelper implements AttributeContainer {
   /** Add all; replace old if has same name */
   @Override
   public void addAll(Iterable<Attribute> atts) {
-    for (Attribute att : atts) addAttribute(att);
+    for (Attribute att : atts)
+      addAttribute(att);
   }
 
   @Override
@@ -70,7 +71,7 @@ public class AttributeContainerHelper implements AttributeContainer {
     if ((att != null) && att.isString())
       attValue = att.getStringValue();
 
-    if (null == attValue)                     // not found, use default
+    if (null == attValue) // not found, use default
       attValue = defaultValue;
 
     return attValue;
@@ -129,18 +130,20 @@ public class AttributeContainerHelper implements AttributeContainer {
     return att != null && atts.remove(att);
   }
 
-  static public AttributeContainer filter(AttributeContainer atts, String... remove) {
+  public static AttributeContainer filter(AttributeContainer atts, String... remove) {
     List<Attribute> result = new ArrayList<>();
     for (Attribute att : atts.getAttributes()) {
       boolean ok = true;
       for (String s : remove)
-        if (att.getShortName().startsWith(s)) ok = false;
-      if (ok) result.add(att);
+        if (att.getShortName().startsWith(s))
+          ok = false;
+      if (ok)
+        result.add(att);
     }
     return new AttributeContainerHelper(atts.getName(), result);
   }
 
-  static public void show(AttributeContainer atts, Indent indent, Formatter f) {
+  public static void show(AttributeContainer atts, Indent indent, Formatter f) {
     for (Attribute att : atts.getAttributes()) {
       f.format("%s%s%n", indent, att);
     }

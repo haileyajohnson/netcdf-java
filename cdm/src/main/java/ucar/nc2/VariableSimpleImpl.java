@@ -7,7 +7,6 @@ package ucar.nc2;
 
 import ucar.ma2.DataType;
 import ucar.nc2.constants.CDM;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,12 +19,12 @@ import java.util.List;
  */
 public class VariableSimpleImpl implements VariableSimpleIF {
 
-  static public VariableSimpleImpl makeScalar(String name, String desc, String units, DataType dt) {
+  public static VariableSimpleImpl makeScalar(String name, String desc, String units, DataType dt) {
     return new VariableSimpleImpl(name, desc, units, dt, null);
   }
 
-  static public VariableSimpleImpl makeString(String name, String desc, String units, int str_len) {
-    Dimension d = new Dimension(name+"_strlen", str_len, false, false, false);
+  public static VariableSimpleImpl makeString(String name, String desc, String units, int str_len) {
+    Dimension d = new Dimension(name + "_strlen", str_len, false, false, false);
     // String dimString = Dimension.makeDimensionsString(new int[] {str_len});
     return new VariableSimpleImpl(name, desc, units, DataType.CHAR, Collections.singletonList(d));
   }

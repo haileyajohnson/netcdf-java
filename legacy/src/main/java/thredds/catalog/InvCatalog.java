@@ -6,7 +6,6 @@
 package thredds.catalog;
 
 import ucar.nc2.units.DateType;
-
 import java.util.*;
 import java.net.*;
 
@@ -32,8 +31,7 @@ public abstract class InvCatalog {
   /**
    * Protected constructor.
    */
-  protected InvCatalog() {
-  }
+  protected InvCatalog() {}
 
 
   /**
@@ -133,15 +131,18 @@ public abstract class InvCatalog {
    * @return service that matches the given name, or null if none found.
    */
   public InvService findService(String name) {
-    if (name == null) return null;
+    if (name == null)
+      return null;
 
     for (InvService s : services) {
-      if (name.equals(s.getName())) return s;
+      if (name.equals(s.getName()))
+        return s;
 
       // look for nested servers
       if (s.getServiceType() == ServiceType.COMPOUND) {
         InvService result = s.findNestedService(name);
-        if (result != null) return result;
+        if (result != null)
+          return result;
       }
     }
 
@@ -176,7 +177,7 @@ public abstract class InvCatalog {
       }
     }
 
-    //otherwise let the URI class resolve it
+    // otherwise let the URI class resolve it
     return baseURI.resolve(want);
   }
 
@@ -192,11 +193,11 @@ public abstract class InvCatalog {
   /**
    * Check internal data structures.
    *
-   * @param out  : print errors here
+   * @param out : print errors here
    * @param show : print messages for each object (debug)
    * @return true if no fatal consistency errors.
    */
-  abstract public boolean check(StringBuilder out, boolean show);
+  public abstract boolean check(StringBuilder out, boolean show);
 
   /**
    * Check internal data structures.
@@ -213,13 +214,13 @@ public abstract class InvCatalog {
    *
    * @param dataset make this top; must be existing dataset in this catalog.
    */
-  abstract public void subset(InvDataset dataset);
+  public abstract void subset(InvDataset dataset);
 
   /**
    * Munge this catalog to remove any dataset that doesnt pass through the filter.
    *
    * @param filter remove datasets that dont pass this filter.
    */
-  abstract public void filter(DatasetFilter filter);
+  public abstract void filter(DatasetFilter filter);
 
 }

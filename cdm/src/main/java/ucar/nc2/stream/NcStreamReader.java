@@ -4,13 +4,13 @@
  */
 package ucar.nc2.stream;
 
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFileSubclass;
 import ucar.nc2.Structure;
 import ucar.ma2.*;
-
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.InputStream;
@@ -18,9 +18,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.zip.InflaterInputStream;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-import ucar.nc2.constants.CDM;
 
 /**
  * Read an ncStream InputStream into a NetcdfFile.
@@ -30,15 +27,15 @@ import ucar.nc2.constants.CDM;
  * @since Feb 7, 2009
  */
 public class NcStreamReader {
-  static private final Logger logger = LoggerFactory.getLogger(NcStreamReader.class);
+  private static final Logger logger = LoggerFactory.getLogger(NcStreamReader.class);
 
   private static final boolean debug = false;
   private static final boolean showDeflate = false;
 
-  private static double total_uncompressedSize = 0.0;
-  private static double total_compressedSize = 0.0;
+  private static double total_uncompressedSize;
+  private static double total_compressedSize;
 
-  static public double getCompression(boolean reset) {
+  public static double getCompression(boolean reset) {
     double result = total_uncompressedSize / total_compressedSize;
     if (reset) {
       total_compressedSize = 0;
@@ -72,22 +69,25 @@ public class NcStreamReader {
 
     NcStreamProto.Header proto = NcStreamProto.Header.parseFrom(m);
     ncfile = proto2nc(proto, ncfile);
-    if (debug) System.out.printf("  proto= %s%n", proto);
+    if (debug)
+      System.out.printf("  proto= %s%n", proto);
 
     // LOOK why doesnt this work ?
-    //CodedInputStream cis = CodedInputStream.newInstance(is);
-    //cis.setSizeLimit(msize);
-    //NcStreamProto.Stream proto = NcStreamProto.Stream.parseFrom(cis);
+    // CodedInputStream cis = CodedInputStream.newInstance(is);
+    // cis.setSizeLimit(msize);
+    // NcStreamProto.Stream proto = NcStreamProto.Stream.parseFrom(cis);
 
-    /* why are we reading then ignoring the data?
-    while (is.available() > 0) {
-      readData(is, ncfile, ncfile.getLocation());
-    } */
+    /*
+     * why are we reading then ignoring the data?
+     * while (is.available() > 0) {
+     * readData(is, ncfile, ncfile.getLocation());
+     * }
+     */
 
     return ncfile;
   }
 
-  static public class DataResult {
+  public static class DataResult {
     public String varNameFullEsc;
     public Array data;
 
@@ -100,7 +100,7 @@ public class NcStreamReader {
   /**
    * Read the result of a data request. Only one variable at a time.
    *
-   * @param is     read from input stream
+   * @param is read from input stream
    * @param ncfile need the metadata from here to interpret structure data
    * @return DataResult
    * @throws IOException on read error
@@ -111,15 +111,18 @@ public class NcStreamReader {
     if (bytesRead < b.length)
       throw new EOFException(location);
 
-    if (NcStream.test(b,NcStream.MAGIC_DATA)) return readData1(is, ncfile);
-    if (NcStream.test(b,NcStream.MAGIC_DATA2)) return readData2(is);
+    if (NcStream.test(b, NcStream.MAGIC_DATA))
+      return readData1(is, ncfile);
+    if (NcStream.test(b, NcStream.MAGIC_DATA2))
+      return readData2(is);
 
     throw new IOException("Data transfer corrupted on " + location);
   }
 
   private DataResult readData1(InputStream is, NetcdfFile ncfile) throws IOException {
     int psize = NcStream.readVInt(is);
-    if (debug) System.out.println("  readData data message len= " + psize);
+    if (debug)
+      System.out.println("  readData data message len= " + psize);
     byte[] dp = new byte[psize];
     NcStream.readFully(is, dp);
     NcStreamProto.Data dproto = NcStreamProto.Data.parseFrom(dp);
@@ -138,7 +141,7 @@ public class NcStreamReader {
         int slen = NcStream.readVInt(is);
         byte[] sb = new byte[slen];
         NcStream.readFully(is, sb);
-        ii.setObjectNext(new String(sb, CDM.utf8Charset));
+        ii.setObjectNext(new String(sb, StandardCharsets.UTF_8));
       }
       return new DataResult(dproto.getVarName(), data);
 
@@ -158,7 +161,8 @@ public class NcStreamReader {
 
     // otherwise read data message
     int dsize = NcStream.readVInt(is);
-    if (debug) System.out.println("  readData data len= " + dsize);
+    if (debug)
+      System.out.println("  readData data len= " + dsize);
     byte[] datab = new byte[dsize];
     NcStream.readFully(is, datab);
 
@@ -189,7 +193,8 @@ public class NcStreamReader {
       byte[] resultb = new byte[uncompressedSize];
       NcStream.readFully(in, resultb);
 
-      data = Array.factory(dataType, section.getShape(), ByteBuffer.wrap(resultb)); // another copy, not sure can do anything
+      data = Array.factory(dataType, section.getShape(), ByteBuffer.wrap(resultb)); // another copy, not sure can do
+                                                                                    // anything
       if (showDeflate)
         System.out.printf("Deflate = %d / %d = %f %n", uncompressedSize, dsize, ((float) uncompressedSize) / dsize);
       total_uncompressedSize += uncompressedSize;
@@ -204,7 +209,8 @@ public class NcStreamReader {
 
   private DataResult readData2(InputStream is) throws IOException {
     int psize = NcStream.readVInt(is);
-    if (debug) System.out.println("  readData data message len= " + psize);
+    if (debug)
+      System.out.println("  readData data message len= " + psize);
     byte[] dp = new byte[psize];
     NcStream.readFully(is, dp);
 
@@ -224,11 +230,11 @@ public class NcStreamReader {
       throw new IOException("Data transfer corrupted on " + ncfile.getLocation());
 
     int psize = NcStream.readVInt(is);
-    if (debug) System.out.println("  readData data message len= " + psize);
+    if (debug)
+      System.out.println("  readData data message len= " + psize);
     byte[] dp = new byte[psize];
     NcStream.readFully(is, dp);
     NcStreamProto.Data dproto = NcStreamProto.Data.parseFrom(dp);
-    // if (debug) System.out.println(" readData proto = " + dproto);
 
     Structure s = (Structure) ncfile.findVariable(dproto.getVarName());
     StructureMembers members = s.makeStructureMembers();
@@ -241,9 +247,9 @@ public class NcStreamReader {
   private static class StreamDataIterator implements StructureDataIterator {
     private InputStream is;
     private StructureMembers members;
-    private StructureData curr = null;
+    private StructureData curr;
     private ByteOrder bo;
-    private int count = 0;
+    private int count;
     private boolean done;
 
     StreamDataIterator(InputStream is, StructureMembers members, ByteOrder bo) {
@@ -254,12 +260,13 @@ public class NcStreamReader {
 
     @Override
     public boolean hasNext() throws IOException {
-      if (!done) readNext();
+      if (!done)
+        readNext();
       return (curr != null);
     }
 
     @Override
-    public StructureData next() throws IOException {
+    public StructureData next() {
       count++;
       return curr;
     }
@@ -274,7 +281,6 @@ public class NcStreamReader {
         byte[] datab = new byte[dsize];
         NcStream.readFully(is, datab);
         // curr = NcStream.decodeStructureData(members, bo, datab); LOOK
-        // System.out.printf("StreamDataIterator read sdata size= %d%n", dsize);
 
       } else if (NcStream.test(b, NcStream.MAGIC_VEND)) {
         curr = null;
@@ -311,12 +317,14 @@ public class NcStreamReader {
 
   /////////////////////////////////////////////////////////////////////
 
-  private NetcdfFile proto2nc(NcStreamProto.Header proto, NetcdfFile ncfile) throws InvalidProtocolBufferException {
+  private NetcdfFile proto2nc(NcStreamProto.Header proto, NetcdfFile ncfile) {
     if (ncfile == null)
       ncfile = new NetcdfFileSubclass(); // not used i think
     ncfile.setLocation(proto.getLocation());
-    if (proto.getId().length() > 0) ncfile.setId(proto.getId());
-    if (proto.getTitle().length() > 0) ncfile.setTitle(proto.getTitle());
+    if (!proto.getId().isEmpty())
+      ncfile.setId(proto.getId());
+    if (!proto.getTitle().isEmpty())
+      ncfile.setTitle(proto.getTitle());
 
     NcStreamProto.Group root = proto.getRoot();
     NcStream.readGroup(root, ncfile, ncfile.getRootGroup());

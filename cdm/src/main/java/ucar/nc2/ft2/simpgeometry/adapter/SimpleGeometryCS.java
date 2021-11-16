@@ -8,11 +8,9 @@ package ucar.nc2.ft2.simpgeometry.adapter;
 import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.List;
-
 import ucar.nc2.constants.AxisType;
 import ucar.nc2.dataset.*;
 import ucar.nc2.Dimension;
-import ucar.nc2.dataset.CoordinateAxis;
 import ucar.nc2.ft2.simpgeometry.*;
 
 /**
@@ -27,23 +25,29 @@ public class SimpleGeometryCS {
 
   private List<CoordinateAxis> simpleGeometryX, simpleGeometryY, simpleGeometryZ, simpleGeometryID;
   SimpleGeometryCSBuilder builder;
-  
+
   public SimpleGeometryCS(SimpleGeometryCSBuilder builder) {
     this.builder = builder;
-    simpleGeometryX = new ArrayList<CoordinateAxis>(); simpleGeometryY = new ArrayList<CoordinateAxis>();
-    simpleGeometryZ = new ArrayList<CoordinateAxis>(); simpleGeometryID = new ArrayList<CoordinateAxis>();
-    
-    for(CoordinateAxis axis : builder.getSgAxes()) {
-    	
-    	// Look for simple geometry axes and add them
-    	if(axis.getAxisType().equals(AxisType.SimpleGeometryX)) simpleGeometryX.add(axis);
-    	else if (axis.getAxisType().equals(AxisType.SimpleGeometryY)) simpleGeometryY.add(axis);
-    	else if(axis.getAxisType().equals(AxisType.SimpleGeometryZ)) simpleGeometryZ.add(axis);
-    	else if(axis.getAxisType().equals(AxisType.SimpleGeometryID)) simpleGeometryID.add(axis);
+    simpleGeometryX = new ArrayList<>();
+    simpleGeometryY = new ArrayList<>();
+    simpleGeometryZ = new ArrayList<>();
+    simpleGeometryID = new ArrayList<>();
+
+    for (CoordinateAxis axis : builder.getSgAxes()) {
+
+      // Look for simple geometry axes and add them
+      if (axis.getAxisType() == AxisType.SimpleGeometryX)
+        simpleGeometryX.add(axis);
+      else if (axis.getAxisType() == AxisType.SimpleGeometryY)
+        simpleGeometryY.add(axis);
+      else if (axis.getAxisType() == AxisType.SimpleGeometryZ)
+        simpleGeometryZ.add(axis);
+      else if (axis.getAxisType() == AxisType.SimpleGeometryID)
+        simpleGeometryID.add(axis);
 
     }
   }
-  
+
   /**
    * Given a variable name, returns the type of geometry which that variable is holding
    * 
@@ -51,36 +55,36 @@ public class SimpleGeometryCS {
    * @return geometry type associated with that variable
    */
   public GeometryType getGeometryType(String name) {
-	return this.builder.getGeometryType(name);
+    return this.builder.getGeometryType(name);
   }
-  
+
   /**
    * Get a list of all simple geometry X axes.
    * 
    * @return list of simple geometry X axes
    */
   public List<CoordinateAxis> getSimpleGeometryX() {
-	return this.simpleGeometryX;
+    return this.simpleGeometryX;
   }
-  
+
   /**
    * Get a list of all simple geometry Y axes
    * 
    * @return list of simple geometry Y axes
    */
   public List<CoordinateAxis> getSimpleGeometryY() {
-	return this.simpleGeometryY;
+    return this.simpleGeometryY;
   }
-  
+
   /**
    * Get a list of all simple geometry Z axes.
    * 
    * @return list of simple geometry Z axes.
    */
   public List<CoordinateAxis> getSimpleGeometryZ() {
-	return this.simpleGeometryZ;
+    return this.simpleGeometryZ;
   }
-  
+
   /**
    * Get a list of all simple geometry ID axes.
    * Simple Geometry ID axes are used for indexing into simple geometry variables.
@@ -88,21 +92,21 @@ public class SimpleGeometryCS {
    * @return list of simple geometry ID axes
    */
   public List<CoordinateAxis> getSimpleGeometryID() {
-	return this.simpleGeometryID;
+    return this.simpleGeometryID;
   }
-  
+
   /**
    * Get a list of all dimensions in this dataset.
    * 
    * @return list of dimensions.
    */
-  public List<Dimension> getDimensions(){
-	  return builder.getDimensions();
+  public List<Dimension> getDimensions() {
+    return builder.getDimensions();
   }
-  
+
   /**
    * Given a Variable name and a geometry index
-   * returns a Polygon 
+   * returns a Polygon
    * 
    * @param name of the data variable
    * @param index within the variable
@@ -110,25 +114,20 @@ public class SimpleGeometryCS {
    * @return polygon with all associated data, null if not found
    */
   public Polygon getPolygon(String name, int index) {
-	 return builder.getPolygon(name, index);
+    return builder.getPolygon(name, index);
   }
-  
+
   /**
    * Given a Variable name and a beginning index and end index, returns a list of
    * polygon (inclusive on both sides)
-   * 
-   * @param name
-   * @param indexBegin
-   * @param indexEnd
-   * @return
    */
   public List<Polygon> getPolygons(String name, int indexBegin, int indexEnd) {
-	  return builder.getPolygons(name, indexBegin, indexEnd);
+    return builder.getPolygons(name, indexBegin, indexEnd);
   }
-  
+
   /**
    * Given a Variable name and a geometry index
-   * returns a Line 
+   * returns a Line
    * 
    * @param name of the data variable
    * @param index within the variable
@@ -136,22 +135,17 @@ public class SimpleGeometryCS {
    * @return line with all associated data, null if not found
    */
   public Line getLine(String name, int index) {
-	 return builder.getLine(name, index);
+    return builder.getLine(name, index);
   }
-  
+
   /**
    * Given a Variable name and a beginning index and end index, returns a list of
    * lines (inclusive on both sides)
-   * 
-   * @param name
-   * @param indexBegin
-   * @param indexEnd
-   * @return
    */
   public List<Line> getLines(String name, int indexBegin, int indexEnd) {
-	  return builder.getLines(name, indexBegin, indexEnd);
+    return builder.getLines(name, indexBegin, indexEnd);
   }
-  
+
   /**
    * Given a Variable name and a geometry index
    * returns a Point
@@ -161,9 +155,9 @@ public class SimpleGeometryCS {
    * @return point with all associated data, null if not found
    */
   public Point getPoint(String name, int index) {
-	 return builder.getPoint(name,index);
+    return builder.getPoint(name, index);
   }
-  
+
   /**
    * Given a Variable name and a beginning index and end index
    * returns a list of points (inclusive on both sides)
@@ -174,19 +168,19 @@ public class SimpleGeometryCS {
    * @return a list of points with associated data
    */
   public List<Point> getPoints(String name, int indexBegin, int indexEnd) {
-	  return builder.getPoints(name, indexBegin, indexEnd);
+    return builder.getPoints(name, indexBegin, indexEnd);
   }
 
-    public static SimpleGeometryCS makeSGCoordSys(Formatter sbuff, CoordinateSystem cs, VariableEnhanced v) {
-        if (sbuff != null) {
-            sbuff.format(" ");
-            v.getNameAndDimensions(sbuff, false, true);
-            sbuff.format(" check CS %s: ", cs.getName());
-        }
-
-        SimpleGeometryCS gcs = new SimpleGeometryCS(new SimpleGeometryCSBuilder(null, cs, null));
-        return gcs;
+  public static SimpleGeometryCS makeSGCoordSys(Formatter sbuff, CoordinateSystem cs, VariableEnhanced v) {
+    if (sbuff != null) {
+      sbuff.format(" ");
+      v.getNameAndDimensions(sbuff, false, true);
+      sbuff.format(" check CS %s: ", cs.getName());
     }
+
+    SimpleGeometryCS gcs = new SimpleGeometryCS(new SimpleGeometryCSBuilder(null, cs, null));
+    return gcs;
+  }
 
 
 }

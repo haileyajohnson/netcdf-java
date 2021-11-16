@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.Iterator;
 import java.util.List;
-
 import thredds.inventory.TimedCollection;
 import ucar.nc2.VariableSimpleIF;
 import ucar.nc2.constants.FeatureType;
@@ -35,27 +34,29 @@ import ucar.unidata.geoloc.LatLonRect;
  */
 
 public class CompositeStationCollectionFlattened extends PointCollectionImpl {
-  static private org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CompositeStationCollectionFlattened.class);
+  private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CompositeStationCollectionFlattened.class);
 
   private TimedCollection stnCollections;
   private LatLonRect bbSubset;
   private List<String> stationsSubset;
   private CalendarDateRange dateRange;
   private List<VariableSimpleIF> varList;
-  private boolean wantStationsubset = false;
+  private boolean wantStationsubset;
 
-  protected CompositeStationCollectionFlattened(String name, CalendarDateUnit timeUnit, String altUnits, List<String> stations, CalendarDateRange dateRange,
-                                                List<VariableSimpleIF> varList, TimedCollection stnCollections) throws IOException {
+  protected CompositeStationCollectionFlattened(String name, CalendarDateUnit timeUnit, String altUnits,
+      List<String> stations, CalendarDateRange dateRange, List<VariableSimpleIF> varList,
+      TimedCollection stnCollections) {
     super(name, timeUnit, altUnits);
     this.stationsSubset = stations; // note these will be from the original collection, must transfer
     this.dateRange = dateRange;
     this.varList = varList;
     this.stnCollections = stnCollections;
 
-    wantStationsubset = (stations != null) && (stations.size() > 0);
+    wantStationsubset = (stations != null) && (!stations.isEmpty());
   }
 
-  protected CompositeStationCollectionFlattened(String name, CalendarDateUnit timeUnit, String altUnits, LatLonRect bbSubset, CalendarDateRange dateRange, TimedCollection stnCollections) throws IOException {
+  protected CompositeStationCollectionFlattened(String name, CalendarDateUnit timeUnit, String altUnits,
+      LatLonRect bbSubset, CalendarDateRange dateRange, TimedCollection stnCollections) {
     super(name, timeUnit, altUnits);
     this.bbSubset = bbSubset;
     this.dateRange = dateRange;
@@ -63,27 +64,29 @@ public class CompositeStationCollectionFlattened extends PointCollectionImpl {
   }
 
   @Override
-  public PointFeatureIterator getPointFeatureIterator() throws IOException {
+  public PointFeatureIterator getPointFeatureIterator() {
     return new PointIterator();
   }
 
   private class PointIterator extends PointIteratorAbstract {
-    private boolean finished = false;
+    private boolean finished;
     private Iterator<TimedCollection.Dataset> iter;
     private FeatureDatasetPoint currentDataset;
-    private PointFeatureIterator pfIter = null;
+    private PointFeatureIterator pfIter;
 
     PointIterator() {
       iter = stnCollections.getDatasets().iterator();
     }
 
     private PointFeatureIterator getNextIterator() throws IOException {
-      if (!iter.hasNext()) return null;
+      if (!iter.hasNext())
+        return null;
       TimedCollection.Dataset td = iter.next();
       Formatter errlog = new Formatter();
 
       // open the next dataset
-      currentDataset = (FeatureDatasetPoint) FeatureDatasetFactoryManager.open(FeatureType.STATION, td.getLocation(), null, errlog);
+      currentDataset =
+          (FeatureDatasetPoint) FeatureDatasetFactoryManager.open(FeatureType.STATION, td.getLocation(), null, errlog);
       if (currentDataset == null) {
         logger.error("FeatureDatasetFactoryManager failed to open: " + td.getLocation() + " \nerrlog = " + errlog);
         return getNextIterator();
@@ -104,7 +107,8 @@ public class CompositeStationCollectionFlattened extends PointCollectionImpl {
       } else {
         List<StationFeature> stations = stnCollection.getStationFeatures(bbSubset);
         List<String> names = new ArrayList<>();
-        for (StationFeature s : stations) names.add(s.getName());
+        for (StationFeature s : stations)
+          names.add(s.getName());
 
         pc = stnCollection.flatten(names, dateRange, null);
       }
@@ -127,7 +131,8 @@ public class CompositeStationCollectionFlattened extends PointCollectionImpl {
           pfIter.close();
           currentDataset.close();
           if (CompositeDatasetFactory.debug)
-            System.out.printf("CompositeStationCollectionFlattened.Iterator close dataset: %s%n", currentDataset.getLocation());
+            System.out.printf("CompositeStationCollectionFlattened.Iterator close dataset: %s%n",
+                currentDataset.getLocation());
           pfIter = getNextIterator();
           return hasNext();
         }
@@ -140,14 +145,15 @@ public class CompositeStationCollectionFlattened extends PointCollectionImpl {
 
     @Override
     public PointFeature next() {
-      PointFeature pf =  pfIter.next();
+      PointFeature pf = pfIter.next();
       calcBounds(pf);
       return pf;
     }
 
     @Override
     public void close() {
-      if (finished) return;
+      if (finished)
+        return;
 
       if (pfIter != null)
         pfIter.close();

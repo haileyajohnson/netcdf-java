@@ -11,9 +11,7 @@ import ucar.nc2.constants.AxisType;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dataset.CoordinateAxis;
 import ucar.nc2.Dimension;
-
 import java.util.Formatter;
-import java.io.IOException;
 
 /**
  * RAF Nimbus conventions
@@ -24,10 +22,10 @@ import java.io.IOException;
 public class RafNimbus extends TableConfigurerImpl {
   public boolean isMine(FeatureType wantFeatureType, NetcdfDataset ds) {
     String center = ds.findAttValueIgnoreCase(null, "Convention", null);
-    return center != null && center.equals("NCAR-RAF/nimbus");
+    return "NCAR-RAF/nimbus".equals(center);
   }
 
-  public TableConfig getConfig(FeatureType wantFeatureType, NetcdfDataset ds, Formatter errlog) throws IOException {
+  public TableConfig getConfig(FeatureType wantFeatureType, NetcdfDataset ds, Formatter errlog) {
     TableConfig topTable = new TableConfig(Table.Type.Top, "singleTrajectory");
 
     CoordinateAxis coordAxis = CoordSysEvaluator.findCoordByType(ds, AxisType.Time);
@@ -35,19 +33,16 @@ public class RafNimbus extends TableConfigurerImpl {
       errlog.format("Cant find a time coordinate");
       return null;
     }
-    final Dimension innerDim = coordAxis.getDimension(0);
+    Dimension innerDim = coordAxis.getDimension(0);
     boolean obsIsStruct = Evaluator.hasNetcdf3RecordStructure(ds) && innerDim.isUnlimited();
 
     TableConfig obsTable = new TableConfig(Table.Type.Structure, innerDim.getShortName());
     obsTable.dimName = innerDim.getShortName();
     obsTable.time = coordAxis.getFullName();
     obsTable.structName = obsIsStruct ? "record" : innerDim.getShortName();
-    obsTable.structureType = obsIsStruct ? TableConfig.StructureType.Structure : TableConfig.StructureType.PsuedoStructure;
-    CoordSysEvaluator.findCoords(obsTable, ds, new CoordSysEvaluator.Predicate() {
-      public boolean match(CoordinateAxis axis) {
-        return innerDim.equals(axis.getDimension(0));
-      }
-    });
+    obsTable.structureType =
+        obsIsStruct ? TableConfig.StructureType.Structure : TableConfig.StructureType.PsuedoStructure;
+    CoordSysEvaluator.findCoords(obsTable, ds, axis -> innerDim.equals(axis.getDimension(0)));
 
     topTable.addChild(obsTable);
     return topTable;

@@ -9,9 +9,7 @@ import thredds.featurecollection.FeatureCollectionConfig;
 import thredds.filesystem.MFileOS7;
 import thredds.inventory.*;
 import ucar.nc2.util.CloseableIterator;
-
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,15 +26,14 @@ public class PartitionManagerFromIndexDirectory extends CollectionAbstract imple
   private List<File> partIndexFiles;
   private final FeatureCollectionConfig config;
 
-  public PartitionManagerFromIndexDirectory(String name, FeatureCollectionConfig config, File directory, String suffix, org.slf4j.Logger logger) {
+  public PartitionManagerFromIndexDirectory(String name, FeatureCollectionConfig config, File directory, String suffix,
+      org.slf4j.Logger logger) {
     super(name, logger);
     this.config = config;
     this.root = directory.getPath();
     this.partIndexFiles = new ArrayList<>();
 
-    File[] files = directory.listFiles( new FilenameFilter() {
-      public boolean accept(File dir, String name) { return name.endsWith(suffix); }
-    });
+    File[] files = directory.listFiles((dir, name1) -> name1.endsWith(suffix));
     if (files != null) {
       Collections.addAll(partIndexFiles, files);
     }
@@ -45,13 +42,13 @@ public class PartitionManagerFromIndexDirectory extends CollectionAbstract imple
 
   }
 
-  public Iterable<MCollection> makePartitions(CollectionUpdateType forceCollection) throws IOException {
+  public Iterable<MCollection> makePartitions(CollectionUpdateType forceCollection) {
     return new PartIterator();
   }
 
   private class PartIterator implements Iterator<MCollection>, Iterable<MCollection> {
     Iterator<File> iter = partIndexFiles.iterator();
-    MCollection next = null;
+    MCollection next;
 
     @Override
     public Iterator<MCollection> iterator() {
@@ -67,15 +64,16 @@ public class PartitionManagerFromIndexDirectory extends CollectionAbstract imple
 
       File nextFile = iter.next();
       try {
-        MCollection result = new CollectionSingleIndexFile( new MFileOS7(nextFile.getPath()), logger);
-        if (wasRemoved(result)) return hasNext();
+        MCollection result = new CollectionSingleIndexFile(new MFileOS7(nextFile.getPath()), logger);
+        if (wasRemoved(result))
+          return hasNext();
 
         result.putAuxInfo(FeatureCollectionConfig.AUX_CONFIG, config);
         next = result;
         return true;
 
       } catch (IOException e) {
-        logger.error("PartitionManagerFromList failed on "+nextFile.getPath(), e);
+        logger.error("PartitionManagerFromList failed on " + nextFile.getPath(), e);
         throw new RuntimeException(e);
       }
 
@@ -87,29 +85,42 @@ public class PartitionManagerFromIndexDirectory extends CollectionAbstract imple
     }
 
     @Override
-    public void remove() {
-    }
+    public void remove() {}
   }
 
   @Override
-  public void close() { }
+  public void close() {}
 
   @Override
-  public Iterable<MFile> getFilesSorted() throws IOException {
-    return null;
+  public Iterable<MFile> getFilesSorted() {
+    return Collections.emptyList();
   }
 
   @Override
-  public CloseableIterator<MFile> getFileIterator() throws IOException {
-    return null;
+  public CloseableIterator<MFile> getFileIterator() {
+    return new CloseableIterator<MFile>() {
+      @Override
+      public boolean hasNext() {
+        return false;
+      }
+
+      @Override
+      public MFile next() {
+        return null;
+      }
+
+      @Override
+      public void close() {}
+    };
   }
 
-    /////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////
   // partitions can be removed (!)
   private List<String> removed;
 
-  public void removePartition( MCollection partition) {
-    if (removed == null) removed = new ArrayList<>();
+  public void removePartition(MCollection partition) {
+    if (removed == null)
+      removed = new ArrayList<>();
     removed.add(partition.getCollectionName());
   }
 

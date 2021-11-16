@@ -6,7 +6,6 @@ package ucar.nc2.dt.radial;
 
 
 import ucar.ma2.*;
-
 import ucar.nc2.Attribute;
 import ucar.nc2.Variable;
 import ucar.nc2.VariableSimpleIF;
@@ -17,15 +16,11 @@ import ucar.nc2.ft.FeatureDataset;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateUnit;
 import ucar.nc2.units.DateUnit;
-
 import ucar.unidata.geoloc.Earth;
 import ucar.unidata.geoloc.LatLonPointImpl;
 import ucar.unidata.geoloc.LatLonRect;
-
 import java.io.IOException;
-
 import java.util.*;
-
 import static ucar.ma2.MAMath.nearlyEquals;
 
 /**
@@ -33,9 +28,9 @@ import static ucar.ma2.MAMath.nearlyEquals;
  */
 public class CFRadialAdapter extends AbstractRadialAdapter {
 
-  static private org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CFRadialAdapter.class);
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CFRadialAdapter.class);
 
-  private NetcdfDataset ds = null;
+  private NetcdfDataset ds;
   private double latv, lonv, elev;
   private double[] time;
   private float[] elevation;
@@ -47,19 +42,20 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
   private int[] ray_start_index;
   private int nsweeps;
   private boolean isStationary;
-  private boolean isStationaryChecked = false;
+  private boolean isStationaryChecked;
 
   /////////////////////////////////////////////////
   // TypedDatasetFactoryIF
 
-  public Object isMine( FeatureType wantFeatureType, NetcdfDataset ncd, Formatter errlog) throws IOException {
+  public Object isMine(FeatureType wantFeatureType, NetcdfDataset ncd, Formatter errlog) {
     String convStr = ncd.findAttValueIgnoreCase(null, "Conventions", null);
     if ((null != convStr) && convStr.startsWith("CF/Radial"))
       return this;
     return null;
   }
 
-  public FeatureDataset open( FeatureType ftype, NetcdfDataset ncd, Object analysis, ucar.nc2.util.CancelTask task, Formatter errlog) throws IOException {
+  public FeatureDataset open(FeatureType ftype, NetcdfDataset ncd, Object analysis, ucar.nc2.util.CancelTask task,
+      Formatter errlog) {
     return new CFRadialAdapter(ncd);
   }
 
@@ -68,8 +64,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
   }
 
   // needed for FeatureDatasetFactory
-  public CFRadialAdapter() {
-  }
+  public CFRadialAdapter() {}
 
   /**
    * Constructor.
@@ -116,11 +111,11 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
 
       Variable var = ds.findVariable("ray_n_gates");
       if (var != null)
-          ray_n_gates = (int[]) var.read().copyTo1DJavaArray();
+        ray_n_gates = (int[]) var.read().copyTo1DJavaArray();
 
       var = ds.findVariable("ray_start_index");
       if (var != null)
-          ray_start_index = (int[]) var.read().copyTo1DJavaArray();
+        ray_start_index = (int[]) var.read().copyTo1DJavaArray();
 
       setTimeUnits();
     } catch (Exception e) {
@@ -138,8 +133,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
       return;
     }
 
-    double dLat = Math.toDegrees(getMaximumRadialDist()
-            / Earth.getRadius());
+    double dLat = Math.toDegrees(getMaximumRadialDist() / Earth.getRadius());
     double latRadians = Math.toRadians(origin.getLatitude());
     double dLon = dLat * Math.cos(latRadians);
 
@@ -171,7 +165,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
     try {
       Variable ga = ds.findVariable("latitude");
       if (ga != null) {
-        if(ga.isScalar()) {
+        if (ga.isScalar()) {
           latv = ga.readScalarDouble();
         } else {
           Array gar = ga.read();
@@ -184,18 +178,19 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
       ga = ds.findVariable("longitude");
 
       if (ga != null) {
-        if(ga.isScalar()) {
+        if (ga.isScalar()) {
           lonv = ga.readScalarDouble();
         } else {
           Array gar = ga.read();
           lonv = gar.getDouble(0);
-        }      } else {
+        }
+      } else {
         lonv = 0.0;
       }
 
       ga = ds.findVariable("altitude");
       if (ga != null) {
-        if(ga.isScalar()) {
+        if (ga.isScalar()) {
           elev = ga.readScalarDouble();
         } else {
           Array gar = ga.read();
@@ -205,6 +200,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
         elev = 0.0;
       }
     } catch (IOException e) {
+      throw new RuntimeException(e);
     }
 
     origin = new ucar.unidata.geoloc.EarthLocationImpl(latv, lonv, elev);
@@ -260,7 +256,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
         else {
           // if array, check to see if all of the values are
           // approximately the same
-          Array gar = null;
+          Array gar;
           try {
             gar = lat.read();
             Object firstVal = gar.getObject(0);
@@ -270,8 +266,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
             }
             isStationary = nearlyEquals(gar, gar2);
           } catch (IOException e) {
-            log.error("Error reading latitude variable {}. Cannot determine if " +
-                    "platform is stationary. Setting to default (false).", lat.getFullName());
+            log.error("Error reading latitude variable {}. Cannot determine if "
+                + "platform is stationary. Setting to default (false).", lat.getFullName());
           }
         }
       }
@@ -308,8 +304,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
 
   public void clearDatasetMemory() {
     for (VariableSimpleIF rvar : getDataVariables()) {
-        RadialVariable radVar = (RadialVariable) rvar;
-        radVar.clearVariableMemory();
+      RadialVariable radVar = (RadialVariable) rvar;
+      radVar.clearVariableMemory();
     }
   }
 
@@ -343,12 +339,11 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
    * _more_
    *
    * @param nds _more_
-   * @param v   _more_
-   * @param v0  _more_
+   * @param v _more_
+   * @param v0 _more_
    * @return _more_
    */
-  protected RadialVariable makeRadialVariable(NetcdfDataset nds,
-                                              VariableSimpleIF v, Variable v0) {
+  protected RadialVariable makeRadialVariable(NetcdfDataset nds, VariableSimpleIF v, Variable v0) {
     // this function is null in level 2
     return new CFRadial2Variable(nds, v0);
   }
@@ -359,12 +354,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
    * @return _more_
    */
   public String getInfo() {
-    StringBuffer sbuff = new StringBuffer();
-    sbuff.append("CFRadial2Dataset\n");
-    sbuff.append(super.getDetailInfo());
-    sbuff.append("\n\n");
-    sbuff.append(parseInfo.toString());
-    return sbuff.toString();
+    String sbuff = "CFRadial2Dataset\n" + super.getDetailInfo() + "\n\n" + parseInfo;
+    return sbuff;
   }
 
 
@@ -392,7 +383,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
      * _more_
      *
      * @param nds _more_
-     * @param v0  _more_
+     * @param v0 _more_
      */
     private CFRadial2Variable(NetcdfDataset nds, Variable v0) {
       super(v0.getShortName(), v0.getAttributes());
@@ -407,12 +398,11 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
       for (int i = 0; i < nsweeps; i++) {
         // For flattened (1D stored data) find max number of gates
         if (flattened) {
-            ngates = ray_n_gates[rayStartIdx[i]];
-            for (int ray = rayStartIdx[i]; ray <= rayEndIdx[i]; ++ray)
-                ngates = ray_n_gates[ray] > ngates ? ray_n_gates[ray] : ngates;
+          ngates = ray_n_gates[rayStartIdx[i]];
+          for (int ray = rayStartIdx[i]; ray <= rayEndIdx[i]; ++ray)
+            ngates = ray_n_gates[ray] > ngates ? ray_n_gates[ray] : ngates;
         }
-        sweeps.add(new CFRadial2Sweep(v0, i, ngates, rayStartIdx[i],
-                rayEndIdx[i]));
+        sweeps.add(new CFRadial2Sweep(v0, i, ngates, rayStartIdx[i], rayEndIdx[i]));
       }
     }
 
@@ -467,8 +457,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
       Sweep spn = sweeps.get(0);
       Variable v = spn.getsweepVar();
       Attribute missing = v.findAttribute("_FillValue");
-      float missingVal = missing == null ?
-              Float.NaN : missing.getNumericValue().floatValue();
+      float missingVal = missing == null ? Float.NaN : missing.getNumericValue().floatValue();
 
       int minRadial = getMinRadialNumber();
       int radials = getNumRadials();
@@ -479,18 +468,17 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
         throw new IOException(e.getMessage());
       }
       if (flattened) {
-          float[] fa0 = (float[]) allData.get1DJavaArray(float.class);
-          float[] fa = new float[minRadial * gates * nsweeps];
-          Arrays.fill(fa, missingVal);
-          for (int s = 0; s < nsweeps; ++s) {
-              for (int r = 0; r < minRadial; ++r) {
-                  System.arraycopy(fa0, ray_start_index[rayStartIdx[s] + r],
-                          fa, s * minRadial * gates + r * gates,
-                          ray_n_gates[rayStartIdx[s] + r]);
-              }
+        float[] fa0 = (float[]) allData.get1DJavaArray(float.class);
+        float[] fa = new float[minRadial * gates * nsweeps];
+        Arrays.fill(fa, missingVal);
+        for (int s = 0; s < nsweeps; ++s) {
+          for (int r = 0; r < minRadial; ++r) {
+            System.arraycopy(fa0, ray_start_index[rayStartIdx[s] + r], fa, s * minRadial * gates + r * gates,
+                ray_n_gates[rayStartIdx[s] + r]);
           }
+        }
 
-          return fa;
+        return fa;
       } else if (minRadial == radials) {
         return (float[]) allData.get1DJavaArray(float.class);
       } else {
@@ -579,14 +567,13 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
       /**
        * _more_
        *
-       * @param v        _more_
-       * @param sweepno  _more_
-       * @param gates    _more_
+       * @param v _more_
+       * @param sweepno _more_
+       * @param gates _more_
        * @param startIdx _more_
-       * @param endIdx   _more_
+       * @param endIdx _more_
        */
-      CFRadial2Sweep(Variable v, int sweepno, int gates,
-                     int startIdx, int endIdx) {
+      CFRadial2Sweep(Variable v, int sweepno, int gates, int startIdx, int endIdx) {
         this.sweepVar = v;
         this.sweepno = sweepno;
         this.ngates = gates;
@@ -612,7 +599,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
         return sweepVar;
       }
 
-            /* read 2d sweep data nradials * ngates */
+      /* read 2d sweep data nradials * ngates */
 
       /**
        * _more_
@@ -636,41 +623,40 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
 
         // init section
         try {
-            if (flattened) {
-                // Get the 1D data for the sweep
-                origin = new int[1];
-                origin[0] = ray_start_index[startIdx];
-                shape = new int[1];
-                shape[0] = ray_start_index[endIdx] + ray_n_gates[endIdx] -
-                        origin[0];
-                Array tempArray = sweepVar.read(origin, shape).reduce();
-                float[] tempD = (float[]) tempArray.get1DJavaArray(Float.TYPE);
+          if (flattened) {
+            // Get the 1D data for the sweep
+            origin = new int[1];
+            origin[0] = ray_start_index[startIdx];
+            shape = new int[1];
+            shape[0] = ray_start_index[endIdx] + ray_n_gates[endIdx] - origin[0];
+            Array tempArray = sweepVar.read(origin, shape).reduce();
+            float[] tempD = (float[]) tempArray.get1DJavaArray(Float.TYPE);
 
-                // Figure out what to use as the initializer
-                float missingVal = Float.NaN;
-                Attribute missing = sweepVar.findAttribute("_FillValue");
-                if (missing != null)
-                    missingVal = missing.getNumericValue().floatValue();
+            // Figure out what to use as the initializer
+            float missingVal = Float.NaN;
+            Attribute missing = sweepVar.findAttribute("_FillValue");
+            if (missing != null)
+              missingVal = missing.getNumericValue().floatValue();
 
-                // Create evenly strided output array and fill
-                float[] ret = new float[ngates * numRays];
-                Arrays.fill(ret, missingVal);
-                int srcInd = 0;
-                for (int ray = 0; ray < numRays; ++ray) {
-                    int gates = ray_n_gates[startIdx + ray];
-                    System.arraycopy(tempD, srcInd, ret, ray * ngates, gates);
-                    srcInd += gates;
-                }
-
-                return ret;
-            } else {
-                origin = new int[2];
-                origin[0] = startIdx;
-                shape = sweepVar.getShape();
-                shape[0] = numRays;
-                Array sweepTmp = sweepVar.read(origin, shape).reduce();
-                return (float[]) sweepTmp.get1DJavaArray(Float.TYPE);
+            // Create evenly strided output array and fill
+            float[] ret = new float[ngates * numRays];
+            Arrays.fill(ret, missingVal);
+            int srcInd = 0;
+            for (int ray = 0; ray < numRays; ++ray) {
+              int gates = ray_n_gates[startIdx + ray];
+              System.arraycopy(tempD, srcInd, ret, ray * ngates, gates);
+              srcInd += gates;
             }
+
+            return ret;
+          } else {
+            origin = new int[2];
+            origin[0] = startIdx;
+            shape = sweepVar.getShape();
+            shape[0] = numRays;
+            Array sweepTmp = sweepVar.read(origin, shape).reduce();
+            return (float[]) sweepTmp.get1DJavaArray(Float.TYPE);
+          }
         } catch (ucar.ma2.InvalidRangeException e) {
           throw new IOException(e);
         }
@@ -687,7 +673,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
         return rayData(ray);
       }
 
-            /* read the radial data from the radial variable */
+      /* read the radial data from the radial variable */
 
       /**
        * _more_
@@ -702,15 +688,15 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
 
         // init section
         if (flattened) {
-            origin = new int[1];
-            origin[0] = ray_start_index[startIdx + ray];
-            shape = new int[1];
-            shape[0] = ray_n_gates[startIdx + ray];
+          origin = new int[1];
+          origin[0] = ray_start_index[startIdx + ray];
+          shape = new int[1];
+          shape[0] = ray_n_gates[startIdx + ray];
         } else {
-            origin = new int[2];
-            origin[0] = startIdx + ray;
-            shape = sweepVar.getShape();
-            shape[0] = 1;
+          origin = new int[2];
+          origin[0] = startIdx + ray;
+          shape = sweepVar.getShape();
+          shape[0] = 1;
         }
 
         try {
@@ -735,7 +721,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
           }
         }
         if (sumSize > 0)
-            meanElevation = sum / sumSize;
+          meanElevation = sum / sumSize;
       }
 
       /**
@@ -829,7 +815,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
           }
         }
         if (sumSize > 0)
-            meanAzimuth = sum / sumSize;
+          meanAzimuth = sum / sumSize;
       }
 
       /**
@@ -858,9 +844,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        *
        * @param ray _more_
        * @return _more_
-       * @throws IOException _more_
        */
-      public float getElevation(int ray) throws IOException {
+      public float getElevation(int ray) {
         return elevation[ray + startIdx];
       }
 
@@ -868,9 +853,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        * _more_
        *
        * @return _more_
-       * @throws IOException _more_
        */
-      public float[] getElevation() throws IOException {
+      public float[] getElevation() {
         float[] elev = new float[numRays];
         System.arraycopy(elevation, startIdx, elev, 0, numRays);
         return elev;
@@ -881,9 +865,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        * _more_
        *
        * @return _more_
-       * @throws IOException _more_
        */
-      public float[] getAzimuth() throws IOException {
+      public float[] getAzimuth() {
         float[] azimu = new float[numRays];
         System.arraycopy(azimuth, startIdx, azimu, 0, numRays);
         return azimu;
@@ -895,9 +878,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        *
        * @param ray _more_
        * @return _more_
-       * @throws IOException _more_
        */
-      public float getAzimuth(int ray) throws IOException {
+      public float getAzimuth(int ray) {
         return azimuth[ray + startIdx];
       }
 
@@ -907,9 +889,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        *
        * @param gate _more_
        * @return _more_
-       * @throws IOException _more_
        */
-      public float getRadialDistance(int gate) throws IOException {
+      public float getRadialDistance(int gate) {
         return range[gate];
       }
 
@@ -918,9 +899,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        *
        * @param ray _more_
        * @return _more_
-       * @throws IOException _more_
        */
-      public float getTime(int ray) throws IOException {
+      public float getTime(int ray) {
 
         return (float) time[ray + startIdx];
 
@@ -932,7 +912,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        * @return _more_
        */
       public float getBeamWidth() {
-        return 0.95f;  // degrees, info from Chris Burkhart
+        return 0.95f; // degrees, info from Chris Burkhart
       }
 
       /**
@@ -941,7 +921,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        * @return _more_
        */
       public float getNyquistFrequency() {
-        return 0;  // LOOK this may be radial specific
+        return 0; // LOOK this may be radial specific
       }
 
       /**
@@ -950,12 +930,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        * @return _more_
        */
       public float getRangeToFirstGate() {
-        try {
-          return getRadialDistance(0);
-        } catch (IOException e) {
-          e.printStackTrace();
-          return 0.0f;
-        }
+        return getRadialDistance(0);
       }
 
       /**
@@ -964,12 +939,7 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
        * @return _more_
        */
       public float getGateSize() {
-        try {
-          return getRadialDistance(1) - getRadialDistance(0);
-        } catch (IOException e) {
-          e.printStackTrace();
-          return 0.0f;
-        }
+        return getRadialDistance(1) - getRadialDistance(0);
       }
 
       /**
@@ -984,9 +954,8 @@ public class CFRadialAdapter extends AbstractRadialAdapter {
       /**
        * _more_
        */
-      public void clearSweepMemory() {
-      }
-    }  // LevelII2Sweep class
+      public void clearSweepMemory() {}
+    } // LevelII2Sweep class
 
-  }      // LevelII2Variable
+  } // LevelII2Variable
 }

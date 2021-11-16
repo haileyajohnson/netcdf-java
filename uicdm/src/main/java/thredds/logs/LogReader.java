@@ -7,7 +7,6 @@ package thredds.logs;
 
 import java.nio.charset.StandardCharsets;
 import ucar.unidata.util.StringUtil2;
-
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -30,7 +29,7 @@ public class LogReader {
       return ip;
     }
 
-    public long getDateMillisec(){
+    public long getDateMillisec() {
       return date;
     }
 
@@ -69,20 +68,23 @@ public class LogReader {
     String ip, path, http;
 
     public String toCSV() {
-      //return ip + "," + date + ",\"" + verb + "\","+ path + "\"," + returnCode + "," + sizeBytes + ",\"" + referrer + "\",\"" + client + "\"," + msecs;
-      return ip + "," + getDate() + "," + verb + ",\"" + getPath() + "\"," + returnCode + "," + sizeBytes + ",\"" + referrer + "\",\"" + client + "\"," + msecs;
+      // return ip + "," + date + ",\"" + verb + "\","+ path + "\"," + returnCode + "," + sizeBytes + ",\"" + referrer +
+      // "\",\"" + client + "\"," + msecs;
+      return ip + "," + getDate() + "," + verb + ",\"" + getPath() + "\"," + returnCode + "," + sizeBytes + ",\""
+          + referrer + "\",\"" + client + "\"," + msecs;
     }
 
     public String toString() {
-      return ip + " [" + getDate() + "] " + verb + " " + getPath() + " " + http + " " + returnCode + " " + sizeBytes + " " + referrer + " " + client + " " + msecs;
+      return ip + " [" + getDate() + "] " + verb + " " + getPath() + " " + http + " " + returnCode + " " + sizeBytes
+          + " " + referrer + " " + client + " " + msecs;
     }
 
     public void toString(Formatter f) {
       f.format("path = %s%n", path);
       int pos = path.indexOf('?');
-      if (pos > 0 ) {
-        f.format("  path = %s%n", path.substring(0,pos));
-        f.format("  query = %s%n", path.substring(pos+1));
+      if (pos > 0) {
+        f.format("  path = %s%n", path.substring(0, pos));
+        f.format("  query = %s%n", path.substring(pos + 1));
       }
       f.format("%n");
       f.format("date = %s%n", getDate());
@@ -128,10 +130,8 @@ public class LogReader {
       if (chain != null && !chain.pass(log))
         return false;
 
-      if ((log.date < start) || (log.date > end))
-        return false;
+      return (log.date >= start) && (log.date <= end);
 
-      return true;
     }
   }
 
@@ -168,9 +168,8 @@ public class LogReader {
         return false;
 
       int status = log.getStatus();
-      if ((status < 400) || (status >= 1000)) return false;
+      return (status >= 400) && (status < 1000);
 
-      return true;
     }
   }
 
@@ -184,12 +183,13 @@ public class LogReader {
   private int maxLines = -1;
   private LogParser parser;
 
-  public LogReader(LogParser parser)  {
+  public LogReader(LogParser parser) {
     this.parser = parser;
   }
 
   /**
    * Read all the files in a directory and process them. Files are sorted by filename.
+   * 
    * @param dir read from this directory
    * @param ff files must pass this filter (may be null)
    * @param closure send each Log to this closure
@@ -207,7 +207,8 @@ public class LogReader {
     Collections.sort(list);
 
     for (File f : list) {
-      if ((ff != null) && !ff.accept(f)) continue;
+      if ((ff != null) && !ff.accept(f))
+        continue;
       if (f.isDirectory())
         readAll(f, ff, closure, logf, stat);
       else
@@ -217,6 +218,7 @@ public class LogReader {
 
   /**
    * Read a log file.
+   * 
    * @param file file to read
    * @param closure send each Log to this closure
    * @param logf filter out these Logs (may be null)
@@ -232,10 +234,12 @@ public class LogReader {
       int count = 0;
       while ((maxLines < 0) || (count < maxLines)) {
         Log log = parser.nextLog(dataIS);
-        if (log == null) break;
+        if (log == null)
+          break;
         total++;
 
-        if ((logf != null) && !logf.pass(log)) continue;
+        if ((logf != null) && !logf.pass(log))
+          continue;
 
         closure.process(log);
         count++;
@@ -248,42 +252,5 @@ public class LogReader {
 
       System.out.printf("----- %s total requests=%d passed=%d %n", file.getPath(), total, count);
     }
-  }
-
-
-  ////////////////////////////////////////////////////////
-
-  static class MyFilter implements LogFilter {
-
-    public boolean pass(Log log) {
-      return log.path.startsWith("/thredds/catalog/");
-    }
-  }
-
-  static class MyFF implements FileFilter {
-
-    public boolean accept(File f) {
-      return f.getPath().endsWith(".log");
-    }
-  }
-
-  public static void main(String[] args) throws IOException {
-    // test
-    final LogReader reader = new LogReader( new AccessLogParser());
-
-    long startElapsed = System.nanoTime();
-    Stats stats = new Stats();
-
-    reader.readAll(new File("d:/mlode/logs/all/"), new MyFF(), new Closure() {
-      long count = 0;
-      public void process(Log log) throws IOException {
-        if (count % 1000 == 0) System.out.printf("%s %s %s%n", log.path, log.client, log.ip);
-        count++;
-      }
-    }, new MyFilter(), stats);
-
-    long elapsedTime = System.nanoTime() - startElapsed;
-    System.out.printf(" total= %d passed=%d%n", stats.total, stats.passed);
-    System.out.printf(" elapsed=%d secs%n", elapsedTime / (1000 * 1000 * 1000));
   }
 }

@@ -6,7 +6,6 @@ package ucar.nc2.ft.point;
 
 import java.io.IOException;
 import javax.annotation.Nonnull;
-
 import ucar.nc2.ft.DsgFeatureCollection;
 import ucar.nc2.ft.PointFeature;
 import ucar.nc2.ft.PointFeatureCC;
@@ -76,36 +75,38 @@ public class DsgCollectionHelper {
 
   private CollectionInfo calcBounds(PointFeatureCC pfcc) throws IOException {
 
-    CollectionInfo result = null;
-    IOIterator<PointFeatureCollection> iter = pfcc.getCollectionIterator();
+    try (IOIterator<PointFeatureCollection> iter = pfcc.getCollectionIterator()) {
+      CollectionInfo result = null;
 
-    while (iter.hasNext()) {
-      PointFeatureCollection pfc = iter.next();
-      CollectionInfo b = calcBounds(pfc);
-      if (result == null)
-        result = b;
-      else
-        result.extend(b);
+      while (iter.hasNext()) {
+        PointFeatureCollection pfc = iter.next();
+        CollectionInfo b = calcBounds(pfc);
+        if (result == null)
+          result = b;
+        else
+          result.extend(b);
+      }
+
+      return result;
     }
-
-    return result;
   }
 
   private CollectionInfo calcBounds(PointFeatureCCC pfccc) throws IOException {
 
-    CollectionInfo result = null;
-    IOIterator<PointFeatureCC> iter = pfccc.getCollectionIterator();
+    try (IOIterator<PointFeatureCC> iter = pfccc.getCollectionIterator()) {
+      CollectionInfo result = null;
 
-    while (iter.hasNext()) {
-      PointFeatureCC pfcc = iter.next();
-      CollectionInfo b = calcBounds(pfcc);
-      if (result == null)
-        result = b;
-      else
-        result.extend(b);
+      while (iter.hasNext()) {
+        PointFeatureCC pfcc = iter.next();
+        CollectionInfo b = calcBounds(pfcc);
+        if (result == null)
+          result = b;
+        else
+          result.extend(b);
+      }
+
+      return result;
     }
-
-    return result;
   }
 
 }

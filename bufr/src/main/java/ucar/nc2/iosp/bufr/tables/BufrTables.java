@@ -4,10 +4,12 @@
  */
 package ucar.nc2.iosp.bufr.tables;
 
+import com.google.re2j.Matcher;
+import com.google.re2j.Pattern;
+import java.nio.charset.StandardCharsets;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
-import ucar.nc2.constants.CDM;
 import ucar.nc2.iosp.bufr.Descriptor;
 import ucar.nc2.iosp.bufr.MessageScanner;
 import ucar.nc2.iosp.bufr.TableLookup;
@@ -15,18 +17,16 @@ import ucar.nc2.util.TableParser;
 import ucar.nc2.wmo.Util;
 import ucar.unidata.io.RandomAccessFile;
 import ucar.unidata.util.StringUtil2;
-
 import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Reads BUFR tables of various forms. Interacts with TableLookup.
+ * 
  * <pre>
  * Table B:
  *
@@ -45,9 +45,9 @@ import java.util.regex.Pattern;
  *
  *
  * mel-tabs (tab delimited) ---------------
- * F	X	Y	Scale	RefVal	Width	Units	Element Name
- * 0	0	1	0	0	24	CCITT_IA5	Table A: entry
- * 0	0	2	0	0	256	CCITT_IA5	Table A: data category description, line 1
+ * F  X  Y  Scale  RefVal  Width  Units  Element Name
+ * 0  0  1  0  0  24  CCITT_IA5  Table A: entry
+ * 0  0  2  0  0  256  CCITT_IA5  Table A: data category description, line 1
  *
  *
  * ncep-----------
@@ -114,9 +114,9 @@ public class BufrTables {
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BufrTables.class);
 
   public enum Mode {
-    wmoOnly,        // wmo entries only found from wmo table
-    wmoLocal,       // if wmo entries not found in wmo table, look in local table
-    localOverride   // look in local first, then wmo
+    wmoOnly, // wmo entries only found from wmo table
+    wmoLocal, // if wmo entries not found in wmo table, look in local table
+    localOverride // look in local first, then wmo
   }
 
   public enum Format {
@@ -134,16 +134,18 @@ public class BufrTables {
   private static final Map<String, TableB> tablesB = new ConcurrentHashMap<>();
   private static final Map<String, TableD> tablesD = new ConcurrentHashMap<>();
 
-  private static List<String> lookups = null;
+  private static List<String> lookups;
 
-  static public synchronized void addLookupFile(String filename) throws FileNotFoundException {
-    if (lookups == null) lookups = new ArrayList<>();
+  public static synchronized void addLookupFile(String filename) throws FileNotFoundException {
+    if (lookups == null)
+      lookups = new ArrayList<>();
     File f = new File(filename);
-    if (!f.exists()) throw new FileNotFoundException(filename + " not found");
+    if (!f.exists())
+      throw new FileNotFoundException(filename + " not found");
     lookups.add(filename);
   }
 
-  static private synchronized void readLookupTable() {
+  private static synchronized void readLookupTable() {
     tables = new ArrayList<>();
     if (lookups != null) {
       lookups.add(canonicalLookup);
@@ -155,20 +157,23 @@ public class BufrTables {
   }
 
   // center,subcenter,master,local,cat,tableB,tableBformat,tableD,tableDformat, mode
-  static private void readLookupTable(String filename) {
+  private static void readLookupTable(String filename) {
 
-    try(InputStream ios = openStream(filename)) {
-      BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    try (InputStream ios = openStream(filename)) {
+      BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
       int count = 0;
       while (true) {
         String line = dataIS.readLine();
-        if (line == null) break;
-        if (line.startsWith("#")) continue;
+        if (line == null)
+          break;
+        if (line.startsWith("#"))
+          continue;
         count++;
 
         String[] flds = line.split(",");
         if (flds.length < 8) {
-          if (showReadErrs) System.out.printf("%d BAD line == %s%n", count, line);
+          if (showReadErrs)
+            System.out.printf("%d BAD line == %s%n", count, line);
           continue;
         }
 
@@ -198,10 +203,12 @@ public class BufrTables {
           }
 
           tables.add(table);
-          if (showTables) System.out.printf("Added table == %s%n", table);
+          if (showTables)
+            System.out.printf("Added table == %s%n", table);
 
         } catch (Exception e) {
-          if (showReadErrs) System.out.printf("%d %d BAD line == %s (%s)%n", count, fldidx, line, e.getMessage());
+          if (showReadErrs)
+            System.out.printf("%d %d BAD line == %s (%s)%n", count, fldidx, line, e.getMessage());
         }
       }
 
@@ -212,13 +219,15 @@ public class BufrTables {
   }
 
   private static Format getFormat(String formatS, String line) {
-    if (formatS.length() == 0) return null;
-    Format result = Format.valueOf(formatS);
-    if (result == null) {
-      if (showReadErrs) System.out.printf("BAD format = %s line == %s%n", formatS, line);
+    if (formatS.isEmpty())
+      return null;
+    try {
+      return Format.valueOf(formatS);
+    } catch (Exception e) {
+      if (showReadErrs)
+        log.warn("BAD format = {} line == {}%n", formatS, line);
       return null;
     }
-    return result;
   }
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -231,12 +240,15 @@ public class BufrTables {
     Mode mode = Mode.localOverride;
 
     boolean matches(int center, int subcenter, int master, int local, int cat) {
-      if ((this.center >= 0) && (center >= 0) && (center != this.center)) return false;
-      if ((this.subcenter >= 0) && (subcenter >= 0) && (subcenter != this.subcenter)) return false;
-      if ((this.master >= 0) && (master >= 0) && (master != this.master)) return false;
-      if ((this.local >= 0) && (local >= 0) && (local != this.local)) return false;
-      if ((this.cat >= 0) && (cat >= 0) && (cat != this.cat)) return false;
-      return true;
+      if ((this.center >= 0) && (center >= 0) && (center != this.center))
+        return false;
+      if ((this.subcenter >= 0) && (subcenter >= 0) && (subcenter != this.subcenter))
+        return false;
+      if ((this.master >= 0) && (master >= 0) && (master != this.master))
+        return false;
+      if ((this.local >= 0) && (local >= 0) && (local != this.local))
+        return false;
+      return (this.cat < 0) || (cat < 0) || (cat == this.cat);
     }
 
     public String getName() {
@@ -271,18 +283,21 @@ public class BufrTables {
   }
 
   public static List<TableConfig> getTables() {
-    if (tables == null) readLookupTable();
+    if (tables == null)
+      readLookupTable();
     return tables;
   }
 
   public static TableConfig[] getTableConfigsAsArray() {
-    if (tables == null) readLookupTable();
+    if (tables == null)
+      readLookupTable();
     TableConfig[] result = new TableConfig[tables.size()];
     return tables.toArray(result);
   }
 
   private static TableConfig matchTableConfig(int center, int subcenter, int master, int local, int cat) {
-    if (tables == null) readLookupTable();
+    if (tables == null)
+      readLookupTable();
 
     for (TableConfig tc : tables) {
       if (tc.matches(center, subcenter, master, local, cat))
@@ -291,30 +306,33 @@ public class BufrTables {
     return null;
   }
 
-  /* private static TableConfig matchTableConfig(BufrIdentificationSection ids) {
-    if (tables == null) readLookupTable();
-
-    int center = ids.getCenterId();
-    int subcenter = ids.getSubCenterId();
-    int master = ids.getMasterTableVersion();
-    int local = ids.getLocalTableVersion();
-    int cat = ids.getCategory();
-
-    return matchTableConfig(center, subcenter, master, local, cat);
-  }  */
+  /*
+   * private static TableConfig matchTableConfig(BufrIdentificationSection ids) {
+   * if (tables == null) readLookupTable();
+   * 
+   * int center = ids.getCenterId();
+   * int subcenter = ids.getSubCenterId();
+   * int master = ids.getMasterTableVersion();
+   * int local = ids.getLocalTableVersion();
+   * int cat = ids.getCategory();
+   * 
+   * return matchTableConfig(center, subcenter, master, local, cat);
+   * }
+   */
 
   ///////////////////////
 
-  /* Note Robb has this cleanup in DescriptorTableB
-        desc = desc.replaceFirst( "\\w+\\s+TABLE B ENTRY( - )?", "" );
-      desc = desc.trim();
-      this.description = desc;
-      desc = desc.replaceAll( "\\s*\\(.*\\)", "" );
-      desc = desc.replaceAll( "\\*", "" );
-      desc = desc.replaceAll( "\\s+", "_" );
-      desc = desc.replaceAll( "\\/", "_or_" );
-      desc = desc.replaceFirst( "1-", "One-" );
-      desc = desc.replaceFirst( "2-", "Two-" );
+  /*
+   * Note Robb has this cleanup in DescriptorTableB
+   * desc = desc.replaceFirst( "\\w+\\s+TABLE B ENTRY( - )?", "" );
+   * desc = desc.trim();
+   * this.description = desc;
+   * desc = desc.replaceAll( "\\s*\\(.*\\)", "" );
+   * desc = desc.replaceAll( "\\*", "" );
+   * desc = desc.replaceAll( "\\s+", "_" );
+   * desc = desc.replaceAll( "\\/", "_or_" );
+   * desc = desc.replaceFirst( "1-", "One-" );
+   * desc = desc.replaceFirst( "2-", "Two-" );
    */
 
   public static class Tables {
@@ -322,8 +340,7 @@ public class BufrTables {
     public TableD d;
     public Mode mode;
 
-    Tables() {
-    }
+    Tables() {}
 
     Tables(TableB b, TableD d, Mode mode) {
       this.b = b;
@@ -332,15 +349,17 @@ public class BufrTables {
     }
   }
 
-  static public Tables getLocalTables(int center, int subcenter, int master, int local, int cat) throws IOException {
+  public static Tables getLocalTables(int center, int subcenter, int master, int local, int cat) throws IOException {
     TableConfig tc = matchTableConfig(center, subcenter, master, local, cat);
-    if (tc == null) return null;
+    if (tc == null)
+      return null;
 
     if (tc.tableBformat == Format.ncep_nm) { // LOOK ??
       // see if we already have it
       TableB b = tablesB.get(tc.tableBname);
       TableD d = tablesD.get(tc.tableBname);
-      if ((b != null) && (d != null)) return new Tables(b, d, tc.mode);
+      if ((b != null) && (d != null))
+        return new Tables(b, d, tc.mode);
 
       // read it
       b = new TableB(tc.tableBname, tc.tableBname);
@@ -350,9 +369,9 @@ public class BufrTables {
         NcepMnemonic.read(ios, t);
       }
 
-      // cache 
-      tablesB.put(tc.tableBname, t.b);  // assume we would get the same table in any thread, so race condition is ok
-      tablesD.put(tc.tableBname, t.d);  // assume we would get the same table in any thread, so race condition is ok
+      // cache
+      tablesB.put(tc.tableBname, t.b); // assume we would get the same table in any thread, so race condition is ok
+      tablesD.put(tc.tableBname, t.d); // assume we would get the same table in any thread, so race condition is ok
       return t;
     }
 
@@ -366,9 +385,9 @@ public class BufrTables {
 
   ////////////////////////////////////////////////////
 
-  static private TableB latestWmoB;
+  private static TableB latestWmoB;
 
-  static public synchronized TableB getWmoTableBlatest() {
+  public static synchronized TableB getWmoTableBlatest() {
     if (latestWmoB == null) {
       try {
         latestWmoB = getWmoTableB(latestVersion);
@@ -381,44 +400,48 @@ public class BufrTables {
   }
 
   /*
-    // private static final String version14 = "wmo.v14";
-    static public TableB getWmoTableBold(int version) throws IOException {
-    String version13 = "wmo.v13.composite";
-    String tableName = (version == 14) ? version14 : version13;
-    TableB tb = tablesB.get(tableName);
-    if (tb != null) return tb;
+   * // private static final String version14 = "wmo.v14";
+   * static public TableB getWmoTableBold(int version) throws IOException {
+   * String version13 = "wmo.v13.composite";
+   * String tableName = (version == 14) ? version14 : version13;
+   * TableB tb = tablesB.get(tableName);
+   * if (tb != null) return tb;
+   * 
+   * // always read 14 in
+   * TableConfig tc14 = matchTableConfig(0, 0, 14, 0, -1);
+   * TableB result = readTableB(tc14.tableBname, tc14.tableBformat, false);
+   * tablesB.put(version14, result); // hash by standard name
+   * 
+   * // everyone else uses 13 : cant override - do it in local if needed
+   * if (version < 14) {
+   * TableConfig tc = matchTableConfig(0, 0, 13, 0, -1);
+   * TableB b13 = readTableB(tc.tableBname, tc.tableBformat, false);
+   * TableB.Composite bb = new TableB.Composite(version13, version13);
+   * bb.addTable(b13); // check in 13 first, so it overrides
+   * bb.addTable(result); // then in 14
+   * result = bb;
+   * tablesB.put(version13, result); // hash by standard name
+   * }
+   * 
+   * return result;
+   * }
+   */
 
-    // always read 14 in
-    TableConfig tc14 = matchTableConfig(0, 0, 14, 0, -1);
-    TableB result = readTableB(tc14.tableBname, tc14.tableBformat, false);
-    tablesB.put(version14, result); // hash by standard name
-
-    // everyone else uses 13 : cant override - do it in local if needed
-    if (version < 14) {
-      TableConfig tc = matchTableConfig(0, 0, 13, 0, -1);
-      TableB b13 = readTableB(tc.tableBname, tc.tableBformat, false);
-      TableB.Composite bb = new TableB.Composite(version13, version13);
-      bb.addTable(b13); // check in 13 first, so it overrides
-      bb.addTable(result); // then in 14
-      result = bb;
-      tablesB.put(version13, result); // hash by standard name
-    }
-
-    return result;
-  } */
-
-  static public TableB getWmoTableB(int masterTableVersion) throws IOException {
+  public static TableB getWmoTableB(int masterTableVersion) throws IOException {
     TableConfig tc = matchTableConfig(0, 0, masterTableVersion, 0, -1);
-    if (tc != null) return readTableB(tc.tableBname, tc.tableBformat, false);
+    if (tc != null)
+      return readTableB(tc.tableBname, tc.tableBformat, false);
     return null;
   }
 
-  static public TableB readTableB(String location, Format format, boolean force) throws IOException {
+  public static TableB readTableB(String location, Format format, boolean force) throws IOException {
     if (!force) {
       TableB tb = tablesB.get(location);
-      if (tb != null) return tb;
+      if (tb != null)
+        return tb;
     }
-    if (showTables) System.out.printf("Read BufrTable B %s format=%s%n", location, format);
+    if (showTables)
+      System.out.printf("Read BufrTable B %s format=%s%n", location, format);
 
     TableB b = new TableB(location, location);
     try (InputStream ios = openStream(location)) {
@@ -460,17 +483,20 @@ public class BufrTables {
       }
     }
 
-    if (b != null) tablesB.put(location, b); // assume we would get the same table in any thread, so race condition is ok
+    if (b != null)
+      tablesB.put(location, b); // assume we would get the same table in any thread, so race condition is ok
     return b;
   }
 
-  static private void readWmoCsvTableB(InputStream ios, TableB b) throws IOException {
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+  private static void readWmoCsvTableB(InputStream ios, TableB b) throws IOException {
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
     int count = 0;
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.startsWith("#")) continue;
+      if (line == null)
+        break;
+      if (line.startsWith("#"))
+        continue;
       count++;
 
       if (count == 1) { // skip first line - its the header
@@ -483,13 +509,15 @@ public class BufrTables {
         int pos2 = line.indexOf('"', pos1 + 1);
         StringBuilder sb = new StringBuilder(line);
         for (int i = pos1; i < pos2; i++)
-          if (sb.charAt(i) == ',') sb.setCharAt(i, ' ');
+          if (sb.charAt(i) == ',')
+            sb.setCharAt(i, ' ');
         line = sb.toString();
       }
 
       String[] flds = line.split(",");
       if (flds.length < 7) {
-        if (showReadErrs) System.out.printf("%d BAD split == %s%n", count, line);
+        if (showReadErrs)
+          System.out.printf("%d BAD split == %s%n", count, line);
         continue;
       }
 
@@ -497,7 +525,7 @@ public class BufrTables {
       try {
         int xy = Integer.parseInt(flds[fldidx++].trim());
         String name = StringUtil2.remove(flds[fldidx++], '"');
-        String units = StringUtil2.filter(flds[fldidx++], " %+-_/()*");  // alphanumeric plus these chars
+        String units = StringUtil2.filter(flds[fldidx++], " %+-_/()*"); // alphanumeric plus these chars
         int scale = Integer.parseInt(clean(flds[fldidx++].trim()));
         int refVal = Integer.parseInt(clean(flds[fldidx++].trim()));
         int width = Integer.parseInt(clean(flds[fldidx++].trim()));
@@ -508,16 +536,17 @@ public class BufrTables {
         b.addDescriptor((short) x, (short) y, scale, refVal, width, name, units, null);
 
       } catch (Exception e) {
-        if (showReadErrs) System.out.printf("%d %d BAD line == %s%n", count, fldidx, line);
+        if (showReadErrs)
+          System.out.printf("%d %d BAD line == %s%n", count, fldidx, line);
       }
     }
   }
 
-  static private String clean(String s) {
+  private static String clean(String s) {
     return StringUtil2.remove(s, ' ');
   }
 
-  static private TableB readEmbeddedTableB(String location) throws IOException {
+  private static TableB readEmbeddedTableB(String location) throws IOException {
     try (RandomAccessFile raf = new RandomAccessFile(location, "r")) {
       MessageScanner scan = new MessageScanner(raf);
       TableLookup lookup = scan.getTableLookup();
@@ -528,7 +557,7 @@ public class BufrTables {
     }
   }
 
-  static private TableD readEmbeddedTableD(String location) throws IOException {
+  private static TableD readEmbeddedTableD(String location) throws IOException {
     try (RandomAccessFile raf = new RandomAccessFile(location, "r")) {
       MessageScanner scan = new MessageScanner(raf);
       TableLookup lookup = scan.getTableLookup();
@@ -540,17 +569,17 @@ public class BufrTables {
   }
 
   // tables are in mel-bufr format
-  static private TableB readMelbufrTableB(InputStream ios, TableB b) throws IOException {
+  private static TableB readMelbufrTableB(InputStream ios, TableB b) throws IOException {
 
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
 
     // read table B looking for descriptors
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.startsWith("#") || line.length() == 0)
+      if (line == null)
+        break;
+      if (line.startsWith("#") || line.isEmpty())
         continue;
-      //System.out.println("Table B line =" + line);
 
       try {
         String[] split = line.split(";");
@@ -569,20 +598,22 @@ public class BufrTables {
     return b;
   }
 
-  /* tables are in cypher format : http://www.northern-lighthouse.com/tables/B_d00v13.htm
-   #
-   002063 Aircraft roll angle
-   Degree
-   2 -18000 16
-  */
+  /*
+   * tables are in cypher format : http://www.northern-lighthouse.com/tables/B_d00v13.htm
+   * #
+   * 002063 Aircraft roll angle
+   * Degree
+   * 2 -18000 16
+   */
 
-  static private TableB readCypherTableB(InputStream ios, TableB b) throws IOException {
+  private static TableB readCypherTableB(InputStream ios, TableB b) throws IOException {
     boolean startMode = false;
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.length() == 0)
+      if (line == null)
+        break;
+      if (line.isEmpty())
         continue;
       if (line.startsWith("<"))
         continue;
@@ -603,7 +634,7 @@ public class BufrTables {
           String units = "";
           line = dataIS.readLine();
           if (line != null)
-              units = WmoXmlReader.cleanUnit(line);
+            units = WmoXmlReader.cleanUnit(line);
 
           int scale = 0, refVal = 0, width = 0;
           line = dataIS.readLine();
@@ -627,17 +658,18 @@ public class BufrTables {
   }
 
   // tables are in mel-bufr format
-  // #F	X	Y	Scale	RefVal	Width	Units	Element Name
-  // 0	0	1	0	0	24	CCITT_IA5	Table A: entry
-  static private TableB readMeltabTableB(InputStream ios, TableB b) throws IOException {
+  // #F X Y Scale RefVal Width Units Element Name
+  // 0 0 1 0 0 24 CCITT_IA5 Table A: entry
+  private static TableB readMeltabTableB(InputStream ios, TableB b) throws IOException {
 
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
 
     // read table B looking for descriptors
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.startsWith("#") || line.length() == 0)
+      if (line == null)
+        break;
+      if (line.startsWith("#") || line.isEmpty())
         continue;
 
       try {
@@ -647,7 +679,6 @@ public class BufrTables {
         int scale = Integer.parseInt(split[3].trim());
         int refVal = Integer.parseInt(split[4].trim());
         int width = Integer.parseInt(split[5].trim());
-        //System.out.printf("%s = %d %d, %d %d %d %s %s %n", line, x, y, scale, refVal, width, split[7], split[6]);
 
         b.addDescriptor(x, y, scale, refVal, width, split[7], split[6], null);
       } catch (Exception e) {
@@ -658,22 +689,24 @@ public class BufrTables {
     return b;
   }
 
-  // F-XX-YYY |SCALE| REFERENCE   | BIT |      UNIT      | MNEMONIC ;DESC ;  ELEMENT NAME
-  static private TableB readNcepTableB(InputStream ios, TableB b) throws IOException {
+  // F-XX-YYY |SCALE| REFERENCE | BIT | UNIT | MNEMONIC ;DESC ; ELEMENT NAME
+  private static TableB readNcepTableB(InputStream ios, TableB b) throws IOException {
 
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
 
     dataIS.readLine(); // throw first line away
 
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.startsWith("#") || line.length() == 0)
+      if (line == null)
+        break;
+      if (line.startsWith("#") || line.isEmpty())
         continue;
 
       try {
         String[] flds = line.split("[\\|;]");
-        if (flds[0].equals("END")) break;
+        if (flds[0].equals("END"))
+          break;
 
         if (flds.length < 8) {
           log.error("Bad line in table " + b.getName() + " entry=<" + line + ">");
@@ -694,11 +727,6 @@ public class BufrTables {
 
         b.addDescriptor(x, y, scale, refVal, width, name, units, desc);
 
-        /* System.out.println("Table B line =" + line);
-       System.out.printf("%s = %d %d, %d %d %d %s %s %n", fxys, x, y, scale, refVal, width, name, units);
-       if (count > 10) break;
-       count++; */
-
       } catch (Exception e) {
         log.error("Bad table " + b.getName() + " entry=<" + line + ">", e);
       }
@@ -708,23 +736,26 @@ public class BufrTables {
   }
 
   /*
-   opera ----------------------------
-0;02;181;Supplementary present weather sensor;Flag-Table;0;0;21
-0;07;192;Pixel size in Z-direction;Meters;-1;0;16
-0;21;036;Radar rainfall intensity;mm*h-1;2;0;16
+   * opera ----------------------------
+   * 0;02;181;Supplementary present weather sensor;Flag-Table;0;0;21
+   * 0;07;192;Pixel size in Z-direction;Meters;-1;0;16
+   * 0;21;036;Radar rainfall intensity;mm*h-1;2;0;16
    */
-  static private void readOperaTableB(InputStream ios, TableB b) throws IOException {
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+  private static void readOperaTableB(InputStream ios, TableB b) throws IOException {
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
     int count = 0;
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.startsWith("#")) continue;
+      if (line == null)
+        break;
+      if (line.startsWith("#"))
+        continue;
       count++;
 
       String[] flds = line.split(";");
       if (flds.length < 8) {
-        if (showReadErrs) System.out.printf("%d BAD split == %s%n", count, line);
+        if (showReadErrs)
+          System.out.printf("%d BAD split == %s%n", count, line);
         continue;
       }
 
@@ -733,7 +764,7 @@ public class BufrTables {
         int x = Integer.parseInt(flds[fldidx++].trim());
         int y = Integer.parseInt(flds[fldidx++].trim());
         String name = StringUtil2.remove(flds[fldidx++], '"');
-        String units = StringUtil2.filter(flds[fldidx++], " %+-_/()*");  // alphanumeric plus these chars
+        String units = StringUtil2.filter(flds[fldidx++], " %+-_/()*"); // alphanumeric plus these chars
         int scale = Integer.parseInt(clean(flds[fldidx++].trim()));
         int refVal = Integer.parseInt(clean(flds[fldidx++].trim()));
         int width = Integer.parseInt(clean(flds[fldidx++].trim()));
@@ -741,18 +772,19 @@ public class BufrTables {
         b.addDescriptor((short) x, (short) y, scale, refVal, width, name, units, null);
 
       } catch (Exception e) {
-        if (showReadErrs) System.out.printf("%d %d BAD line == %s%n", count, fldidx, line);
+        if (showReadErrs)
+          System.out.printf("%d %d BAD line == %s%n", count, fldidx, line);
       }
     }
   }
 
   /*
-   fxy    name                                                             units                   scale  ref         w  units
-  01234567                                                                 72                       97   102            119
-   001015 STATION OR SITE NAME                                             CCITTIA5                   0            0 160 CHARACTER                 0        20
-   001041 ABSOLUTE PLATFORM VELOCITY - FIRST COMPONENT (SEE NOTE 6)        M/S                        5  -1073741824  31 M/S                       5        10
-  */
-  static private TableB readEcmwfTableB(InputStream ios, TableB b) throws IOException {
+   * fxy name units scale ref w units
+   * 01234567 72 97 102 119
+   * 001015 STATION OR SITE NAME CCITTIA5 0 0 160 CHARACTER 0 20
+   * 001041 ABSOLUTE PLATFORM VELOCITY - FIRST COMPONENT (SEE NOTE 6) M/S 5 -1073741824 31 M/S 5 10
+   */
+  private static TableB readEcmwfTableB(InputStream ios, TableB b) throws IOException {
     List<TableParser.Record> recs = TableParser.readTable(ios, "4i,7i,72,97,102i,114i,119i", 50000);
     for (TableParser.Record record : recs) {
       if (record.nfields() < 7) {
@@ -767,17 +799,12 @@ public class BufrTables {
       int width = (Integer) record.get(6);
 
       b.addDescriptor((short) x, (short) y, scale, ref, width, name, units, null);
-
-      /* System.out.println("Table B line =" + record);
-    System.out.printf("%d %d, %d %d %d %s %s %n", x, y, scale, ref, width, name, units);
-    if (count > 10) break;
-    count++;  */
     }
 
     return b;
   }
 
-  static private void readBmetTableB(InputStream ios, TableB b) throws IOException {
+  private static void readBmetTableB(InputStream ios, TableB b) throws IOException {
     org.jdom2.Document doc;
     try {
       SAXBuilder builder = new SAXBuilder();
@@ -807,21 +834,21 @@ public class BufrTables {
           s = bufrElem.getChildTextNormalize("BUFR_scale");
           scale = Integer.parseInt(clean(s));
         } catch (NumberFormatException e) {
-          System.out.printf(" key %s name '%s' has bad scale='%s'%n", fxy, name, s);
+          log.warn(" key {} name '{}' has bad scale='{}'%n", fxy, name, s);
         }
 
         try {
           s = bufrElem.getChildTextNormalize("BUFR_reference");
           reference = Integer.parseInt(clean(s));
         } catch (NumberFormatException e) {
-          System.out.printf(" key %s name '%s' has bad reference='%s' %n", fxy, name, s);
+          log.warn(" key {} name '{}' has bad reference='{}' %n", fxy, name, s);
         }
 
         try {
           s = bufrElem.getChildTextNormalize("BUFR_width");
           width = Integer.parseInt(clean(s));
         } catch (NumberFormatException e) {
-          System.out.printf(" key %s name '%s' has bad width='%s' %n", fxy, name, s);
+          log.warn(" key {} name '{}' has bad width='{}' %n", fxy, name, s);
         }
 
         b.addDescriptor((short) x, (short) y, scale, reference, width, name, units, null);
@@ -832,9 +859,9 @@ public class BufrTables {
 
   ///////////////////////////////////////////////////////
 
-  static private TableD latestWmoD;
+  private static TableD latestWmoD;
 
-  static public synchronized TableD getWmoTableDlatest() {
+  public static synchronized TableD getWmoTableDlatest() {
     if (latestWmoD == null) {
       try {
         latestWmoD = getWmoTableD(latestVersion);
@@ -846,22 +873,27 @@ public class BufrTables {
     return latestWmoD;
   }
 
-  static public TableD getWmoTableD(int masterTableVersion) throws IOException {
+  public static TableD getWmoTableD(int masterTableVersion) throws IOException {
     TableConfig tc = matchTableConfig(0, 0, masterTableVersion, 0, -1);
-    if (tc != null) return readTableD(tc.tableDname, tc.tableDformat, false);
+    if (tc != null)
+      return readTableD(tc.tableDname, tc.tableDformat, false);
     return null;
   }
 
-  static public TableD readTableD(String location, Format format, boolean force) throws IOException {
-    if (location == null) return null;
-    if (location.trim().length() == 0) return null;
+  public static TableD readTableD(String location, Format format, boolean force) throws IOException {
+    if (location == null)
+      return null;
+    if (location.trim().isEmpty())
+      return null;
 
     if (!force) {
       TableD tb = tablesD.get(location);
-      if (tb != null) return tb;
+      if (tb != null)
+        return tb;
     }
 
-    if (showTables) System.out.printf("Read BufrTable D %s format=%s%n", location, format);
+    if (showTables)
+      System.out.printf("Read BufrTable D %s format=%s%n", location, format);
     TableD d = new TableD(location, location);
 
     try (InputStream ios = openStream(location)) {
@@ -895,54 +927,56 @@ public class BufrTables {
           WmoXmlReader.readWmoXmlTableD(ios, d);
           break;
         default:
-          System.out.printf("Unknown format= %s %n", format);
+          log.warn("Unknown format= {}", format);
           return null;
       }
     }
 
-    if (d != null) tablesD.put(location, d); // assume we would get the same table in any thread, so race condition is ok
+    if (d != null)
+      tablesD.put(location, d); // assume we would get the same table in any thread, so race condition is ok
     return d;
   }
 
   /*
-  #
-<A HREF="#C40"> 40</A>
-</TT></P>
-<PRE></PRE>
-<HR>
-<A NAME="C00"></A>
-<H4 ALIGN="CENTER">Class 00</H4>
-<PRE>
-#
- 300002
-	000002	Table A category, line 1
-	000003  Table A category, line 2
-#
- 300003
-	000010	F,  part descriptor
-	000011  X,  part descriptor
-	000012  Y,  part descriptor
-#
- 300004
-	300003
-	000013  Element name, line 1
-	000014  Element name, line 2
-	000015  Units name
-	000016  Units scale sign
-	000017  Units scale
-	000018  Units reference sign
-	000019  Units reference value
-	000020  Element data width
+   * #
+   * <A HREF="#C40"> 40</A>
+   * </TT></P>
+   * <PRE></PRE>
+   * <HR>
+   * <A NAME="C00"></A>
+   * <H4 ALIGN="CENTER">Class 00</H4>
+   * <PRE>
+   * #
+   * 300002
+   * 000002 Table A category, line 1
+   * 000003 Table A category, line 2
+   * #
+   * 300003
+   * 000010 F, part descriptor
+   * 000011 X, part descriptor
+   * 000012 Y, part descriptor
+   * #
+   * 300004
+   * 300003
+   * 000013 Element name, line 1
+   * 000014 Element name, line 2
+   * 000015 Units name
+   * 000016 Units scale sign
+   * 000017 Units scale
+   * 000018 Units reference sign
+   * 000019 Units reference value
+   * 000020 Element data width
    */
-  static private void readCypherTableD(InputStream ios, TableD t) throws IOException {
+  private static void readCypherTableD(InputStream ios, TableD t) throws IOException {
     TableD.Descriptor currDesc = null;
     boolean startMode = false;
 
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.length() == 0)
+      if (line == null)
+        break;
+      if (line.isEmpty())
         continue;
       if (line.startsWith("<"))
         continue;
@@ -960,8 +994,10 @@ public class BufrTables {
           fxy /= 1000;
           int x = fxy % 100;
           int f1 = fxy / 100;
-          if (f1 != 3) log.error("Bad table " + t.getName() + " entry=<" + line + ">");
-          else currDesc = t.addDescriptor((short) x, (short) y, "", new ArrayList<Short>());
+          if (f1 != 3)
+            log.error("Bad table " + t.getName() + " entry=<" + line + ">");
+          else
+            currDesc = t.addDescriptor((short) x, (short) y, "", new ArrayList<>());
           startMode = false;
           continue;
 
@@ -980,43 +1016,46 @@ public class BufrTables {
           int f1 = fxy / 100;
           int fxy1 = (f1 << 14) + (x1 << 8) + y1;
           currDesc.addFeature((short) fxy1);
-          } catch (Exception e) {
-              log.warn("Bad table " + t.getName() + " line=<" + line + ">", e.getMessage());
-          }
+        } catch (Exception e) {
+          log.warn("Bad table " + t.getName() + " line=<" + line + ">", e.getMessage());
+        }
       } else {
-        log.warn("Bad table " + t.getName() + " line=<" + line + ">" +
-         " trying to add feature without descriptor.");
+        log.warn("Bad table " + t.getName() + " line=<" + line + ">" + " trying to add feature without descriptor.");
       }
     }
   }
 
   static String cleanNumber(String s) {
     int pos = s.indexOf("(");
-    if (pos > 0) return s.substring(0, pos);
+    if (pos > 0)
+      return s.substring(0, pos);
     return s;
   }
 
-  /* opera:
- # Heights of side view
-  3;13;192;  1;01;000
-   ;  ;   ;  0;31;001
-   ;  ;   ;  0;10;007
- # 4 bit per pixel radar images (top view)
-  3;21;192;  1;10;000
-  ...
-  */
-  static private void readOperaTableD(InputStream ios, TableD t) throws IOException {
+  /*
+   * opera:
+   * # Heights of side view
+   * 3;13;192; 1;01;000
+   * ; ; ; 0;31;001
+   * ; ; ; 0;10;007
+   * # 4 bit per pixel radar images (top view)
+   * 3;21;192; 1;10;000
+   * ...
+   */
+  private static void readOperaTableD(InputStream ios, TableD t) throws IOException {
 
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
 
     TableD.Descriptor currDesc = null;
 
     String name = null;
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
+      if (line == null)
+        break;
       line = line.trim();
-      if (line.length() == 0) continue;
+      if (line.isEmpty())
+        continue;
       if (line.startsWith("#")) {
         name = line.substring(2).trim();
         continue;
@@ -1024,20 +1063,20 @@ public class BufrTables {
 
       try {
         String[] flds = line.split(";");
-        if (flds[0].trim().length() != 0) {
+        if (!flds[0].trim().isEmpty()) {
           int x = Integer.parseInt(flds[1].trim());
           int y = Integer.parseInt(flds[2].trim());
-          currDesc = t.addDescriptor((short) x, (short) y, name, new ArrayList<Short>());
+          currDesc = t.addDescriptor((short) x, (short) y, name, new ArrayList<>());
         }
 
-        if (currDesc != null){
+        if (currDesc != null) {
           int f1 = Integer.parseInt(flds[3].trim());
           int x1 = Integer.parseInt(flds[4].trim());
           int y1 = Integer.parseInt(flds[5].trim());
           int fxy = (f1 << 14) + (x1 << 8) + y1;
           currDesc.addFeature((short) fxy);
         } else {
-            throw new Exception("Trying to add feature to null descriptor");
+          throw new Exception("Trying to add feature to null descriptor");
         }
 
       } catch (Exception e) {
@@ -1047,16 +1086,18 @@ public class BufrTables {
   }
 
 
-  static private void readWmoCsvTableD(InputStream ios, TableD tableD) throws IOException {
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+  private static void readWmoCsvTableD(InputStream ios, TableD tableD) throws IOException {
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
     int count = 0;
     int currSeqno = -1;
     TableD.Descriptor currDesc = null;
 
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.startsWith("#")) continue;
+      if (line == null)
+        break;
+      if (line.startsWith("#"))
+        continue;
       count++;
 
       if (count == 1) {
@@ -1069,13 +1110,15 @@ public class BufrTables {
         int pos2 = line.indexOf('"', pos1 + 1);
         StringBuilder sb = new StringBuilder(line);
         for (int i = pos1; i < pos2; i++)
-          if (sb.charAt(i) == ',') sb.setCharAt(i, ' ');
+          if (sb.charAt(i) == ',')
+            sb.setCharAt(i, ' ');
         line = sb.toString();
       }
 
       String[] flds = line.split(",");
       if (flds.length < 5) {
-        if (showReadErrs) System.out.printf("%d INCOMPLETE line == %s%n", count, line);
+        if (showReadErrs)
+          System.out.printf("%d INCOMPLETE line == %s%n", count, line);
         continue;
       }
 
@@ -1084,8 +1127,9 @@ public class BufrTables {
         int seq = Integer.parseInt(flds[fldidx++]);
         String seqName = flds[fldidx++];
         String featno = flds[fldidx++].trim();
-        if (featno.length() == 0) {
-          if (showReadErrs) System.out.printf("%d no FXY2 specified; line == %s%n", count, line);
+        if (featno.isEmpty()) {
+          if (showReadErrs)
+            System.out.printf("%d no FXY2 specified; line == %s%n", count, line);
           continue;
         }
 
@@ -1094,7 +1138,7 @@ public class BufrTables {
           int w = seq / 1000;
           int x = w % 100;
           seqName = StringUtil2.remove(seqName, '"');
-          currDesc = tableD.addDescriptor((short) x, (short) y, seqName, new ArrayList<Short>());
+          currDesc = tableD.addDescriptor((short) x, (short) y, seqName, new ArrayList<>());
           currSeqno = seq;
         }
 
@@ -1106,38 +1150,43 @@ public class BufrTables {
 
         int fxy = (f << 14) + (x << 8) + y;
         if (currDesc != null) {
-            currDesc.addFeature((short) fxy);
+          currDesc.addFeature((short) fxy);
         } else {
-            log.error("Trying to add feature to null desc!");
+          log.error("Trying to add feature to null desc!");
         }
 
       } catch (Exception e) {
-        if (showReadErrs) System.out.printf("%d %d BAD line == %s : %s%n", count, fldidx, line, e.getMessage());
+        if (showReadErrs)
+          System.out.printf("%d %d BAD line == %s : %s%n", count, fldidx, line, e.getMessage());
       }
     }
   }
 
-  private static final Pattern threeInts = Pattern.compile("^\\s*(\\d+)\\s+(\\d+)\\s+(\\d+)");  // get 3 integers from beginning of line
-  private static final Pattern negOne = Pattern.compile("^\\s*-1");  // check for -1 sequence terminator
+  private static final Pattern threeInts = Pattern.compile("^\\s*(\\d+)\\s+(\\d+)\\s+(\\d+)"); // get 3 integers from
+                                                                                               // beginning of line
+  private static final Pattern negOne = Pattern.compile("^\\s*-1"); // check for -1 sequence terminator
 
-  static private void readMelbufrTableD(InputStream ios, TableD t) throws IOException {
+  private static void readMelbufrTableD(InputStream ios, TableD t) throws IOException {
 
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
     int count = 0;
 
     // read table D to store sequences and their descriptors
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
+      if (line == null)
+        break;
       count++;
       // check for comment lines
-      if (line.startsWith("#") || line.length() == 0)
+      if (line.startsWith("#") || line.isEmpty())
         continue;
 
       line = line.trim();
       String[] split = line.split("[ \t]+"); // 1 or more whitespace
-      if (split.length < 3) continue;
-      if (split[0].equals("END")) break;
+      if (split.length < 3)
+        continue;
+      if (split[0].equals("END"))
+        break;
 
       try {
         short seqF = Short.parseShort(split[0]);
@@ -1158,10 +1207,11 @@ public class BufrTables {
         // look for descriptors within sequence terminated by -1
         while (true) {
           line = dataIS.readLine();
-          if (line == null) break;
+          if (line == null)
+            break;
           count++;
           // check for comment lines
-          if (line.startsWith("#") || line.length() == 0)
+          if (line.startsWith("#") || line.isEmpty())
             continue;
 
           Matcher m = threeInts.matcher(line);
@@ -1183,26 +1233,26 @@ public class BufrTables {
         }
       } catch (Exception e) {
         log.warn("TableD " + t.getName() + " Failed on line " + count + " = " + line + "\n " + e);
-        //e.printStackTrace();
+        // e.printStackTrace();
       }
     }
   }
 
   /*
-  3-00-010 | DELAYREP   ;     ; Table D sequence definition
-           | 3-00-003 > | Table D descriptor to be defined
-           | 1-01-000 > | Delayed replication of 1 descriptor
-           | 0-31-001 > | Delayed descriptor replication factor
-           | 0-00-030   | Descriptor defining sequence
+   * 3-00-010 | DELAYREP ; ; Table D sequence definition
+   * | 3-00-003 > | Table D descriptor to be defined
+   * | 1-01-000 > | Delayed replication of 1 descriptor
+   * | 0-31-001 > | Delayed descriptor replication factor
+   * | 0-00-030 | Descriptor defining sequence
+   * 
+   * 3-01-001 | WMOBLKST ; ;
+   * | 0-01-001 > | WMO block number
+   * | 0-01-002 | WMO station number
+   * 
+   */
+  private static void readNcepTableD(InputStream ios, TableD t) throws IOException {
 
-  3-01-001 | WMOBLKST   ;     ;
-           | 0-01-001 > | WMO block number
-           | 0-01-002   | WMO station number
-
-    */
-  static private void readNcepTableD(InputStream ios, TableD t) throws IOException {
-
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
 
     dataIS.readLine(); // throw first line away
 
@@ -1210,24 +1260,24 @@ public class BufrTables {
 
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
-      if (line.startsWith("#") || line.trim().length() == 0)
+      if (line == null)
+        break;
+      if (line.startsWith("#") || line.trim().isEmpty())
         continue;
-      //System.out.println("Table D line =" + line);
 
       try {
         String[] flds = line.split("[\\|;]");
-        if (flds[0].equals("END")) break;
+        if (flds[0].equals("END"))
+          break;
 
         String fxys = flds[0].trim();
 
-        if (fxys.length() > 0) {
+        if (!fxys.isEmpty()) {
           String[] xyflds = fxys.split("-");
           short x = Short.parseShort(clean(xyflds[1]));
           short y = Short.parseShort(clean(xyflds[2]));
           String seqName = (flds.length > 3) ? flds[3].trim() : "";
-          currDesc = t.addDescriptor(x, y, seqName, new ArrayList<Short>());
-          //System.out.printf("Add seq %s = %d %d %s %n", fxys, x, y, seqName);
+          currDesc = t.addDescriptor(x, y, seqName, new ArrayList<>());
         } else if (currDesc != null) {
           fxys = StringUtil2.remove(flds[1], '>');
           String[] xyflds = fxys.split("-");
@@ -1236,11 +1286,7 @@ public class BufrTables {
           short y = Short.parseShort(clean(xyflds[2]));
           int fxy = (f << 14) + (x << 8) + y;
           currDesc.addFeature((short) fxy);
-          //System.out.printf("Add %s = %d %d %d%n", fxys, f, x, y);
         }
-
-        //if (count > 10) break;
-        //count++;
 
       } catch (Exception e) {
         log.error("Bad table " + t.getName() + " entry=<" + line + ">", e);
@@ -1251,26 +1297,26 @@ public class BufrTables {
   }
 
   /*
- 300002  2 000002
-           000003
- 300003  3 000010
-           000011
-           000012
+   * 300002 2 000002
+   * 000003
+   * 300003 3 000010
+   * 000011
+   * 000012
    */
-  static private void readEcmwfTableD(InputStream ios, TableD t) throws IOException {
+  private static void readEcmwfTableD(InputStream ios, TableD t) throws IOException {
 
-    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, CDM.utf8Charset));
+    BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
 
     TableD.Descriptor currDesc = null;
 
     int n = 0;
     while (true) {
       String line = dataIS.readLine();
-      if (line == null) break;
+      if (line == null)
+        break;
       line = line.trim();
-      if (line.startsWith("#") || line.length() == 0)
+      if (line.startsWith("#") || line.isEmpty())
         continue;
-      //System.out.println("Table D line =" + line);
 
       try {
         String fxys;
@@ -1284,8 +1330,7 @@ public class BufrTables {
           int y = fxy % 1000;
           fxy /= 1000;
           int x = fxy % 100;
-          currDesc = t.addDescriptor((short) x, (short) y, "", new ArrayList<Short>());
-          //System.out.printf("Add seq %s = %d %d%n", fxys, x, y);
+          currDesc = t.addDescriptor((short) x, (short) y, "", new ArrayList<>());
           n = Integer.parseInt(flds[1].trim());
           fxys = flds[2].trim();
         } else {
@@ -1298,11 +1343,10 @@ public class BufrTables {
         int x = fxy % 100;
         fxy /= 100;
         fxy = (fxy << 14) + (x << 8) + y;
-        currDesc.addFeature((short) fxy);
+        if (currDesc != null) {
+          currDesc.addFeature((short) fxy);
+        }
         n--;
-        //System.out.printf("Add %s = %d %d %d%n", fxys, f, x, y);
-        //if (count > 10) break;
-        //count++;
 
       } catch (Exception e) {
         log.error("Bad table " + t.getName() + " entry=<" + line + ">", e);
@@ -1330,23 +1374,5 @@ public class BufrTables {
       ios = new FileInputStream(location);
     }
     return ios;
-  }
-
-  ///////////////////////////////
-  // debug
-  public static void main(String args[]) throws IOException {
-    /* Formatter out = new Formatter(System.out);
-
-    TableB tableB = BufrTables.getWmoTableB(13);
-    tableB.show(out);
-
-    TableD tableD = BufrTables.getWmoTableD(null);
-    tableD.show(out); */
-
-    String location = "resource:/resources/bufrTables/local/opera/localtabd_65535_5.csv";
-    try (InputStream ios = openStream(location)) {
-      TableD d = new TableD(location, location);
-      readOperaTableD(ios, d);
-    }
   }
 }

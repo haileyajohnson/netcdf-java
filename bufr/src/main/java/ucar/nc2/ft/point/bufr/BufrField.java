@@ -15,24 +15,32 @@ import java.util.List;
  * @since 8/20/13
  */
 public interface BufrField {
-  public String getName();
-  public String getDesc();
-  public String getUnits();
+  String getName();
 
-  public short getFxy();
-  public String getFxyName();
+  String getDesc();
 
-  public BufrCdmIndexProto.FldAction getAction();
-  public BufrCdmIndexProto.FldType getType() ;
+  String getUnits();
 
-  public boolean isSeq();
-  public int getMin();
-  public int getMax();
+  short getFxy();
 
-  public int getScale();
-  public int getReference();
-  public int getBitWidth();
+  String getFxyName();
 
-  public List<? extends BufrField> getChildren();
+  BufrCdmIndexProto.FldAction getAction();
+
+  BufrCdmIndexProto.FldType getType();
+
+  boolean isSeq();
+
+  int getMin();
+
+  int getMax();
+
+  int getScale();
+
+  int getReference();
+
+  int getBitWidth();
+
+  List<? extends BufrField> getChildren();
 
 }

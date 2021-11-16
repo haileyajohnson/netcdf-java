@@ -9,7 +9,6 @@ package ucar.nc2.iosp.nexrad2;
 import ucar.unidata.io.RandomAccessFile;
 import ucar.ma2.IndexIterator;
 import ucar.ma2.Range;
-
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Date;
@@ -28,7 +27,7 @@ import java.util.Date;
  * @author David Priegnitz
  */
 public class Level2Record {
-  static private org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Level2Record.class);
+  private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Level2Record.class);
 
   /**
    * Reflectivity moment identifier
@@ -63,9 +62,9 @@ public class Level2Record {
   /**
    * Horizontal beam width
    */
-  public static final float HORIZONTAL_BEAM_WIDTH = (float) 1.5;         // LOOK  always true ??
+  public static final float HORIZONTAL_BEAM_WIDTH = (float) 1.5; // LOOK always true ??
 
- /* added for high resolution message type 31 */
+  /* added for high resolution message type 31 */
 
   public static final int REFLECTIVITY_HIGH = 5;
 
@@ -110,12 +109,12 @@ public class Level2Record {
    * public static float[] Velocity_hkm_LUT = new float[256];
    * <p/>
    * static {
-   * Reflectivity_LUT[0] = 0.0f; // Float.NaN;  //(float) SIGNAL_BELOW_THRESHOLD;
-   * Reflectivity_LUT[1] = Float.NaN;  //(float) SIGNAL_OVERLAID;
-   * Velocity_1km_LUT[0] = 0.0f; // Float.NaN;  //(float) SIGNAL_BELOW_THRESHOLD;
-   * Velocity_1km_LUT[1] = Float.NaN;  //(float) SIGNAL_OVERLAID;
-   * Velocity_hkm_LUT[0] = 0.0f; // Float.NaN;  //(float) SIGNAL_BELOW_THRESHOLD;
-   * Velocity_hkm_LUT[1] = Float.NaN;  //(float) SIGNAL_OVERLAID;
+   * Reflectivity_LUT[0] = 0.0f; // Float.NaN; //(float) SIGNAL_BELOW_THRESHOLD;
+   * Reflectivity_LUT[1] = Float.NaN; //(float) SIGNAL_OVERLAID;
+   * Velocity_1km_LUT[0] = 0.0f; // Float.NaN; //(float) SIGNAL_BELOW_THRESHOLD;
+   * Velocity_1km_LUT[1] = Float.NaN; //(float) SIGNAL_OVERLAID;
+   * Velocity_hkm_LUT[0] = 0.0f; // Float.NaN; //(float) SIGNAL_BELOW_THRESHOLD;
+   * Velocity_hkm_LUT[1] = Float.NaN; //(float) SIGNAL_OVERLAID;
    * <p/>
    * for (int i = 2; i < 256; i++) {
    * Reflectivity_LUT[i] = (float) (i / 2.0 - 33.0);
@@ -148,7 +147,7 @@ public class Level2Record {
    */
   private static final int RADAR_DATA_SIZE = 2432;
 
-  static public String getDatatypeName(int datatype) {
+  public static String getDatatypeName(int datatype) {
     switch (datatype) {
       case REFLECTIVITY:
         return "Reflectivity";
@@ -176,21 +175,16 @@ public class Level2Record {
     }
   }
 
-  static public String getDatatypeUnits(int datatype) {
+  public static String getDatatypeUnits(int datatype) {
     switch (datatype) {
       case REFLECTIVITY:
+      case REFLECTIVITY_HIGH:
+      case DIFF_REFLECTIVITY_HIGH:
         return "dBz";
 
       case VELOCITY_HI:
       case VELOCITY_LOW:
       case SPECTRUM_WIDTH:
-        return "m/s";
-
-      case REFLECTIVITY_HIGH:
-        return "dBz";
-      case DIFF_REFLECTIVITY_HIGH:
-        return "dBz";
-
       case VELOCITY_HIGH:
       case SPECTRUM_WIDTH_HIGH:
         return "m/s";
@@ -251,12 +245,11 @@ public class Level2Record {
   public float getDatatypeScaleFactor(int datatype) {
     switch (datatype) {
       case REFLECTIVITY:
-        return 0.5f;
-      case VELOCITY_LOW:
-        return 1.0f;
       case VELOCITY_HI:
       case SPECTRUM_WIDTH:
         return 0.5f;
+      case VELOCITY_LOW:
+        return 1.0f;
       case REFLECTIVITY_HIGH:
         return 1 / reflectHR_scale;
       case VELOCITY_HIGH:
@@ -302,7 +295,7 @@ public class Level2Record {
     }
   }
 
-  static public String getMessageTypeName(int code) {
+  public static String getMessageTypeName(int code) {
     switch (code) {
       case 1:
         return "digital radar data";
@@ -343,7 +336,7 @@ public class Level2Record {
     }
   }
 
-  static public String getRadialStatusName(int code) {
+  public static String getRadialStatusName(int code) {
     switch (code) {
       case 0:
         return "start of new elevation";
@@ -360,7 +353,7 @@ public class Level2Record {
     }
   }
 
-  static public String getVolumeCoveragePatternName(int code) {
+  public static String getVolumeCoveragePatternName(int code) {
     switch (code) {
       case 11:
         return "16 elevation scans every 5 mins";
@@ -385,14 +378,14 @@ public class Level2Record {
     }
   }
 
-  static public java.util.Date getDate(int julianDays, int msecs) {
+  public static java.util.Date getDate(int julianDays, int msecs) {
     long total = ((long) (julianDays - 1)) * 24 * 3600 * 1000 + msecs;
     return new Date(total);
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  int recno;        //  record number within the file
+  int recno; // record number within the file
   long message_offset; // offset of start of message
 
   boolean hasReflectData, hasDopplerData;
@@ -403,37 +396,37 @@ public class Level2Record {
   boolean hasHighResPHIData;
   boolean hasHighResRHOData;
   // message header
-  short message_size = 0;
-  byte id_channel = 0;
-  public byte message_type = 0;
-  short id_sequence = 0;
-  short mess_julian_date = 0;
-  int mess_msecs = 0;
-  short seg_count = 0;
-  short seg_number = 0;
+  short message_size;
+  byte id_channel;
+  public byte message_type;
+  short id_sequence;
+  short mess_julian_date;
+  int mess_msecs;
+  short seg_count;
+  short seg_number;
 
   // radar data header
-  int data_msecs = 0;
-  short data_julian_date = 0;
-  short unamb_range = 0;
-  int azimuth_ang = 0;
-  short radial_num = 0; // radial number within the elevation : starts with one
-  short radial_status = 0;
-  short elevation_ang = 0;
-  short elevation_num = 0;
+  int data_msecs;
+  short data_julian_date;
+  short unamb_range;
+  int azimuth_ang;
+  short radial_num; // radial number within the elevation : starts with one
+  short radial_status;
+  short elevation_ang;
+  short elevation_num;
 
-  short reflect_first_gate = 0; // distance to first reflectivity gate (m)
-  short reflect_gate_size = 0; //  reflectivity gate size (m)
-  short reflect_gate_count = 0; //  number of reflectivity gates
+  short reflect_first_gate; // distance to first reflectivity gate (m)
+  short reflect_gate_size; // reflectivity gate size (m)
+  short reflect_gate_count; // number of reflectivity gates
 
-  short doppler_first_gate = 0; // distance to first reflectivity gate (m)
-  short doppler_gate_size = 0; //  reflectivity gate size (m)
-  short doppler_gate_count = 0; //  number of reflectivity gates
+  short doppler_first_gate; // distance to first reflectivity gate (m)
+  short doppler_gate_size; // reflectivity gate size (m)
+  short doppler_gate_count; // number of reflectivity gates
 
-  short cut = 0;
-  float calibration = 0; // system gain calibration constant (db biased)
-  short resolution = 0; // dopplar velocity resolution
-  short vcp = 0;        // volume coverage pattern
+  short cut;
+  float calibration; // system gain calibration constant (db biased)
+  short resolution; // dopplar velocity resolution
+  short vcp; // volume coverage pattern
 
   short nyquist_vel; // nyquist velocity
   short attenuation; // atmospheric attenuation factor
@@ -455,7 +448,7 @@ public class Level2Record {
   private short velocity_offset; // velocity data pointer (byte number from start of message)
   private short spectWidth_offset; // spectrum-width data pointer (byte number from start of message)
   // new addition for message type 31
-  short rlength = 0;
+  short rlength;
   String id;
   float azimuth;
   byte compressIdx;
@@ -476,42 +469,42 @@ public class Level2Record {
   int dbp7;
   int dbp8;
   int dbp9;
-  short reflectHR_gate_count = 0;
-  short velocityHR_gate_count = 0;
-  short spectrumHR_gate_count = 0;
-  float reflectHR_scale = 0;
-  float velocityHR_scale = 0;
-  float spectrumHR_scale = 0;
-  float zdrHR_scale = 0;
-  float phiHR_scale = 0;
-  float rhoHR_scale = 0;
-  float reflectHR_addoffset = 0;
-  float velocityHR_addoffset = 0;
-  float spectrumHR_addoffset = 0;
-  float zdrHR_addoffset = 0;
-  float phiHR_addoffset = 0;
-  float rhoHR_addoffset = 0;
-  short reflectHR_offset = 0;
-  short velocityHR_offset = 0;
-  short spectrumHR_offset = 0;
-  short zdrHR_offset = 0;
-  short phiHR_offset = 0;
-  short rhoHR_offset = 0;
-  short zdrHR_gate_count = 0;
-  short phiHR_gate_count = 0;
-  short rhoHR_gate_count = 0;
-  short reflectHR_gate_size = 0;
-  short velocityHR_gate_size = 0;
-  short spectrumHR_gate_size = 0;
-  short zdrHR_gate_size = 0;
-  short phiHR_gate_size = 0;
-  short rhoHR_gate_size = 0;
-  short reflectHR_first_gate = 0;
-  short velocityHR_first_gate = 0;
-  short spectrumHR_first_gate = 0;
-  short zdrHR_first_gate = 0;
-  short phiHR_first_gate = 0;
-  short rhoHR_first_gate = 0;
+  short reflectHR_gate_count;
+  short velocityHR_gate_count;
+  short spectrumHR_gate_count;
+  float reflectHR_scale;
+  float velocityHR_scale;
+  float spectrumHR_scale;
+  float zdrHR_scale;
+  float phiHR_scale;
+  float rhoHR_scale;
+  float reflectHR_addoffset;
+  float velocityHR_addoffset;
+  float spectrumHR_addoffset;
+  float zdrHR_addoffset;
+  float phiHR_addoffset;
+  float rhoHR_addoffset;
+  short reflectHR_offset;
+  short velocityHR_offset;
+  short spectrumHR_offset;
+  short zdrHR_offset;
+  short phiHR_offset;
+  short rhoHR_offset;
+  short zdrHR_gate_count;
+  short phiHR_gate_count;
+  short rhoHR_gate_count;
+  short reflectHR_gate_size;
+  short velocityHR_gate_size;
+  short spectrumHR_gate_size;
+  short zdrHR_gate_size;
+  short phiHR_gate_size;
+  short rhoHR_gate_size;
+  short reflectHR_first_gate;
+  short velocityHR_first_gate;
+  short spectrumHR_first_gate;
+  short zdrHR_first_gate;
+  short phiHR_first_gate;
+  short rhoHR_first_gate;
 
 
   public static Level2Record factory(RandomAccessFile din, int record, long message_offset31) throws IOException {
@@ -536,14 +529,14 @@ public class Level2Record {
     message_type = din.readByte();
     id_sequence = din.readShort();
     mess_julian_date = din.readShort(); // from 1/1/70; prob "message generation time"
-    mess_msecs = din.readInt();   // message generation time
+    mess_msecs = din.readInt(); // message generation time
     seg_count = din.readShort(); // number of message segments
     seg_number = din.readShort(); // this segment
 
     // if (message_type != 1 ) return;
     if (message_type == 1) {
       // data header
-      data_msecs = din.readInt();   // collection time for this radial, msecs since midnight
+      data_msecs = din.readInt(); // collection time for this radial, msecs since midnight
       data_julian_date = din.readShort(); // prob "collection time"
       unamb_range = din.readShort(); // unambiguous range
       azimuth_ang = din.readUnsignedShort(); // LOOK why unsigned ??
@@ -577,7 +570,7 @@ public class Level2Record {
     } else if (message_type == 31) {
       // data header
       id = din.readString(4);
-      data_msecs = din.readInt();   // collection time for this radial, msecs since midnight
+      data_msecs = din.readInt(); // collection time for this radial, msecs since midnight
       data_julian_date = din.readShort(); // prob "collection time"
       radial_num = din.readShort(); // radial number within the elevation
       azimuth = din.readFloat(); // LOOK why unsigned ??
@@ -764,7 +757,7 @@ public class Level2Record {
           logger.warn("Missing radial product dbp9={} tname={}", dbp9, tname);
         }
       }
-      //hasHighResREFData = (dbp4 > 0);
+      // hasHighResREFData = (dbp4 > 0);
 
       if (hasHighResREFData) {
         reflectHR_gate_count = getDataBlockValue(din, (short) dbpp4, 8);
@@ -777,7 +770,7 @@ public class Level2Record {
         reflectHR_offset = (short) (dbpp4 + 28);
 
       }
-      //hasHighResVELData = (dbp5 > 0);
+      // hasHighResVELData = (dbp5 > 0);
       if (hasHighResVELData) {
         velocityHR_gate_count = getDataBlockValue(din, (short) dbpp5, 8);
         velocityHR_first_gate = getDataBlockValue(din, (short) dbpp5, 10);
@@ -789,7 +782,7 @@ public class Level2Record {
         velocityHR_offset = (short) (dbpp5 + 28);
 
       }
-      // hasHighResSWData  = (dbp6 > 0);
+      // hasHighResSWData = (dbp6 > 0);
       if (hasHighResSWData) {
         spectrumHR_gate_count = getDataBlockValue(din, (short) dbpp6, 8);
         spectrumHR_first_gate = getDataBlockValue(din, (short) dbpp6, 10);
@@ -812,7 +805,7 @@ public class Level2Record {
         zdrHR_addoffset = getDataBlockValue1(din, (short) dbpp7, 24);
         zdrHR_offset = (short) (dbpp7 + 28);
       }
-      //hasHighResPHIData = (dbp8 > 0);
+      // hasHighResPHIData = (dbp8 > 0);
       if (hasHighResPHIData) {
         phiHR_gate_count = getDataBlockValue(din, (short) dbpp8, 8);
         phiHR_first_gate = getDataBlockValue(din, (short) dbpp8, 10);
@@ -823,7 +816,7 @@ public class Level2Record {
         phiHR_addoffset = getDataBlockValue1(din, (short) dbpp8, 24);
         phiHR_offset = (short) (dbpp8 + 28);
       }
-      //hasHighResRHOData = (dbp9 > 0);
+      // hasHighResRHOData = (dbp9 > 0);
       if (hasHighResRHOData) {
         rhoHR_gate_count = getDataBlockValue(din, (short) dbpp9, 8);
         rhoHR_first_gate = getDataBlockValue(din, (short) dbpp9, 10);
@@ -851,11 +844,14 @@ public class Level2Record {
     out.println(" data date = " + data_julian_date + " : " + data_msecs);
     out.println(" elevation = " + getElevation() + " (" + elevation_num + ")");
     out.println(" azimuth = " + getAzimuth());
-    out.println(" radial = " + radial_num + " status= " + getRadialStatusName(radial_status) +
-            " ratio = " + getAzimuth() / radial_num);
-    out.println(" reflectivity first= " + reflect_first_gate + " size= " + reflect_gate_size + " count= " + reflect_gate_count);
-    out.println(" doppler first= " + doppler_first_gate + " size= " + doppler_gate_size + " count= " + doppler_gate_count);
-    out.println(" offset: reflect= " + reflect_offset + " velocity= " + velocity_offset + " spWidth= " + spectWidth_offset);
+    out.println(" radial = " + radial_num + " status= " + getRadialStatusName(radial_status) + " ratio = "
+        + getAzimuth() / radial_num);
+    out.println(
+        " reflectivity first= " + reflect_first_gate + " size= " + reflect_gate_size + " count= " + reflect_gate_count);
+    out.println(
+        " doppler first= " + doppler_first_gate + " size= " + doppler_gate_size + " count= " + doppler_gate_count);
+    out.println(
+        " offset: reflect= " + reflect_offset + " velocity= " + velocity_offset + " spWidth= " + spectWidth_offset);
     out.println(" pattern = " + vcp + " cut= " + cut);
   }
 
@@ -871,7 +867,8 @@ public class Level2Record {
       ok = false;
     }
 
-    if (message_type != 1) return ok;
+    if (message_type != 1)
+      return ok;
 
     if ((seg_count != 1) || (seg_number != 1)) {
       logger.warn("*** segment = " + seg_number + "/" + seg_count + who());
@@ -888,8 +885,7 @@ public class Level2Record {
     }
 
     if ((spectWidth_offset < 0) || (spectWidth_offset > RADAR_DATA_SIZE)) {
-      logger.warn("****" + recno + " HAS bad spwidth offset= " +
-              spectWidth_offset + who());
+      logger.warn("****" + recno + " HAS bad spwidth offset= " + spectWidth_offset + who());
       ok = false;
     }
 
@@ -904,8 +900,8 @@ public class Level2Record {
     }
 
     if (mess_julian_date != data_julian_date) {
-      logger.warn("*** message date = " + mess_julian_date + " : " + mess_msecs + who() + "\n" +
-              " data date = " + data_julian_date + " : " + data_msecs);
+      logger.warn("*** message date = " + mess_julian_date + " : " + mess_msecs + who() + "\n" + " data date = "
+          + data_julian_date + " : " + data_msecs);
       ok = false;
     }
 
@@ -965,7 +961,7 @@ public class Level2Record {
       case VELOCITY_LOW:
       case SPECTRUM_WIDTH:
         return ((int) doppler_gate_size);
-      //high resolution
+      // high resolution
       case REFLECTIVITY_HIGH:
         return ((int) reflectHR_gate_size);
       case VELOCITY_HIGH:
@@ -998,7 +994,7 @@ public class Level2Record {
       case VELOCITY_LOW:
       case SPECTRUM_WIDTH:
         return ((int) doppler_first_gate);
-      //high resolution
+      // high resolution
       case REFLECTIVITY_HIGH:
         return ((int) reflectHR_first_gate);
       case VELOCITY_HIGH:
@@ -1101,10 +1097,10 @@ public class Level2Record {
   /**
    * Read data from this record.
    *
-   * @param raf       read from this file
-   * @param datatype  which type of data : REFLECTIVITY, VELOCITY_HI, VELOCITY_LO, SPECTRUM_WIDTH
+   * @param raf read from this file
+   * @param datatype which type of data : REFLECTIVITY, VELOCITY_HI, VELOCITY_LO, SPECTRUM_WIDTH
    * @param gateRange handles the possible subset of data to return
-   * @param ii        put the data here
+   * @param ii put the data here
    * @throws IOException on read error
    */
   public void readData(RandomAccessFile raf, int datatype, Range gateRange, IndexIterator ii) throws IOException {
@@ -1114,7 +1110,8 @@ public class Level2Record {
     raf.seek(offset);
     if (logger.isDebugEnabled()) {
       logger.debug("  read recno " + recno + " at offset " + offset + " count= " + getGateCount(datatype));
-      logger.debug("   offset: reflect= " + reflect_offset + " velocity= " + velocity_offset + " spWidth= " + spectWidth_offset);
+      logger.debug(
+          "   offset: reflect= " + reflect_offset + " velocity= " + velocity_offset + " spWidth= " + spectWidth_offset);
     }
 
     int dataCount = getGateCount(datatype);
@@ -1132,7 +1129,7 @@ public class Level2Record {
 
       byte[] data = new byte[dataCount];
       raf.readFully(data);
-      //short [] ds = convertunsignedByte2Short(data);
+      // short [] ds = convertunsignedByte2Short(data);
       for (int gateIdx : gateRange) {
         if (gateIdx >= dataCount)
           ii.setByteNext(MISSING_DATA);

@@ -142,12 +142,6 @@ public class GempakStation implements Station {
   private String sdesc = "";
 
   /**
-   * Create a new GEMPAK station
-   */
-  public GempakStation() {
-  }
-
-  /**
    * Return a String representation of this
    *
    * @return a String representation of this
@@ -378,7 +372,7 @@ public class GempakStation implements Station {
     return spri;
   }
 
-  // Station interface stuff  have this class extend when we
+  // Station interface stuff have this class extend when we
   // decide where the interface lives
 
   /**
@@ -406,7 +400,7 @@ public class GempakStation implements Station {
   }
 
   /**
-   * Get the altitude in meters;  missing = NaN.
+   * Get the altitude in meters; missing = NaN.
    *
    * @return the altitude
    */
@@ -449,7 +443,7 @@ public class GempakStation implements Station {
   public String getWmoId() {
     String wmoID = "";
     if (!(stnm == GempakConstants.IMISSD)) {
-      wmoID = String.valueOf((int) (stnm / 10));
+      wmoID = String.valueOf(stnm / 10);
     }
     return wmoID;
   }
@@ -470,8 +464,7 @@ public class GempakStation implements Station {
    * @return true if lat or lon is missing
    */
   public boolean isMissing() {
-    return ((slat == GempakConstants.IMISSD)
-            || (slon == GempakConstants.IMISSD));
+    return ((slat == GempakConstants.IMISSD) || (slon == GempakConstants.IMISSD));
   }
 
   /**

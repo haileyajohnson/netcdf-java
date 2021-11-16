@@ -5,8 +5,6 @@
 package thredds.inventory;
 
 import ucar.nc2.util.CloseableIterator;
-
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -23,7 +21,8 @@ public class MFileIterator implements CloseableIterator<MFile> {
 
   /**
    * Constructor
-   * @param iter   iterator over MFiles
+   * 
+   * @param iter iterator over MFiles
    * @param filter optional filter, may be null
    */
   public MFileIterator(Iterator<MFile> iter, MFileFilter filter) {
@@ -31,8 +30,7 @@ public class MFileIterator implements CloseableIterator<MFile> {
     this.filter = filter;
   }
 
-  public void close() throws IOException {
-  }
+  public void close() {}
 
   public boolean hasNext() {
     while (true) {
@@ -41,12 +39,14 @@ public class MFileIterator implements CloseableIterator<MFile> {
         return false;
       }
       nextMfile = iter.next();
-      if (filter == null || filter.accept(nextMfile)) return true;
+      if (filter == null || filter.accept(nextMfile))
+        return true;
     }
   }
 
   public MFile next() {
-    if (nextMfile == null) throw new NoSuchElementException();
+    if (nextMfile == null)
+      throw new NoSuchElementException();
     return nextMfile;
   }
 

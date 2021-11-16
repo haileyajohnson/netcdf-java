@@ -5,14 +5,14 @@
 package ucar.nc2.iosp.bufr;
 
 import ucar.unidata.io.RandomAccessFile;
-
 import javax.annotation.concurrent.Immutable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents  Section 3 of a BUFR message.
+ * Represents Section 3 of a BUFR message.
+ * 
  * @author caron
  * @since May 10, 2008
  */
@@ -37,7 +37,7 @@ public class BufrDataDescriptionSection {
   /**
    * List of data set descriptors.
    */
-  private final List<Short> descriptors = new ArrayList<Short>();
+  private final List<Short> descriptors = new ArrayList<>();
 
   /**
    * Constructs a BufrDataDescriptionSection object by reading section 3 from a BUFR file.
@@ -133,7 +133,7 @@ public class BufrDataDescriptionSection {
    * @return descriptors as List<String>
    */
   public final List<String> getDescriptors() {
-    List<String> desc = new ArrayList<String>();
+    List<String> desc = new ArrayList<>();
     for (short fxy : descriptors)
       desc.add(Descriptor.makeString(fxy));
     return desc;

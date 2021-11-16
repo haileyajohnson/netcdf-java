@@ -6,7 +6,6 @@ package ucar.nc2.dt.radial;
 
 import ucar.nc2.dataset.*;
 import ucar.nc2.constants.*;
-import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dt.*;
 import ucar.nc2.ft.FeatureDataset;
 import ucar.nc2.time.CalendarDateUnit;
@@ -14,7 +13,6 @@ import ucar.nc2.units.DateUnit;
 import ucar.nc2.VariableSimpleIF;
 import ucar.nc2.Variable;
 import ucar.ma2.*;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -28,17 +26,18 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
   private NetcdfDataset ds;
 
   /////////////////////////////////////////////////
-  public Object isMine( FeatureType wantFeatureType, NetcdfDataset ncd, Formatter errlog) throws IOException {
+  public Object isMine(FeatureType wantFeatureType, NetcdfDataset ncd, Formatter errlog) {
     String convention = ncd.findAttValueIgnoreCase(null, "Conventions", null);
-    if ((null != convention) && convention.equals(_Coordinate.Convention)) {
+    if (_Coordinate.Convention.equals(convention)) {
       String format = ncd.findAttValueIgnoreCase(null, "Format", null);
-      if (format != null && format.equals("Level3/NIDS"))
+      if ("Level3/NIDS".equals(format))
         return this;
     }
     return null;
   }
 
-  public FeatureDataset open( FeatureType ftype, NetcdfDataset ncd, Object analysis, ucar.nc2.util.CancelTask task, Formatter errlog) throws IOException {
+  public FeatureDataset open(FeatureType ftype, NetcdfDataset ncd, Object analysis, ucar.nc2.util.CancelTask task,
+      Formatter errlog) {
     return new NidsRadialAdapter(ncd);
   }
 
@@ -47,8 +46,7 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
   }
 
   // needed for FeatureDatasetFactory
-  public NidsRadialAdapter() {
-  }
+  public NidsRadialAdapter() {}
 
   /**
    * Constructor.
@@ -200,9 +198,8 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
 
   public void clearDatasetMemory() {
     List rvars = getDataVariables();
-    Iterator iter = rvars.iterator();
-    while (iter.hasNext()) {
-      RadialVariable radVar = (RadialVariable) iter.next();
+    for (Object rvar : rvars) {
+      RadialVariable radVar = (RadialVariable) rvar;
       radVar.clearVariableMemory();
     }
   }
@@ -213,23 +210,18 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
   }
 
   public String getInfo() {
-    StringBuilder sbuff = new StringBuilder();
-    sbuff.append("Nids2Dataset\n");
-    sbuff.append(super.getDetailInfo());
-    sbuff.append("\n\n");
-    sbuff.append(parseInfo.toString());
-    return sbuff.toString();
+    String sbuff = "Nids2Dataset\n" + super.getDetailInfo() + "\n\n" + parseInfo;
+    return sbuff;
   }
 
 
   private class Nids2Variable extends MyRadialVariableAdapter implements RadialDatasetSweep.RadialVariable {
-    ArrayList sweeps;
+    ArrayList<Nids2Sweep> sweeps;
     String name;
-
 
     private Nids2Variable(NetcdfDataset nds, VariableSimpleIF v, Variable v0) {
       super(v.getShortName(), v0.getAttributes());
-      sweeps = new ArrayList();
+      sweeps = new ArrayList<>();
       name = v.getShortName();
 
       int[] shape = v0.getShape();
@@ -241,7 +233,6 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
       count--;
 
       sweeps.add(new Nids2Sweep(nds, v0, 0, nrays, ngates));
-      //sweep = new Sweep[nsweeps];
     }
 
     public String toString() {
@@ -265,8 +256,9 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
     }
 
     public Sweep getSweep(int sn) {
-      if (sn != 0) return null;
-      return (Sweep) sweeps.get(sn);
+      if (sn != 0)
+        return null;
+      return sweeps.get(sn);
     }
 
     public void clearVariableMemory() {
@@ -287,8 +279,8 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
         this.nrays = rays;
         this.ngates = gates;
         this.ds = nds;
-        //setMeanElevation(nds);
-        //setMeanAzimuth(nds);
+        // setMeanElevation(nds);
+        // setMeanAzimuth(nds);
       }
 
       public Variable getsweepVar() {
@@ -329,7 +321,8 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
           }
           meanAzimuth = MAMath.sumDouble(spData) / spData.getSize();
 
-        } else meanAzimuth = 0.0;
+        } else
+          meanAzimuth = 0.0;
 
       }
 
@@ -347,9 +340,9 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
         return ngates;
       }
 
-      /* a 2D array nradials * ngates   */
+      /* a 2D array nradials * ngates */
       public float[] readData() throws IOException {
-        Array allData = null;
+        Array allData;
         int[] shape = sweepVar.getShape();
         int[] origind = new int[sweepVar.getRank()];
         try {
@@ -384,12 +377,12 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
         return true;
       }
 
-      public float getElevation(int ray) throws IOException {
+      public float getElevation(int ray) {
         // setMeanElevation();
         return (float) meanElevation;
       }
 
-      public float[] getElevation() throws IOException {
+      public float[] getElevation() {
         float[] spArray = null;
         try {
           Variable sp = ds.findVariable("elevation");
@@ -449,9 +442,9 @@ public class NidsRadialAdapter extends AbstractRadialAdapter {
 
       public float getGateSize() {
         try {
-            if (Double.isNaN(gateSize))
-               gateSize = getRadialDistance(1) - getRadialDistance(0);
-            return (float) gateSize;
+          if (Double.isNaN(gateSize))
+            gateSize = getRadialDistance(1) - getRadialDistance(0);
+          return (float) gateSize;
 
         } catch (IOException e) {
           e.printStackTrace();

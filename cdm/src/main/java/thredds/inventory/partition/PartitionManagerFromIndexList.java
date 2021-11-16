@@ -5,14 +5,10 @@
 
 package thredds.inventory.partition;
 
+import java.util.Collections;
 import thredds.featurecollection.FeatureCollectionConfig;
-import thredds.filesystem.MFileOS;
-import thredds.filesystem.MFileOS7;
 import thredds.inventory.*;
 import ucar.nc2.util.CloseableIterator;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -23,7 +19,7 @@ import java.util.List;
  * Index Files are already in the cache.
  *
  * @author John
- * @since 2/5/14                   `
+ * @since 2/5/14 `
  */
 public class PartitionManagerFromIndexList extends CollectionAbstract implements PartitionManager {
   private List<MFile> partIndexFiles;
@@ -37,7 +33,7 @@ public class PartitionManagerFromIndexList extends CollectionAbstract implements
     this.partIndexFiles = partFiles;
   }
 
-  public Iterable<MCollection> makePartitions(CollectionUpdateType forceCollection) throws IOException {
+  public Iterable<MCollection> makePartitions(CollectionUpdateType forceCollection) {
     return new PartIterator();
   }
 
@@ -58,39 +54,47 @@ public class PartitionManagerFromIndexList extends CollectionAbstract implements
     public MCollection next() {
       MFile nextFile = iter.next();
 
-      // try {
-        MCollection result = new CollectionSingleIndexFile( nextFile, logger);
-        result.putAuxInfo(FeatureCollectionConfig.AUX_CONFIG, config);
-        return result;
-
-      //} catch (IOException e) {
-      //  logger.error("PartitionManagerFromList failed on "+nextFile.getPath(), e);
-     //   throw new RuntimeException(e);
-     // }
+      MCollection result = new CollectionSingleIndexFile(nextFile, logger);
+      result.putAuxInfo(FeatureCollectionConfig.AUX_CONFIG, config);
+      return result;
     }
 
     @Override
-    public void remove() {
-    }
+    public void remove() {}
   }
 
   @Override
-  public void close() { }
+  public void close() {}
 
   @Override
-  public Iterable<MFile> getFilesSorted() throws IOException {
-    return null;
+  public Iterable<MFile> getFilesSorted() {
+    return Collections.emptyList();
   }
 
   @Override
-  public CloseableIterator<MFile> getFileIterator() throws IOException {
-    return null;
+  public CloseableIterator<MFile> getFileIterator() {
+    return new CloseableIterator<MFile>() {
+      @Override
+      public boolean hasNext() {
+        return false;
+      }
+
+      @Override
+      public MFile next() {
+        return null;
+      }
+
+      @Override
+      public void close() {
+
+      }
+    };
   }
 
   /////////////////////////////////////////////////////////////
   // partitions can be removed (!)
 
-  public void removePartition( MCollection partition) {
+  public void removePartition(MCollection partition) {
     for (MFile mfile : partIndexFiles) {
       if (mfile.getName().equalsIgnoreCase(partition.getCollectionName())) {
         List<MFile> part = new ArrayList<>(partIndexFiles);

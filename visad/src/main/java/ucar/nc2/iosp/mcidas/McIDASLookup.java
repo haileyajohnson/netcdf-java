@@ -13,6 +13,7 @@ import ucar.nc2.iosp.grid.*;
 /**
  * McIDASLookup
  * get all the information about a McIDAS file.
+ * 
  * @author dmurray
  */
 public final class McIDASLookup implements GridTableLookup {
@@ -82,8 +83,9 @@ public final class McIDASLookup implements GridTableLookup {
   public final String getLevelName(GridRecord gr) {
 
     if (cust != null) {
-      String result = cust.getLevelNameShort( gr.getLevelType1());
-      if (result != null) return result;
+      String result = cust.getLevelNameShort(gr.getLevelType1());
+      if (result != null)
+        return result;
     }
 
     String levelUnit = getLevelUnit(gr);
@@ -111,11 +113,12 @@ public final class McIDASLookup implements GridTableLookup {
    */
   public final String getLevelDescription(GridRecord gr) {
     if (cust != null) {
-      String result = cust.getLevelDescription( gr.getLevelType1());
-      if (result != null) return result;
+      String result = cust.getLevelDescription(gr.getLevelType1());
+      if (result != null)
+        return result;
     }
 
-    // TODO:  flesh this out
+    // TODO: flesh this out
     return getLevelName(gr);
   }
 
@@ -124,8 +127,9 @@ public final class McIDASLookup implements GridTableLookup {
    */
   public final String getLevelUnit(GridRecord gr) {
     if (cust != null) {
-      String result = cust.getLevelUnits( gr.getLevelType1());
-      if (result != null) return result;
+      String result = cust.getLevelUnits(gr.getLevelType1());
+      if (result != null)
+        return result;
     }
 
     return visad.jmet.MetUnits.makeSymbol(((McIDASGridRecord) gr).getLevelUnitName());
@@ -194,13 +198,9 @@ public final class McIDASLookup implements GridTableLookup {
       if (type == 141) {
         return true;
       }
-      if (type == 160) {
-        return true;
-      }
-    } else if (getLevelUnit(gr).equals("hPa")) {
-      return true;
-    }
-    return false;
+      return type == 160;
+    } else
+      return getLevelUnit(gr).equals("hPa");
   }
 
   /**
@@ -208,7 +208,7 @@ public final class McIDASLookup implements GridTableLookup {
    */
   public final boolean isPositiveUp(GridRecord gr) {
     if (cust != null) {
-      return cust.isPositiveUp( gr.getLevelType1());
+      return cust.isPositiveUp(gr.getLevelType1());
     }
 
     int type = gr.getLevelType1();
@@ -234,9 +234,8 @@ public final class McIDASLookup implements GridTableLookup {
       }
       if (type == 125) {
         return true;
-      } else if (getLevelUnit(gr).equals("hPa")) {
-        return false;
-      }
+      } else
+        return !getLevelUnit(gr).equals("hPa");
     }
     return true;
   }
@@ -258,13 +257,10 @@ public final class McIDASLookup implements GridTableLookup {
    */
   public boolean isLayer(GridRecord gr) {
     if (cust != null) {
-      return cust.isLayer( gr.getLevelType1());
+      return cust.isLayer(gr.getLevelType1());
     }
 
-    if (gr.getLevel2() == 0) {
-      return false;
-    }
-    return true;
+    return gr.getLevel2() != 0;
   }
 
   /**

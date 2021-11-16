@@ -8,9 +8,7 @@ package ucar.nc2.iosp.sigmet;
 import ucar.ma2.IndexIterator;
 import ucar.ma2.Range;
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.Formatter;
 
 /**
@@ -24,17 +22,16 @@ public class Ray {
   int offset1;
   private float range, step, az, elev;
   private short time;
-  //  private float[] val;
+  // private float[] val;
   String varName;
   int nsweep;
   short datatype;
 
 
   public Ray(float range, float step, float az, float elev, short bins, short time, int offset, int dataRead,
-             int offset1, int nsweep, String name,
-             short datatype) {
+      int offset1, int nsweep, String name, short datatype) {
 
-    //  this.val = new float[bins];
+    // this.val = new float[bins];
     setRange(range);
     setStep(step);
     setAz(az);
@@ -143,14 +140,15 @@ public class Ray {
     this.offset1 = offset1;
   }
 
-  /*   public float[] getVal() {
-        return val;
-    }
-
-    public void setVal(float[] val) {
-        System.arraycopy(val, 0, this.val, 0, bins);
-    }
-  */
+  /*
+   * public float[] getVal() {
+   * return val;
+   * }
+   * 
+   * public void setVal(float[] val) {
+   * System.arraycopy(val, 0, this.val, 0, bins);
+   * }
+   */
   public void setName(String name) {
     this.varName = name;
   }
@@ -165,8 +163,7 @@ public class Ray {
     } else if (o instanceof Ray) {
       Ray oo = (Ray) o;
 
-      return (range == oo.range & step == oo.step & az == oo.az & elev == oo.elev & bins == oo.bins
-              & time == oo.time);
+      return (range == oo.range & step == oo.step & az == oo.az & elev == oo.elev & bins == oo.bins & time == oo.time);
     } else {
       return false;
     }
@@ -174,7 +171,7 @@ public class Ray {
 
   public int hashCode() {
     return new Float(range).hashCode() + new Float(step).hashCode() + new Float(az).hashCode()
-            + new Float(elev).hashCode() + new Short(bins).hashCode() + new Short(time).hashCode();
+        + new Float(elev).hashCode() + new Short(bins).hashCode() + new Short(time).hashCode();
 
     // val.hashCode();
   }
@@ -196,13 +193,13 @@ public class Ray {
   /**
    * Read data from this record.
    *
-   * @param raf       read from this file
+   * @param raf read from this file
    * @param gateRange handles the possible subset of data to return
-   * @param ii        put the data here
+   * @param ii put the data here
    * @throws java.io.IOException on read error
    */
   public void readData(RandomAccessFile raf, Range gateRange, IndexIterator ii) throws IOException {
-    final int REC_SIZE = 6144;
+    int REC_SIZE = 6144;
     raf.seek(offset);
     byte[] data = new byte[bins];
     float[] dd = new float[bins];
@@ -219,7 +216,6 @@ public class Ray {
         nb++;
       }
     }
-    // System.out.println("this is az " + getAz());
     raf.seek(offset1);
     int cur_len = offset1;
 
@@ -235,12 +231,11 @@ public class Ray {
         break;
       }
 
-      if (a00 < 0) {    // -- This is data
+      if (a00 < 0) { // -- This is data
         int nwords = a00 & 0x7fff;
         int dataRead1 = nwords * 2;
         int pos = 0;
         if (cur_len % REC_SIZE == 0) {
-          pos = 0;
           break;
         }
         raf.seek(cur_len);
@@ -270,7 +265,7 @@ public class Ray {
         }
 
       }
-    }                     // ------ end of while for num_bins---------------------------------
+    } // ------ end of while for num_bins---------------------------------
 
     for (int gateIdx : gateRange) {
       if (gateIdx >= bins)
@@ -280,6 +275,6 @@ public class Ray {
     }
 
   } // end of readData
-}    // class Ray end------------------------------------------
+} // class Ray end------------------------------------------
 
- 
+

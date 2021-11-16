@@ -15,7 +15,7 @@ import java.net.URL;
  */
 public class DbaseFile {
 
-  public static int DBASEIII = 0;
+  public static int DBASEIII;
   public static int DBASEIV = 1;
   public static int DBASE5DOS = 2;
   public static int DBASE5WIN = 3;
@@ -28,10 +28,10 @@ public class DbaseFile {
   DbaseFieldDesc[] FieldDesc;
   DbaseData[] data;
   byte[] Header;
-  private boolean headerLoaded = false;
-  private boolean dataLoaded = false;
+  private boolean headerLoaded;
+  private boolean dataLoaded;
   InputStream stream;
-  DataInputStream ds = null;
+  DataInputStream ds;
 
   /**
    * @param url URL to the *.dbf file
@@ -75,17 +75,19 @@ public class DbaseFile {
    * @return 0 for success, -1 for failure
    */
   private int loadHeader() {
-    if (headerLoaded) return 0;
+    if (headerLoaded)
+      return 0;
     InputStream s = stream;
-    if (s == null) return -1;
+    if (s == null)
+      return -1;
     try {
       BufferedInputStream bs = new BufferedInputStream(s);
       ds = new DataInputStream(bs);
-      /* read the header as one block of bytes*/
+      /* read the header as one block of bytes */
       Header = new byte[32];
       ds.readFully(Header);
-      //System.out.println("dbase header is " + Header);
-      if (Header[0] == '<') { //looks like html coming back to us!
+      // System.out.println("dbase header is " + Header);
+      if (Header[0] == '<') { // looks like html coming back to us!
         close(ds);
         return -1;
       }
@@ -95,22 +97,21 @@ public class DbaseFile {
       nbytesheader = Swap.swapShort(Header, 8);
 
       /* read in the Field Descriptors */
-      /* have to figure how many there are from
-      * the header size.  Should be nbytesheader/32 -1
-      */
+      /*
+       * have to figure how many there are from
+       * the header size. Should be nbytesheader/32 -1
+       */
       nfields = (nbytesheader / 32) - 1;
       if (nfields < 1) {
         System.out.println("nfields = " + nfields);
-        System.out.println("nbytesheader = " +
-                nbytesheader);
+        System.out.println("nbytesheader = " + nbytesheader);
         return -1;
       }
       FieldDesc = new DbaseFieldDesc[nfields];
       data = new DbaseData[nfields];
       for (int i = 0; i < nfields; i++) {
         FieldDesc[i] = new DbaseFieldDesc(ds, filetype);
-        data[i] = new DbaseData(FieldDesc[i],
-                nrecords);
+        data[i] = new DbaseData(FieldDesc[i], nrecords);
       }
 
       /* read the last byte of the header (0x0d) */
@@ -130,10 +131,13 @@ public class DbaseFile {
    * @return 0 for success, -1 for failure
    */
   private int loadData() {
-    if (!headerLoaded) return -1;
-    if (dataLoaded) return 0;
+    if (!headerLoaded)
+      return -1;
+    if (dataLoaded)
+      return 0;
     InputStream s = stream;
-    if (s == null) return -1;
+    if (s == null)
+      return -1;
     try {
       /* read in the data */
       for (int i = 0; i < nrecords; i++) {
@@ -160,7 +164,8 @@ public class DbaseFile {
   }
 
   private void close(InputStream d) {
-    if (d == null) return;
+    if (d == null)
+      return;
     try {
       d.close();
     } catch (java.io.IOException e) {
@@ -175,7 +180,8 @@ public class DbaseFile {
    * @return A DbaseData object if the column is within bounds. Otherwise, null.
    */
   public DbaseData getField(int index) {
-    if (index < 0 || index >= nfields) return null;
+    if (index < 0 || index >= nfields)
+      return null;
     return data[index];
   }
 
@@ -187,7 +193,8 @@ public class DbaseFile {
    */
   public DbaseData getField(String Name) {
     for (int i = 0; i < nfields; i++) {
-      if (FieldDesc[i].Name.equals(Name)) return data[i];
+      if (FieldDesc[i].Name.equals(Name))
+        return data[i];
     }
     return null;
   }
@@ -200,12 +207,13 @@ public class DbaseFile {
    */
   public double[] getDoublesByName(String Name) {
     DbaseData d;
-    if ((d = getField(Name)) == null) return null;
+    if ((d = getField(Name)) == null)
+      return null;
     if (d.getType() == DbaseData.TYPE_CHAR) {
       String[] s = d.getStrings();
       double[] dd = new double[s.length];
       for (int i = 0; i < s.length; i++) {
-        dd[i] = Double.valueOf(s[i]);
+        dd[i] = Double.parseDouble(s[i]);
       }
       return dd;
     }
@@ -233,8 +241,10 @@ public class DbaseFile {
    */
   public String[] getStringsByName(String Name) {
     DbaseData d;
-    if ((d = getField(Name)) == null) return null;
-    if (d.getType() != DbaseData.TYPE_CHAR) return null;
+    if ((d = getField(Name)) == null)
+      return null;
+    if (d.getType() != DbaseData.TYPE_CHAR)
+      return null;
     return d.getStrings();
   }
 
@@ -246,8 +256,10 @@ public class DbaseFile {
    */
   public boolean[] getBooleansByName(String Name) {
     DbaseData d;
-    if ((d = getField(Name)) == null) return null;
-    if (d.getType() != DbaseData.TYPE_BOOLEAN) return null;
+    if ((d = getField(Name)) == null)
+      return null;
+    if (d.getType() != DbaseData.TYPE_BOOLEAN)
+      return null;
     return d.getBooleans();
   }
 
@@ -298,70 +310,5 @@ public class DbaseFile {
    */
   public boolean isLoaded() {
     return (dataLoaded);
-  }
-
-  /**
-   * Test program, dumps a Dbase file to stdout.
-   */
-  public static void main(String[] args) {
-    if (args.length < 1) {
-      System.out.println("filename or URL required");
-      System.exit(-1);
-    }
-    for (String s : args) {
-      System.out.println("*** Dump of Dbase " + s + ":");
-      try {
-        DbaseFile dbf = new DbaseFile(s);
-        // load() method reads all data at once
-        if (dbf.loadHeader() != 0) {
-          System.out.println("Error loading header" + s);
-          System.exit(-1);
-        }
-
-        // output schema as [type0 field0, type1 field1, ...]
-        String[] fieldNames = dbf.getFieldNames();
-        System.out.print("[");
-
-        int nf = dbf.getNumFields();
-        DbaseData[] dbd = new DbaseData[nf];
-        for (int field = 0; field < nf; field++) {
-          dbd[field] = dbf.getField(field);
-          switch (dbd[field].getType()) {
-            case DbaseData.TYPE_BOOLEAN:
-              System.out.print("boolean ");
-              break;
-            case DbaseData.TYPE_CHAR:
-              System.out.print("String ");
-              break;
-            case DbaseData.TYPE_NUMERIC:
-              System.out.print("double ");
-              break;
-          }
-          System.out.print(fieldNames[field]);
-          if (field < nf - 1)
-            System.out.print(", ");
-        }
-        System.out.println("]");
-
-        if (dbf.loadData() != 0) {
-          System.out.println("Error loading data" + s);
-          System.exit(-1);
-        }
-
-        // output data
-        for (int rec = 0; rec < dbf.getNumRecords(); rec++) {
-          for (int field = 0; field < nf; field++) {
-            System.out.print(dbd[field].getData(rec));
-            if (field < nf - 1)
-              System.out.print(", ");
-            else
-              System.out.println();
-          }
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-        break;
-      }
-    }
   }
 }

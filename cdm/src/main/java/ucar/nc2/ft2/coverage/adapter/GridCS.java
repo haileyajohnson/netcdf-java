@@ -7,12 +7,7 @@ package ucar.nc2.ft2.coverage.adapter;
 
 import ucar.nc2.dataset.CoordinateAxis1D;
 import ucar.nc2.dataset.CoordinateAxis1DTime;
-import ucar.nc2.dataset.CoordinateSystem;
-import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateRange;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Grid Coordinate System Implementation
@@ -50,18 +45,18 @@ public class GridCS extends DtCoverageCS {
   }
 
   /*
-   @Override
- public List<CalendarDate> getCalendarDates() {
-    if (getTimeAxis() != null)
-      return getTimeAxis().getCalendarDates();
-
-    else if (getRunTimeAxis() != null)
-      return getRunTimeAxis().getCalendarDates();
-
-    else
-      return new ArrayList<>();
-  }
-  */
+   * @Override
+   * public List<CalendarDate> getCalendarDates() {
+   * if (getTimeAxis() != null)
+   * return getTimeAxis().getCalendarDates();
+   * 
+   * else if (getRunTimeAxis() != null)
+   * return getRunTimeAxis().getCalendarDates();
+   * 
+   * else
+   * return new ArrayList<>();
+   * }
+   */
 
   @Override
   public CalendarDateRange getCalendarDateRange() {

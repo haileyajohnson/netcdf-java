@@ -14,7 +14,6 @@ import ucar.nc2.constants.CF;
 import ucar.nc2.iosp.AbstractIOServiceProvider;
 import ucar.nc2.util.CancelTask;
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Formatter;
@@ -42,55 +41,50 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
   /**
    * Float missing attribute
    */
-  protected final static Number RMISS = GempakConstants.RMISSD;
+  protected static final Number RMISS = GempakConstants.RMISSD;
 
   /**
    * Integer missing attribute
    */
-  protected final static Number IMISS = GempakConstants.IMISSD;
+  protected static final Number IMISS = GempakConstants.IMISSD;
 
   /**
    * static for shared dimension of length 4
    */
-  protected final static Dimension DIM_LEN8 = new Dimension("len8", 8, true);
+  protected static final Dimension DIM_LEN8 = new Dimension("len8", 8, true);
 
   /**
    * static for shared dimension of length 4
    */
-  protected final static Dimension DIM_LEN4 = new Dimension("len4", 4, true);
+  protected static final Dimension DIM_LEN4 = new Dimension("len4", 4, true);
 
   /**
    * static for shared dimension of length 2
    */
-  protected final static Dimension DIM_LEN2 = new Dimension("len2", 2, true);
+  protected static final Dimension DIM_LEN2 = new Dimension("len2", 2, true);
 
   /**
    * name for the time variable
    */
-  protected final static String TIME_VAR = "time";
+  protected static final String TIME_VAR = "time";
 
   /**
    * name for the time variable
    */
-  protected final static String MISSING_VAR = "_isMissing";
+  protected static final String MISSING_VAR = "_isMissing";
 
   /**
    * station variable names
    */
-  private static String[] stnVarNames = {
-          GempakStation.STID, GempakStation.STNM, GempakStation.SLAT,
-          GempakStation.SLON, GempakStation.SELV, GempakStation.STAT,
-          GempakStation.COUN, GempakStation.STD2, GempakStation.SPRI,
-          GempakStation.SWFO, GempakStation.WFO2
-  };
+  private static String[] stnVarNames = {GempakStation.STID, GempakStation.STNM, GempakStation.SLAT, GempakStation.SLON,
+      GempakStation.SELV, GempakStation.STAT, GempakStation.COUN, GempakStation.STD2, GempakStation.SPRI,
+      GempakStation.SWFO, GempakStation.WFO2};
 
 
   /**
    * lengths of station variable
    */
-  private static int[] stnVarSizes = {
-          8, 4, 4, 4, 4, 2, 2, 4, 4, 4, 4
-  };
+  private static int[] stnVarSizes = {8, 4, 4, 4, 4, 2, 2, 4, 4, 4, 4};
 
 
   /**
@@ -121,15 +115,14 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
   /**
    * Open the service provider for reading.
    *
-   * @param raf        file to read from
-   * @param ncfile     netCDF file we are writing to (memory)
+   * @param raf file to read from
+   * @param ncfile netCDF file we are writing to (memory)
    * @param cancelTask task for cancelling
    * @throws IOException problem reading file
    */
   @Override
   public void open(RandomAccessFile raf, NetcdfFile ncfile, CancelTask cancelTask) throws IOException {
 
-    //System.out.printf("GempakSurfaceIOSP open %s (%s) %n", raf.getLocation(), Calendar.getInstance().getTime());
     super.open(raf, ncfile, cancelTask);
     if (gemreader == null) {
       gemreader = makeStationReader();
@@ -158,31 +151,6 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
     return ff.toString();
   }
 
-  /*
-   * Sync the file
-   *
-   * @return true if needed to sync
-   * @throws IOException problem synching the file
-   *
-  public boolean sync() throws IOException {
-    //printStack("***************************** sync ************************", 100);
-    //System.out.printf("check sync on %s (%s) %n", raf.getLocation(), Calendar.getInstance().getTime());
-
-    if (gemreader.getInitFileSize() < raf.length()) {
-      long start = System.currentTimeMillis();
-      log.debug("GEMPAKStationIOSP.sync: file " + raf.getLocation()
-              + " is bigger: " + raf.length() + " > "
-              + gemreader.getInitFileSize());
-      gemreader.init(raf, true);
-      // reconstruct the ncfile objects
-      buildNCFile();
-      //System.out.printf("sync on %s took %d msecs%n", raf.getLocation(), (System.currentTimeMillis()-start));
-      return true;
-    }
-    return false;
-  } */
-
-
   /**
    * Build the netCDF file
    *
@@ -193,11 +161,10 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
     fillNCFile();
     addGlobalAttributes();
     ncfile.finish();
-    //System.out.println(ncfile);
   }
 
   /**
-   * Fill the contents of the netCDF file.  Assumes that the file has been
+   * Fill the contents of the netCDF file. Assumes that the file has been
    * cleared.
    *
    * @throws IOException problem reading the file
@@ -207,8 +174,8 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
   /**
    * Make a structure for the part
    *
-   * @param partName       partname
-   * @param dimensions     dimensions for the structure
+   * @param partName partname
+   * @param dimensions dimensions for the structure
    * @param includeMissing true to include the missing variable
    * @return a Structure
    */
@@ -246,7 +213,7 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
    * Make a variable from a GempakParmaeter
    *
    * @param param GempakParameter
-   * @param dims  Variable dimensions
+   * @param dims Variable dimensions
    * @return the Variable
    */
   protected Variable makeParamVariable(GempakParameter param, List<Dimension> dims) {
@@ -314,7 +281,7 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
    * Make the station variables from a representative station
    *
    * @param stations list of stations
-   * @param dim      station dimension
+   * @param dim station dimension
    * @return the list of variables
    */
   protected List<Variable> makeStationVars(List<GempakStation> stations, Dimension dim) {
@@ -324,7 +291,7 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
     for (String varName : stnKeyNames) {
       Variable v = makeStationVariable(varName, dim);
       Attribute stIDAttr = new Attribute(CF.STANDARD_NAME, "station_id");
-      if (varName.equals(GempakStation.STID)) {  // Use STID as the station_id for the dataset.
+      if (varName.equals(GempakStation.STID)) { // Use STID as the station_id for the dataset.
         v.addAttribute(stIDAttr);
       }
       vars.add(v);
@@ -333,7 +300,7 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
     if ((dim != null) && (numStations > 0)) {
       for (Variable v : vars) {
         Array varArray;
-        if (v.getDataType().equals(DataType.CHAR)) {
+        if (v.getDataType() == DataType.CHAR) {
           int[] shape = v.getShape();
           varArray = new ArrayChar.D2(shape[0], shape[1]);
         } else {
@@ -395,16 +362,16 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
    * Get a 1DArray for the type and length
    *
    * @param type DataType
-   * @param len  length
+   * @param len length
    * @return the array
    */
   private Array get1DArray(DataType type, int len) {
     Array varArray = null;
-    if (type.equals(DataType.FLOAT)) {
+    if (type == DataType.FLOAT) {
       varArray = new ArrayFloat.D1(len);
-    } else if (type.equals(DataType.DOUBLE)) {
+    } else if (type == DataType.DOUBLE) {
       varArray = new ArrayDouble.D1(len);
-    } else if (type.equals(DataType.INT)) {
+    } else if (type == DataType.INT) {
       varArray = new ArrayInt.D1(len, false);
     }
     return varArray;
@@ -414,7 +381,7 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
   /**
    * Make a station variable
    *
-   * @param varname  variable name
+   * @param varname variable name
    * @param firstDim station dimension
    * @return corresponding variable
    */
@@ -487,9 +454,9 @@ public abstract class GempakStationFileIOSP extends AbstractIOServiceProvider {
     if (unit != null) {
       v.addAttribute(new Attribute(CDM.UNITS, unit));
     }
-    if (type.equals(DataType.FLOAT)) {
+    if (type == DataType.FLOAT) {
       v.addAttribute(new Attribute(CDM.MISSING_VALUE, RMISS));
-    } else if (type.equals(DataType.INT)) {
+    } else if (type == DataType.INT) {
       v.addAttribute(new Attribute(CDM.MISSING_VALUE, IMISS));
     }
     if (!attrs.isEmpty()) {

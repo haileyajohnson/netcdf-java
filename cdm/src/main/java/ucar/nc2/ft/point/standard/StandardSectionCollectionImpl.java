@@ -8,7 +8,6 @@ package ucar.nc2.ft.point.standard;
 import java.io.IOException;
 import java.util.Iterator;
 import javax.annotation.Nonnull;
-
 import ucar.ma2.StructureData;
 import ucar.ma2.StructureDataIterator;
 import ucar.nc2.ft.PointFeature;
@@ -40,7 +39,7 @@ import ucar.nc2.util.IOIterator;
 public class StandardSectionCollectionImpl extends SectionCollectionImpl {
   private NestedTable ft;
 
-  StandardSectionCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) throws IOException {
+  StandardSectionCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) {
     super(ft.getName(), timeUnit, altUnits);
     this.ft = ft;
     this.extras = ft.getExtras();
@@ -87,17 +86,19 @@ public class StandardSectionCollectionImpl extends SectionCollectionImpl {
 
         if (!sdataIter.hasNext()) {
           close();
-          if (calcInfo != null) calcInfo.setComplete();
+          if (calcInfo != null)
+            calcInfo.setComplete();
           return false;
         }
         sectionData = sdataIter.next();
-        if (!ft.isFeatureMissing(sectionData)) break;
+        if (!ft.isFeatureMissing(sectionData))
+          break;
       }
       return true;
     }
 
     @Override
-    public TrajectoryProfileFeature next() throws IOException {
+    public TrajectoryProfileFeature next() {
       Cursor cursor = new Cursor(ft.getNumberOfLevels());
       cursor.recnum[2] = sdataIter.getCurrentRecno();
       cursor.tableData[2] = sectionData; // obs(leaf) = 0, profile=1, section(root)=2
@@ -121,7 +122,8 @@ public class StandardSectionCollectionImpl extends SectionCollectionImpl {
     StructureData sectionData;
 
     StandardSectionFeature(Cursor cursor, StructureData sectionData) {
-      super(ft.getFeatureName(cursor), StandardSectionCollectionImpl.this.getTimeUnit(), StandardSectionCollectionImpl.this.getAltUnits());
+      super(ft.getFeatureName(cursor), StandardSectionCollectionImpl.this.getTimeUnit(),
+          StandardSectionCollectionImpl.this.getAltUnits());
       this.cursor = cursor;
       this.sectionData = sectionData;
     }
@@ -133,7 +135,7 @@ public class StandardSectionCollectionImpl extends SectionCollectionImpl {
 
     @Nonnull
     @Override
-    public StructureData getFeatureData() throws IOException {
+    public StructureData getFeatureData() {
       return sectionData;
     }
 
@@ -166,7 +168,8 @@ public class StandardSectionCollectionImpl extends SectionCollectionImpl {
       boolean more = sdataIter.hasNext();
       if (!more) {
         sdataIter.close();
-        if (calcInfo != null) calcInfo.setComplete();
+        if (calcInfo != null)
+          calcInfo.setComplete();
       }
       return more;
     }
@@ -198,8 +201,8 @@ public class StandardSectionCollectionImpl extends SectionCollectionImpl {
     StructureData profileData;
 
     StandardSectionProfileFeature(Cursor cursor, double time, StructureData profileData) {
-      super(ft.getFeatureName(cursor), StandardSectionCollectionImpl.this.getTimeUnit(), StandardSectionCollectionImpl.this.getAltUnits(),
-              ft.getLatitude(cursor), ft.getLongitude(cursor), time, -1);
+      super(ft.getFeatureName(cursor), StandardSectionCollectionImpl.this.getTimeUnit(),
+          StandardSectionCollectionImpl.this.getAltUnits(), ft.getLatitude(cursor), ft.getLongitude(cursor), time, -1);
 
       this.cursor = cursor;
       this.profileData = profileData;
@@ -235,19 +238,20 @@ public class StandardSectionCollectionImpl extends SectionCollectionImpl {
 
     @Nonnull
     @Override
-    public StructureData getFeatureData() throws IOException {
+    public StructureData getFeatureData() {
       return profileData;
     }
 
     private class PointIterator extends StandardPointFeatureIterator {
 
-      PointIterator(NestedTable ft, CalendarDateUnit timeUnit, StructureDataIterator structIter, Cursor cursor) throws IOException {
+      PointIterator(NestedTable ft, CalendarDateUnit timeUnit, StructureDataIterator structIter, Cursor cursor) {
         super(StandardSectionProfileFeature.this, ft, timeUnit, structIter, cursor);
       }
 
       @Override
       protected boolean isMissing() throws IOException {
-        if (super.isMissing()) return true;
+        if (super.isMissing())
+          return true;
         // must also check for missing z values
         return ft.isAltMissing(this.cursor);
       }

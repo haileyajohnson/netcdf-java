@@ -4,14 +4,14 @@
  */
 package ucar.nc2.iosp.nids;
 
+import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ucar.nc2.constants.DataFormatType;
 import ucar.ma2.*;
 import ucar.nc2.*;
-import ucar.nc2.constants.CDM;
 import ucar.nc2.iosp.AbstractIOServiceProvider;
-
 import ucar.nc2.units.DateUnit;
-
 import java.io.*;
 import java.util.*;
 import java.util.zip.DataFormatException;
@@ -22,31 +22,28 @@ import java.nio.ByteBuffer;
  * IOServiceProvider implementation abstract base class to read/write "version 3" netcdf files.
  * AKA "file format version 1" files.
  * <p/>
- * see   concrete class
+ * see concrete class
  */
 
 public class Nidsiosp extends AbstractIOServiceProvider {
-
+  private static Logger logger = LoggerFactory.getLogger(Nidsiosp.class);
   protected boolean readonly;
   protected Nidsheader headerParser;
 
   private int pcode;
 
-  final static int Z_DEFLATED = 8;
-  final static int DEF_WBITS = 15;
+  static final int Z_DEFLATED = 8;
+  static final int DEF_WBITS = 15;
 
   // used for writing
-  protected int fileUsed = 0; // how much of the file is written to ?
-  protected int recStart = 0; // where the record data starts
+  protected int fileUsed; // how much of the file is written to ?
+  protected int recStart; // where the record data starts
 
-  protected boolean debug = false, debugSize = false, debugSPIO = false;
-  protected boolean showHeaderBytes = false;
+  protected boolean debug, debugSize, debugSPIO;
+  protected boolean showHeaderBytes;
 
   /**
-   * checking the file
-   *
-   * @param raf
-   * @return the valid of file checking
+   * Check if the file is a Nids file.
    */
   public boolean isValidFile(ucar.unidata.io.RandomAccessFile raf) {
     Nidsheader localHeader = new Nidsheader();
@@ -62,27 +59,20 @@ public class Nidsiosp extends AbstractIOServiceProvider {
   }
 
   public void open(ucar.unidata.io.RandomAccessFile raf, ucar.nc2.NetcdfFile ncfile,
-                   ucar.nc2.util.CancelTask cancelTask) throws IOException {
+      ucar.nc2.util.CancelTask cancelTask) throws IOException {
     super.open(raf, ncfile, cancelTask);
 
     headerParser = new Nidsheader();
     headerParser.read(this.raf, ncfile);
-    //myInfo = headerParser.getVarInfo();
+    // myInfo = headerParser.getVarInfo();
     pcode = headerParser.pcode;
     ncfile.finish();
   }
 
   /**
    * Read nested structure data
-   *
-   * @param v2
-   * @param section
-   * @return output data
-   * @throws java.io.IOException
-   * @throws ucar.ma2.InvalidRangeException
    */
-  public ucar.ma2.Array readNestedData(ucar.nc2.Variable v2, Section section)
-          throws java.io.IOException, ucar.ma2.InvalidRangeException {
+  public ucar.ma2.Array readNestedData(ucar.nc2.Variable v2, Section section) throws ucar.ma2.InvalidRangeException {
 
     Variable vp = v2.getParentStructure();
     Object data;
@@ -120,14 +110,8 @@ public class Nidsiosp extends AbstractIOServiceProvider {
 
   /**
    * Read the data for each variable passed in
-   *
-   * @param v2
-   * @param section
-   * @return output data
-   * @throws IOException
-   * @throws InvalidRangeException
    */
-  public Array readData(Variable v2, Section section) throws IOException, InvalidRangeException {
+  public Array readData(Variable v2, Section section) throws InvalidRangeException {
     // subset
     Object data;
     Array outputData;
@@ -137,23 +121,15 @@ public class Nidsiosp extends AbstractIOServiceProvider {
     List<Range> ranges = section.getRanges();
     vinfo = (Nidsheader.Vinfo) v2.getSPobject();
 
-    /*
-if (vinfo.isZlibed  )
-vdata = readCompData(vinfo.hoff, vinfo.doff);
-else
-vdata = readUCompData(vinfo.hoff, vinfo.doff);
-
-ByteBuffer bos = ByteBuffer.wrap(vdata);     */
-
     vdata = headerParser.getUncompData((int) vinfo.doff, 0);
     bos = ByteBuffer.wrap(vdata);
 
 
     if (v2.getShortName().equals("azimuth")) {
-      if(pcode == 176)
-         data = readOneScanGenericData(bos, vinfo, v2.getShortName());
+      if (pcode == 176)
+        data = readOneScanGenericData(bos, vinfo, v2.getShortName());
       else
-         data = readRadialDataAzi(bos, vinfo);
+        data = readRadialDataAzi(bos, vinfo);
       outputData = Array.factory(v2.getDataType(), v2.getShape(), data);
 
     } else if (v2.getShortName().equals("gate")) {
@@ -194,7 +170,7 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
       outputData = Array.factory(v2.getDataType(), v2.getShape(), dd);
 
     } else if (v2.getShortName().startsWith("EchoTop") || v2.getShortName().startsWith("VertLiquid")
-            || v2.getShortName().startsWith("BaseReflectivityComp") || v2.getShortName().startsWith("LayerCompReflect")) {
+        || v2.getShortName().startsWith("BaseReflectivityComp") || v2.getShortName().startsWith("LayerCompReflect")) {
       data = readOneArrayData(bos, vinfo, v2.getShortName());
       outputData = Array.factory(v2.getDataType(), v2.getShape(), data);
 
@@ -223,9 +199,9 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
       outputData = readCircleStructData(v2.getShortName(), bos, vinfo);
     } else if (v2.getShortName().startsWith("hail") || v2.getShortName().startsWith("TVS")) {
       outputData = readGraphicSymbolData(v2.getShortName(), bos, vinfo);
-    } else if (v2.getShortName().startsWith("DigitalInstantaneousPrecipitationRate") ) {
-        data = readOneScanGenericData(bos, vinfo, v2.getShortName());
-        outputData = Array.factory(v2.getDataType(), v2.getShape(), data);
+    } else if (v2.getShortName().startsWith("DigitalInstantaneousPrecipitationRate")) {
+      data = readOneScanGenericData(bos, vinfo, v2.getShortName());
+      outputData = Array.factory(v2.getDataType(), v2.getShape(), data);
     } else {
       data = readOneScanData(bos, vinfo, v2.getShortName());
       outputData = Array.factory(v2.getDataType(), v2.getShape(), data);
@@ -237,15 +213,15 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
   /**
    * Read nested graphic symbolic structure data
    *
-   * @param name    Variable name,
-   * @param m       Structure mumber name,
-   * @param bos     data buffer,
-   * @param vinfo   variable info,
+   * @param name Variable name,
+   * @param m Structure mumber name,
+   * @param bos data buffer,
+   * @param vinfo variable info,
    * @param section variable section
-   * @return the array  of member variable data
+   * @return the array of member variable data
    */
-  public Array readNestedGraphicSymbolData(String name, StructureMembers.Member m, ByteBuffer bos, Nidsheader.Vinfo vinfo,
-                                           java.util.List section) throws IOException, InvalidRangeException {
+  public Array readNestedGraphicSymbolData(String name, StructureMembers.Member m, ByteBuffer bos,
+      Nidsheader.Vinfo vinfo, List<Range> section) throws InvalidRangeException {
     int[] pos = vinfo.pos;
     int size = pos.length;
     Structure pdata = (Structure) ncfile.findVariable(name);
@@ -264,22 +240,22 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
   /**
    * Read graphic sysmbol structure data
    *
-   * @param name  Variable name
-   * @param bos   data buffer,
+   * @param name Variable name
+   * @param bos data buffer,
    * @param vinfo variable info,
    * @return the arraystructure of graphic symbol data
    */
-  public ArrayStructure readGraphicSymbolData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  public ArrayStructure readGraphicSymbolData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int[] pos = vinfo.pos;
     int[] dlen = vinfo.len;
     int size = pos.length;
     int vlen = 0;
 
-    for(int i=0; i< size ; i++ ){
-           vlen = vlen + dlen[i];
+    for (int i = 0; i < size; i++) {
+      vlen = vlen + dlen[i];
     }
 
-    Structure pdata = (Structure) ncfile.findVariable( name);
+    Structure pdata = (Structure) ncfile.findVariable(name);
     StructureMembers members = pdata.makeStructureMembers();
     members.findMember("x_start");
     members.findMember("y_start");
@@ -287,27 +263,27 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
     ArrayStructureW asw = new ArrayStructureW(members, new int[] {vlen});
 
     int ii = 0;
-    for (int i=0; i< size; i++) {
-       bos.position( pos[i] );
+    for (int i = 0; i < size; i++) {
+      bos.position(pos[i]);
 
-       for( int j = 0; j < dlen[i]; j++ ) {
-         StructureDataW sdata = new StructureDataW(asw.getStructureMembers());
-         Iterator memberIter = sdata.getMembers().iterator();
+      for (int j = 0; j < dlen[i]; j++) {
+        StructureDataW sdata = new StructureDataW(asw.getStructureMembers());
+        Iterator memberIter = sdata.getMembers().iterator();
 
-         ArrayFloat.D0 sArray ;
+        ArrayFloat.D0 sArray;
 
-         sArray = new ArrayFloat.D0();
-         sArray.set( bos.getShort() / 4.f);
-         sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
+        sArray = new ArrayFloat.D0();
+        sArray.set(bos.getShort() / 4.f);
+        sdata.setMemberData((StructureMembers.Member) memberIter.next(), sArray);
 
-         sArray = new ArrayFloat.D0();
-         sArray.set( bos.getShort() / 4.f );
-         sdata.setMemberData((StructureMembers.Member) memberIter.next(), sArray);
+        sArray = new ArrayFloat.D0();
+        sArray.set(bos.getShort() / 4.f);
+        sdata.setMemberData((StructureMembers.Member) memberIter.next(), sArray);
 
-         asw.setStructureData(sdata, ii);
-         ii++;
-       }
-    }   //end of for loop
+        asw.setStructureData(sdata, ii);
+        ii++;
+      }
+    } // end of for loop
 
     return asw;
   }
@@ -315,16 +291,15 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
   /**
    * Read nested structure data
    *
-   * @param name       Variable name,
+   * @param name Variable name,
    * @param memberName mumber name,
-   * @param bos        data buffer,
-   * @param vinfo      variable info,
-   * @param section    variable section
-   * @return the array  of member variable data
+   * @param bos data buffer,
+   * @param vinfo variable info,
+   * @param section variable section
+   * @return the array of member variable data
    */
   public Array readNestedLinkedVectorData(String name, String memberName, ByteBuffer bos, Nidsheader.Vinfo vinfo,
-                                          java.util.List section) throws IOException, InvalidRangeException {
-
+      List<Range> section) throws InvalidRangeException {
     Structure pdata = (Structure) ncfile.findVariable(name);
     ArrayStructure ma = readLinkedVectorData(name, bos, vinfo);
     int size = (int) pdata.getSize();
@@ -338,18 +313,17 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
 
     Array ay = Array.factory(DataType.SHORT, pdata.getShape(), pa);
     return ay.sectionNoReduce(section);
-
   }
 
   /**
    * Read linked vector sturcture data
    *
-   * @param name  Variable name,
-   * @param bos   data buffer,
+   * @param name Variable name,
+   * @param bos data buffer,
    * @param vinfo variable info,
    * @return the arraystructure of linked vector data
    */
-  public ArrayStructure readLinkedVectorData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  public ArrayStructure readLinkedVectorData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int[] pos = vinfo.pos;
     int[] dlen = vinfo.len;
     bos.position(0);
@@ -392,24 +366,25 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
 
         ii++;
       }
-    }   //end of for loop of read data
+    } // end of for loop of read data
 
-    ArrayStructureMA asma = new ArrayStructureMA(members, new int[]{vlen});
+    ArrayStructureMA asma = new ArrayStructureMA(members, new int[] {vlen});
     Array data;
     // these are the offsets into the record
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[0]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[0]);
     StructureMembers.Member m = members.findMember("sValue");
-    if (m != null) m.setDataArray(data);
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[1]);
+    if (m != null)
+      m.setDataArray(data);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[1]);
     m = members.findMember("x_start");
     m.setDataArray(data);
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[2]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[2]);
     m = members.findMember("y_start");
     m.setDataArray(data);
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[3]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[3]);
     m = members.findMember("x_end");
     m.setDataArray(data);
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[4]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[4]);
     m = members.findMember("y_end");
     m.setDataArray(data);
     return asma;
@@ -418,15 +393,15 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
   /**
    * Read nested data
    *
-   * @param name       Variable name,
+   * @param name Variable name,
    * @param memberName Structure mumber name,
-   * @param bos        Data buffer,
-   * @param vinfo      variable info,
-   * @param section    variable section
-   * @return the array  of member variable data
+   * @param bos Data buffer,
+   * @param vinfo variable info,
+   * @param section variable section
+   * @return the array of member variable data
    */
   public Array readNestedCircleStructData(String name, String memberName, ByteBuffer bos, Nidsheader.Vinfo vinfo,
-                                          java.util.List section) throws IOException, InvalidRangeException {
+      List<Range> section) throws InvalidRangeException {
 
     Structure pdata = (Structure) ncfile.findVariable(name);
     ArrayStructure ma = readCircleStructData(name, bos, vinfo);
@@ -447,21 +422,22 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
   /**
    * Read data
    *
-   * @param name  Variable name,
-   * @param bos   Data buffer,
+   * @param name Variable name,
+   * @param bos Data buffer,
    * @param vinfo variable info,
    * @return the arraystructure of circle struct data
    */
-  public ArrayStructure readCircleStructData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  public ArrayStructure readCircleStructData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int[] pos = vinfo.pos;
     int size = pos.length;
 
     Structure pdata = (Structure) ncfile.findVariable(name);
 
-    int recsize = pos[1] - pos[0]; // each record  must be all the same size
+    int recsize = pos[1] - pos[0]; // each record must be all the same size
     for (int i = 1; i < size; i++) {
       int r = pos[i] - pos[i - 1];
-      if (r != recsize) System.out.println(" PROBLEM at " + i + " == " + r);
+      if (r != recsize)
+        logger.warn(" PROBLEM at i = {} : r {} != recsize {}", i, r, recsize);
     }
 
     StructureMembers members = pdata.makeStructureMembers();
@@ -470,18 +446,17 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
     members.findMember("y_center").setDataParam(2);
     members.findMember("radius").setDataParam(4);
     members.setStructureSize(recsize);
-    return new ArrayStructureBBpos(members, new int[]{size}, bos, pos);
-
+    return new ArrayStructureBBpos(members, new int[] {size}, bos, pos);
   }
 
   /**
    * Read data
    *
-   * @param bos   Data buffer,
+   * @param bos Data buffer,
    * @param vinfo variable info,
    * @return the array of tab data
    */
-  public Object readTabAlphaNumData(ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  public Object readTabAlphaNumData(ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int plen = vinfo.xt;
     int tablen = vinfo.yt;
     String[] pdata = new String[plen];
@@ -503,7 +478,7 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
 
       byte[] b = new byte[llen];
       bos.get(b);
-      String sl = new String(b, CDM.utf8Charset) + "\n";
+      String sl = new String(b, StandardCharsets.UTF_8) + "\n";
       sbuf.append(sl);
       icnt = icnt + llen + 2;
     }
@@ -511,73 +486,73 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
     return pdata;
   }
 
-    /**
-     * Read one scan radar data
-     *
-     * @param bos   Data buffer
-     * @param vinfo variable info
-     * @return the data object of scan data
-     */
-    // all the work is here, so can be called recursively
-    public Object readOneScanGenericData(ByteBuffer bos, Nidsheader.Vinfo vinfo, String vName) throws IOException, InvalidRangeException {
-        int npixel = 0;
-        short [] pdata = null;
-
-        bos.position(0);
-        int numRadials = vinfo.yt;
-        float [] angleData = new float[numRadials] ;
-        int numBins0;
-
-        for(int k = 0; k < numRadials; k++)
-        {
-            angleData[k] = bos.getFloat();
-            bos.getFloat(); // t1
-            bos.getFloat(); // t2
-            bos.getInt(); // numBins0
-            Nidsheader.readInString(bos);
-
-            numBins0 = bos.getInt();
-            if(pdata == null){
-                npixel = numRadials * numBins0;
-                pdata = new short[npixel];
-            }
-            for(int l = 0; l < numBins0; l++)
-                pdata[k * numBins0 + l] = (short)bos.getInt();
-        }
-
-        int offset;
-        if (vName.endsWith("_RAW")) {
-            return pdata;
-        } else if (vName.startsWith("azimuth")  ) {
-            return angleData;
-        } else if (vName.startsWith("DigitalInstantaneousPrecipitationRate")  ) {
-
-            int[] levels = vinfo.len;
-            int scale = levels[0];
-            offset = levels[1];
-            float[] fdata = new float[npixel];
-            for (int i = 0; i < npixel; i++) {
-                int ival =  pdata[i];
-                if (ival != 0 )
-                    fdata[i] = (ival - offset)*1.0f/scale;
-                else
-                    fdata[i] = Float.NaN;
-            }
-
-            return fdata;
-
-        }
-        return null;
-    }
   /**
    * Read one scan radar data
    *
-   * @param bos   Data buffer
+   * @param bos Data buffer
    * @param vinfo variable info
    * @return the data object of scan data
    */
   // all the work is here, so can be called recursively
-  public Object readOneScanData(ByteBuffer bos, Nidsheader.Vinfo vinfo, String vName) throws IOException, InvalidRangeException {
+  public Object readOneScanGenericData(ByteBuffer bos, Nidsheader.Vinfo vinfo, String vName) {
+    int npixel = 0;
+    short[] pdata = null;
+
+    bos.position(0);
+    int numRadials = vinfo.yt;
+    float[] angleData = new float[numRadials];
+    int numBins0;
+
+    for (int k = 0; k < numRadials; k++) {
+      angleData[k] = bos.getFloat();
+      bos.getFloat(); // t1
+      bos.getFloat(); // t2
+      bos.getInt(); // numBins0
+      Nidsheader.readInString(bos);
+
+      numBins0 = bos.getInt();
+      if (pdata == null) {
+        npixel = numRadials * numBins0;
+        pdata = new short[npixel];
+      }
+      for (int l = 0; l < numBins0; l++)
+        pdata[k * numBins0 + l] = (short) bos.getInt();
+    }
+
+    int offset;
+    if (vName.endsWith("_RAW")) {
+      return pdata;
+    } else if (vName.startsWith("azimuth")) {
+      return angleData;
+    } else if (vName.startsWith("DigitalInstantaneousPrecipitationRate")) {
+
+      int[] levels = vinfo.len;
+      int scale = levels[0];
+      offset = levels[1];
+      float[] fdata = new float[npixel];
+      for (int i = 0; i < npixel; i++) {
+        int ival = pdata[i];
+        if (ival != 0)
+          fdata[i] = (ival - offset) * 1.0f / scale;
+        else
+          fdata[i] = Float.NaN;
+      }
+
+      return fdata;
+
+    }
+    return null;
+  }
+
+  /**
+   * Read one scan radar data
+   *
+   * @param bos Data buffer
+   * @param vinfo variable info
+   * @return the data object of scan data
+   */
+  // all the work is here, so can be called recursively
+  public Object readOneScanData(ByteBuffer bos, Nidsheader.Vinfo vinfo, String vName) {
     int doff = 0;
     int npixel = vinfo.yt * vinfo.xt;
     byte[] odata = new byte[vinfo.xt];
@@ -585,9 +560,9 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
     // byte[] b2 = new byte[2];
     bos.position(0);
     for (int radial = 0; radial < vinfo.yt; radial++) {
-      //bos.get(b2, 0, 2);
-      //int test = getInt(b2, 0, 2);
-      int runLen = bos.getShort();   // getInt(vdata, doff, 2 );
+      // bos.get(b2, 0, 2);
+      // int test = getInt(b2, 0, 2);
+      int runLen = bos.getShort(); // getInt(vdata, doff, 2 );
       // int runLen = getInt(b2, 0, 2);
       doff += 2;
       if (vinfo.isRadial) {
@@ -596,8 +571,8 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
         int radialAngleD = bos.getShort();
         doff += 2;
       }
-      byte[] rdata = null;
-      byte[] bdata = null;
+      byte[] rdata;
+      byte[] bdata;
 
       if (vinfo.xt != runLen) {
         rdata = new byte[runLen * 2];
@@ -624,63 +599,61 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
       // copy into odata
       System.arraycopy(odata, 0, pdata, vinfo.xt * radial, vinfo.xt);
 
-    }   //end of for loop
+    } // end of for loop
     int offset = 0;
     if (vName.endsWith("_RAW")) {
       return pdata;
-    } else if (vName.startsWith("DifferentialReflectivity") || vName.startsWith("CorrelationCoefficient") ||
-            vName.startsWith("DifferentialPhase") ) {
+    } else if (vName.startsWith("DifferentialReflectivity") || vName.startsWith("CorrelationCoefficient")
+        || vName.startsWith("DifferentialPhase")) {
 
-        int[] levels = vinfo.len;
-        int scale = levels[0];
-        offset = levels[1];
-        float isc = vinfo.code;
-        float[] fdata = new float[npixel];
-        for (int i = 0; i < npixel; i++) {
-            int ival =  DataType.unsignedByteToShort(pdata[i]);
-            if (ival != 2 && ival != 0 && ival != 1)
-                fdata[i] = (ival*isc - offset)/scale;
-            else
-                fdata[i] = Float.NaN;
-        }
+      int[] levels = vinfo.len;
+      int scale = levels[0];
+      offset = levels[1];
+      float isc = vinfo.code;
+      float[] fdata = new float[npixel];
+      for (int i = 0; i < npixel; i++) {
+        int ival = DataType.unsignedByteToShort(pdata[i]);
+        if (ival != 2 && ival != 0 && ival != 1)
+          fdata[i] = (ival * isc - offset) / scale;
+        else
+          fdata[i] = Float.NaN;
+      }
 
-        return fdata;
+      return fdata;
 
-    } else if ( vName.startsWith("DigitalAccumulationArray")  || vName.startsWith("Digital1HourDifferenceAccumulation")
-            || vName.startsWith("DigitalStormTotalAccumulation") || vName.startsWith("Accumulation3Hour")
-            || vName.startsWith("DigitalTotalDifferenceAccumulation") ) {
+    } else if (vName.startsWith("DigitalAccumulationArray") || vName.startsWith("Digital1HourDifferenceAccumulation")
+        || vName.startsWith("DigitalStormTotalAccumulation") || vName.startsWith("Accumulation3Hour")
+        || vName.startsWith("DigitalTotalDifferenceAccumulation")) {
 
-        int[] levels = vinfo.len;
-        int scale = levels[0];
-        offset = levels[1];
-        float isc = vinfo.code;
-        float[] fdata = new float[npixel];
-        for (int i = 0; i < npixel; i++) {
-            int ival =  DataType.unsignedByteToShort(pdata[i]);
-            if ( ival != 0 && ival != 1)
-                fdata[i] = (ival*1.0f - offset*1.0f/isc)/(scale*1.0f);
-            else
-                fdata[i] = Float.NaN;
-        }
+      int[] levels = vinfo.len;
+      int scale = levels[0];
+      offset = levels[1];
+      float isc = vinfo.code;
+      float[] fdata = new float[npixel];
+      for (int i = 0; i < npixel; i++) {
+        int ival = DataType.unsignedByteToShort(pdata[i]);
+        if (ival != 0 && ival != 1)
+          fdata[i] = (ival * 1.0f - offset * 1.0f / isc) / (scale * 1.0f);
+        else
+          fdata[i] = Float.NaN;
+      }
 
-        return fdata;
+      return fdata;
 
-    } else if ( vName.startsWith("HypridHydrometeorClassification")
-             || vName.startsWith("HydrometeorClassification")) {
+    } else if (vName.startsWith("HypridHydrometeorClassification") || vName.startsWith("HydrometeorClassification")) {
 
-        int[] levels = vinfo.len;
-        int scale = levels[0];
-        offset = levels[1];
-        float[] fdata = new float[npixel];
-        for (int i = 0; i < npixel; i++) {
-            int ival =  DataType.unsignedByteToShort(pdata[i]);
-            if (ival != 0)
-                fdata[i] = (float) ival ;
-            else
-                fdata[i] = Float.NaN;
-        }
+      int[] levels = vinfo.len;
+      int scale = levels[0];
+      float[] fdata = new float[npixel];
+      for (int i = 0; i < npixel; i++) {
+        int ival = DataType.unsignedByteToShort(pdata[i]);
+        if (ival != 0)
+          fdata[i] = (float) ival;
+        else
+          fdata[i] = Float.NaN;
+      }
 
-        return fdata;
+      return fdata;
 
     } else if (vName.startsWith("BaseReflectivity") || vName.startsWith("BaseVelocity")) {
       int[] levels = vinfo.len;
@@ -738,7 +711,7 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
       return fdata;
 
     } else if (vName.startsWith("Precip") || vName.startsWith("DigitalPrecip")
-            || vName.startsWith("OneHourAccumulation") || vName.startsWith("StormTotalAccumulation")) {
+        || vName.startsWith("OneHourAccumulation") || vName.startsWith("StormTotalAccumulation")) {
       int[] levels = vinfo.len;
       int iscale = vinfo.code;
       float[] fdata = new float[npixel];
@@ -751,10 +724,10 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
         if (ival > -9996)
           fdata[i] = ((float) ival / (float) iscale + (float) offset);
         else
-          fdata[i] = Float.NaN; //100 * ival;
+          fdata[i] = Float.NaN; // 100 * ival;
       }
       return fdata;
-    }  else if (vName.startsWith("EnhancedEchoTop")) {
+    } else if (vName.startsWith("EnhancedEchoTop")) {
       int[] levels = vinfo.len;
       float[] fdata = new float[npixel];
       for (int i = 0; i < npixel; i++) {
@@ -762,86 +735,51 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
         if (ival == 0 || ival == 1)
           fdata[i] = Float.NaN;
         else
-          fdata[i] = (float)( ival & levels[0])/ (float) levels[1] - (float) levels[2];
+          fdata[i] = (float) (ival & levels[0]) / (float) levels[1] - (float) levels[2];
       }
       return fdata;
 
     } else if (vName.startsWith("DigitalIntegLiquid")) {
       int[] levels = vinfo.len;
       float[] fdata = new float[npixel];
-      float a = getHexDecodeValue((short)levels[0]);
-      float b = getHexDecodeValue((short)levels[1]);
-      float c = getHexDecodeValue((short)levels[3]);
-      float d = getHexDecodeValue((short)levels[4]);
+      float a = getHexDecodeValue((short) levels[0]);
+      float b = getHexDecodeValue((short) levels[1]);
+      float c = getHexDecodeValue((short) levels[3]);
+      float d = getHexDecodeValue((short) levels[4]);
       for (int i = 0; i < npixel; i++) {
         int ival = DataType.unsignedByteToShort(pdata[i]);
-        if(ival == 0 || ival ==1)
+        if (ival == 0 || ival == 1)
           fdata[i] = Float.NaN;
         else if (ival < 20)
-          fdata[i] = (ival - b)/a;
+          fdata[i] = (ival - b) / a;
         else {
-          float t =  (ival - d)/c;
+          float t = (ival - d) / c;
           fdata[i] = (float) Math.exp(t);
         }
       }
       return fdata;
-
     }
-
-    /*else if(vName.endsWith( "_Brightness" )){
-  float ratio = 256.0f/vinfo.level;
-
-  float [] fdata = new float[npixel];
-  for ( int i = 0; i < vinfo.yt * vinfo.xt; i++ ) {
-         fdata[i] = pdata[i] * ratio;
-   }
-  return fdata;
-
- }  else if ( vName.endsWith( "_VIP" )) {
-  int [] levels = vinfo.len;
-  int iscale = vinfo.code;
-  int [] dvip ={ 0, 30, 40, 45, 50, 55 };
-  float [] fdata = new float[npixel];
-  for (int i = 0; i < npixel; i++ ) {
-    float dbz = levels[pdata[i]] / iscale + offset;
-    for (int j = 0; j <= 5; j++ ) {
-      if ( dbz > dvip[j] ) fdata[i] = j + 1;
-    }
-  }
-  return fdata;
-
- }   */
     return null;
   }
 
-  public float getHexDecodeValue(short val) {
-      float deco;
+  private float getHexDecodeValue(short val) {
+    float deco;
 
-      int s = (val >> 15) & 1;
-      int e = (val >> 10) & (31);
-      int f = (val) & (1023);
+    int s = (val >> 15) & 1;
+    int e = (val >> 10) & (31);
+    int f = (val) & (1023);
 
-      if( e== 0) {
-           deco =(float) Math.pow(-1, s) * 2 * (0.f +(float) (f/1024.f)) ;
-      } else {
-           deco = (float) (Math.pow(-1, s) *Math.pow(2, e-16)*(1 + (f/1024.f)));
-      }
+    if (e == 0) {
+      deco = (float) Math.pow(-1, s) * 2 * (0.f + (f / 1024.f));
+    } else {
+      deco = (float) (Math.pow(-1, s) * Math.pow(2, e - 16) * (1 + (f / 1024.f)));
+    }
 
-      return deco;
+    return deco;
   }
-  /**
-   * read one radial beam data
-   *
-   * @param ddata
-   * @param rLen
-   * @param xt
-   * @param level
-   * @return one beam data array
-   * @throws IOException
-   * @throws InvalidRangeException
-   */
 
-  public byte[] readOneBeamData(byte[] ddata, int rLen, int xt, int level) throws IOException, InvalidRangeException {
+  /** read one radial beam data */
+  private byte[] readOneBeamData(byte[] ddata, int rLen, int xt, int level) {
     int run;
     byte[] bdata = new byte[xt];
 
@@ -865,18 +803,8 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
     return bdata;
   }
 
-  /**
-   * read one radial beam data
-   *
-   * @param ddata
-   * @param rLen
-   * @param xt
-   * @param level
-   * @return one beam data array
-   * @throws IOException
-   * @throws InvalidRangeException
-   */
-  public short[] readOneBeamShortData(byte[] ddata, int rLen, int xt, int level) throws IOException, InvalidRangeException {
+  /** read one radial beam data */
+  public short[] readOneBeamShortData(byte[] ddata, int rLen, int xt, int level) {
     int run;
     short[] sdata = new short[xt];
 
@@ -900,15 +828,15 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
   /**
    * Read nested data
    *
-   * @param name       Variable name,
+   * @param name Variable name,
    * @param memberName Structure mumber name,
-   * @param bos        Data buffer,
-   * @param vinfo      variable info,
-   * @param section    variable section
-   * @return the array  of member variable data
+   * @param bos Data buffer,
+   * @param vinfo variable info,
+   * @param section variable section
+   * @return the array of member variable data
    */
   public Array readNestedWindBarbData(String name, String memberName, ByteBuffer bos, Nidsheader.Vinfo vinfo,
-                                      java.util.List section) throws IOException, InvalidRangeException {
+      List<Range> section) throws InvalidRangeException {
 
     Structure pdata = (Structure) ncfile.findVariable(name);
     ArrayStructure ma = readWindBarbData(name, bos, vinfo, null);
@@ -924,19 +852,19 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
     Array ay = Array.factory(DataType.SHORT, pdata.getShape(), pa);
     return ay.sectionNoReduce(section);
 
-    //return asbb;
+    // return asbb;
 
   }
 
   /**
    * Read data
    *
-   * @param name  Variable name,
-   * @param bos   Data buffer,
+   * @param name Variable name,
+   * @param bos Data buffer,
    * @param vinfo variable info,
    * @return the arraystructure of wind barb data
    */
-  public ArrayStructure readWindBarbData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo, List sList) throws IOException, InvalidRangeException {
+  public ArrayStructure readWindBarbData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo, List sList) {
     int[] pos = vinfo.pos;
     int size = pos.length;
 
@@ -945,10 +873,11 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
 
     int recsize;
     if (size > 1) {
-      recsize = pos[1] - pos[0]; // each record  must be all the same size
+      recsize = pos[1] - pos[0]; // each record must be all the same size
       for (int i = 1; i < size; i++) {
         int r = pos[i] - pos[i - 1];
-        if (r != recsize) System.out.println(" PROBLEM at " + i + " == " + r);
+        if (r != recsize)
+          logger.warn(" PROBLEM at i = {} : r {} != recsize {}", i, r, recsize);
       }
     } else
       recsize = 1;
@@ -962,27 +891,27 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
     members.findMember("speed").setDataParam(8);
     members.setStructureSize(recsize);
 
-    ArrayStructure ay = new ArrayStructureBBpos(members, new int[]{size}, bos, pos);
+    ArrayStructure ay = new ArrayStructureBBpos(members, new int[] {size}, bos, pos);
 
     return (sList != null) ? (ArrayStructure) ay.sectionNoReduce(sList) : ay;
 
     // return new ArrayStructureBBpos( members, new int[] { size}, bos, pos);
-    //return asbb;
+    // return asbb;
 
   }
 
   /**
    * Read nested data
    *
-   * @param name       Variable name,
+   * @param name Variable name,
    * @param memberName Structure mumber name,
-   * @param bos        Data buffer,
-   * @param vinfo      variable info,
-   * @param section    variable section
-   * @return the array  of member variable data
+   * @param bos Data buffer,
+   * @param vinfo variable info,
+   * @param section variable section
+   * @return the array of member variable data
    */
   public Array readNestedVectorArrowData(String name, String memberName, ByteBuffer bos, Nidsheader.Vinfo vinfo,
-                                         java.util.List section) throws IOException, InvalidRangeException {
+      List<Range> section) throws InvalidRangeException {
 
     Structure pdata = (Structure) ncfile.findVariable(name);
     ArrayStructure ma = readVectorArrowData(name, bos, vinfo);
@@ -1004,25 +933,28 @@ ByteBuffer bos = ByteBuffer.wrap(vdata);     */
   /**
    * Read data
    *
-   * @param name  Variable name,
-   * @param bos   Data buffer,
+   * @param name Variable name,
+   * @param bos Data buffer,
    * @param vinfo variable info,
    * @return the arraystructure of vector arrow data
    */
-  public ArrayStructure readVectorArrowData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  public ArrayStructure readVectorArrowData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int[] pos = vinfo.pos;
     int size = pos.length;
-    /* short istart = 0;
-short jstart = 0;
-short direction = 0;
-short arrowvalue = 0;
-short arrowHeadValue = 0;    */
+    /*
+     * short istart = 0;
+     * short jstart = 0;
+     * short direction = 0;
+     * short arrowvalue = 0;
+     * short arrowHeadValue = 0;
+     */
 
     Structure pdata = (Structure) ncfile.findVariable(name);
-    int recsize = pos[1] - pos[0]; // each record  must be all the same size
+    int recsize = pos[1] - pos[0]; // each record must be all the same size
     for (int i = 1; i < size; i++) {
       int r = pos[i] - pos[i - 1];
-      if (r != recsize) System.out.println(" PROBLEM at " + i + " == " + r);
+      if (r != recsize)
+        logger.warn(" PROBLEM at i = {} : r {} != recsize {}", i, r, recsize);
     }
 
     StructureMembers members = pdata.makeStructureMembers();
@@ -1033,89 +965,21 @@ short arrowHeadValue = 0;    */
     members.findMember("arrowHeadLength").setDataParam(8);
 
     members.setStructureSize(recsize);
-    return new ArrayStructureBBpos(members, new int[]{size}, bos, pos);
-    /*
-    Structure pdata = new Structure(ncfile, null, null,"vectorArrow" );
-
-    Variable ii0 = new Variable(ncfile, null, pdata, "x_start");
-    ii0.setDimensions((String)null);
-    ii0.setDataType(DataType.SHORT);
-    pdata.addMemberVariable(ii0);
-
-    Variable ii1 = new Variable(ncfile, null, pdata, "y_start");
-    ii1.setDimensions((String)null);
-    ii1.setDataType(DataType.SHORT);
-    pdata.addMemberVariable(ii1);
-
-    Variable direct = new Variable(ncfile, null, pdata, "direction");
-    direct.setDimensions((String)null);
-    direct.setDataType(DataType.SHORT);
-    pdata.addMemberVariable(direct);
-
-    Variable speed = new Variable(ncfile, null, pdata, "arrowLength");
-    speed.setDimensions((String)null);
-    speed.setDataType(DataType.SHORT);
-    pdata.addMemberVariable(speed);
-
-    Variable  v = new Variable(ncfile, null, null, "arrowHeadLength");
-    v.setDataType(DataType.SHORT);
-    v.setDimensions((String)null);
-    pdata.addMemberVariable(v);
-
-    StructureMembers members = pdata.makeStructureMembers();
-    ArrayStructureW asw = new ArrayStructureW(members, new int[] {size});
-
-    for (int i=0; i< size; i++) {
-       bos.position( pos[i]);
-
-       istart = bos.getShort();
-       jstart = bos.getShort();
-       direction = bos.getShort();
-       arrowvalue = bos.getShort();
-       arrowHeadValue = bos.getShort();
-
-       ArrayStructureW.StructureDataW sdata = asw.new StructureDataW();
-       Iterator memberIter = sdata.getMembers().iterator();
-
-       ArrayObject.D0 sArray = new ArrayObject.D0(DataType.SHORT);
-       sArray.set(new Short(istart));
-       sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-
-       sArray = new ArrayObject.D0(Short.class);
-       sArray.set(new Short(jstart));
-       sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-
-       sArray = new ArrayObject.D0(String.class);
-       sArray.set(new Short(direction));
-       sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-
-       sArray = new ArrayObject.D0(Short.class);
-       sArray.set(new Short(arrowvalue));
-       sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-
-       sArray = new ArrayObject.D0(String.class);
-       sArray.set(new Short(arrowHeadValue));
-       sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-
-       asw.setStructureData(sdata, i);
-    }   //end of for loop
-    */
-    // return asw;
-
+    return new ArrayStructureBBpos(members, new int[] {size}, bos, pos);
   }
 
   /**
    * Read nested data
    *
-   * @param name       Variable name,
+   * @param name Variable name,
    * @param memberName Structure mumber name,
-   * @param bos        Data buffer,
-   * @param vinfo      variable info,
-   * @param section    variable section
-   * @return the array  of member variable data
+   * @param bos Data buffer,
+   * @param vinfo variable info,
+   * @param section variable section
+   * @return the array of member variable data
    */
   public Array readNestedTextStringData(String name, String memberName, ByteBuffer bos, Nidsheader.Vinfo vinfo,
-                                        java.util.List section) throws IOException, InvalidRangeException {
+      List<Range> section) throws InvalidRangeException {
 
     Structure pdata = (Structure) ncfile.findVariable(name);
     ArrayStructure ma = readTextStringData(name, bos, vinfo);
@@ -1146,12 +1010,12 @@ short arrowHeadValue = 0;    */
   /**
    * Read data
    *
-   * @param name  Variable name,
-   * @param bos   Data buffer,
+   * @param name Variable name,
+   * @param bos Data buffer,
    * @param vinfo variable info
    * @return the arraystructure of text string data
    */
-  public ArrayStructure readTextStringData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  public ArrayStructure readTextStringData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int[] pos = vinfo.pos;
     int[] sizes = vinfo.len;
     int size = pos.length;
@@ -1170,79 +1034,7 @@ short arrowHeadValue = 0;    */
       members.findMember("textString").setDataParam(4);
     }
 
-    return new MyArrayStructureBBpos(members, new int[]{size}, bos, pos, sizes);
-    //StructureData[] outdata = new StructureData[size];
-    // Structure pdata = new Structure(ncfile, null, null,"textdata" );
-    /*   short istart = 0;
-    short jstart = 0;
-    short sValue = 0;
-
-    Variable ii0 = new Variable(ncfile, null, pdata, "x_start");
-    ii0.setDimensions((String)null);
-    ii0.setDataType(DataType.SHORT);
-    pdata.addMemberVariable(ii0);
-    Variable ii1 = new Variable(ncfile, null, pdata, "y_start");
-    ii1.setDimensions((String)null);
-    ii1.setDataType(DataType.SHORT);
-    pdata.addMemberVariable(ii1);
-    Variable jj0 = new Variable(ncfile, null, pdata, "textString");
-    jj0.setDimensions((String)null);
-    jj0.setDataType(DataType.STRING);
-    pdata.addMemberVariable(jj0);
-
-    if(vinfo.code == 8){
-    Variable  v = new Variable(ncfile, null, null, "strValue");
-    v.setDataType(DataType.SHORT);
-    v.setDimensions((String)null);
-    pdata.addMemberVariable(v);
-    }
-
-    StructureMembers members = pdata.makeStructureMembers();
-    ArrayStructureW asw = new ArrayStructureW(members, new int[] {size});
-
-    for (int i=0; i< size; i++) {
-    bos.position( pos[i] - 2);    //re read the length of block
-    int strLen = bos.getShort();
-
-    if(vinfo.code == 8) {
-    strLen = strLen - 6;
-    sValue = bos.getShort();
-    } else {
-    strLen = strLen - 4;
-    }
-    byte[] bb = new byte[strLen];
-    ArrayStructureW.StructureDataW sdata = asw.new StructureDataW();
-    Iterator memberIter = sdata.getMembers().iterator();
-
-    ArrayObject.D0 sArray = new ArrayObject.D0(Short.class);
-    istart = bos.getShort();
-    jstart = bos.getShort();
-    bos.get(bb);
-    String tstring = new String(bb);
-
-    sArray.set(new Short(istart));
-    sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-
-    sArray = new ArrayObject.D0(Short.class);
-    sArray.set(new Short(jstart));
-    sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-
-    sArray = new ArrayObject.D0(String.class);
-    sArray.set(new String(tstring));
-    sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-
-    if(vinfo.code == 8) {
-    sArray = new ArrayObject.D0(Short.class);
-    sArray.set(new Short(sValue));
-    sdata.setMemberData( (StructureMembers.Member) memberIter.next(), sArray);
-    }
-
-    asw.setStructureData(sdata, i);
-
-    }   //end of for loop
-    */
-    //return asw;
-
+    return new MyArrayStructureBBpos(members, new int[] {size}, bos, pos, sizes);
   }
 
   private static class MyArrayStructureBBpos extends ArrayStructureBBpos {
@@ -1253,13 +1045,7 @@ short arrowHeadValue = 0;    */
       this.size = size;
     }
 
-    /**
-     * convert structure member into a string
-     *
-     * @param recnum
-     * @param m
-     * @return
-     */
+    /** convert structure member into a string */
     public String getScalarString(int recnum, StructureMembers.Member m) {
       if ((m.getDataType() == DataType.CHAR) || (m.getDataType() == DataType.STRING)) {
         int offset = calcOffsetSetOrder(recnum, m);
@@ -1268,9 +1054,10 @@ short arrowHeadValue = 0;    */
         int i;
         for (i = 0; i < count; i++) {
           pa[i] = bbuffer.get(offset + i);
-          if (0 == pa[i]) break;
+          if (0 == pa[i])
+            break;
         }
-        return new String(pa, 0, i, CDM.utf8Charset);
+        return new String(pa, 0, i, StandardCharsets.UTF_8);
       }
 
       throw new IllegalArgumentException("Type is " + m.getDataType() + ", must be String or char");
@@ -1281,15 +1068,15 @@ short arrowHeadValue = 0;    */
   /**
    * Read nested data
    *
-   * @param name       Variable name,
+   * @param name Variable name,
    * @param memberName Structure mumber name,
-   * @param bos        Data buffer,
-   * @param vinfo      variable info,
-   * @param section    variable section
-   * @return the array  of member variable data
+   * @param bos Data buffer,
+   * @param vinfo variable info,
+   * @param section variable section
+   * @return the array of member variable data
    */
   public Array readNestedDataUnlinkVector(String name, String memberName, ByteBuffer bos, Nidsheader.Vinfo vinfo,
-                                          java.util.List section) throws java.io.IOException, ucar.ma2.InvalidRangeException {
+      List<Range> section) throws ucar.ma2.InvalidRangeException {
 
     Structure pdata = (Structure) ncfile.findVariable(name);
     ArrayStructure ma = readUnlinkedVectorData(name, bos, vinfo);
@@ -1309,12 +1096,12 @@ short arrowHeadValue = 0;    */
   /**
    * Read data
    *
-   * @param name  Variable name,
-   * @param bos   Data buffer,
+   * @param name Variable name,
+   * @param bos Data buffer,
    * @param vinfo variable info,
    * @return the arraystructure of unlinked vector data
    */
-  public ArrayStructure readUnlinkedVectorData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  public ArrayStructure readUnlinkedVectorData(String name, ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int[] pos = vinfo.pos;
     int[] dlen = vinfo.len;
     bos.position(0);
@@ -1335,7 +1122,7 @@ short arrowHeadValue = 0;    */
     short jend;
     short vlevel;
 
-    ArrayStructureMA asma = new ArrayStructureMA(members, new int[]{vlen});
+    ArrayStructureMA asma = new ArrayStructureMA(members, new int[] {vlen});
     int ii = 0;
     short[][] sArray = new short[5][vlen];
     for (int i = 0; i < size; i++) {
@@ -1356,23 +1143,23 @@ short arrowHeadValue = 0;    */
 
         ii++;
       }
-    }   //end of for loop
+    } // end of for loop
 
     Array data;
     // these are the offsets into the record
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[0]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[0]);
     StructureMembers.Member m = members.findMember("iValue");
     m.setDataArray(data);
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[1]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[1]);
     m = members.findMember("x_start");
     m.setDataArray(data);
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[2]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[2]);
     m = members.findMember("y_start");
     m.setDataArray(data);
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[3]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[3]);
     m = members.findMember("x_end");
     m.setDataArray(data);
-    data = Array.factory(DataType.SHORT, new int[]{vlen}, sArray[4]);
+    data = Array.factory(DataType.SHORT, new int[] {vlen}, sArray[4]);
     m = members.findMember("y_end");
     m.setDataArray(data);
     return asma;
@@ -1381,20 +1168,20 @@ short arrowHeadValue = 0;    */
 
 
   // all the work is here, so can be called recursively
-  public Object readOneArrayData(ByteBuffer bos, Nidsheader.Vinfo vinfo, String vName) throws IOException, InvalidRangeException {
+  public Object readOneArrayData(ByteBuffer bos, Nidsheader.Vinfo vinfo, String vName) {
     int doff = 0;
     int offset = 0;
-    //byte[] odata = new byte[ vinfo.xt];
+    // byte[] odata = new byte[ vinfo.xt];
     byte[] pdata = new byte[vinfo.yt * vinfo.xt];
     byte[] b2 = new byte[2];
     int npixel = vinfo.yt * vinfo.xt;
-    //int t = 0;
+    // int t = 0;
     bos.position(0);
 
     for (int radial = 0; radial < vinfo.yt; radial++) {
 
       bos.get(b2);
-      int runLen = getUInt(b2, 0, 2); //bos.getShort();   //   getInt(vdata, doff, 2 );
+      int runLen = getUInt(b2, 0, 2); // bos.getShort(); // getInt(vdata, doff, 2 );
       doff += 2;
 
       byte[] rdata = new byte[runLen];
@@ -1407,7 +1194,7 @@ short arrowHeadValue = 0;    */
       // copy into odata
       System.arraycopy(bdata, 0, pdata, vinfo.xt * radial, vinfo.xt);
 
-    }   //end of for loop
+    } // end of for loop
 
     if (vName.endsWith("_RAW")) {
       return pdata;
@@ -1447,21 +1234,21 @@ short arrowHeadValue = 0;    */
   /**
    * Read data
    *
-   * @param bos   is data buffer
+   * @param bos is data buffer
    * @param vinfo is variable info
    * @return the data object
    */
-  public Object readOneArrayData1(ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  public Object readOneArrayData1(ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int doff = 0;
-    //byte[] odata = new byte[ vinfo.xt];
+    // byte[] odata = new byte[ vinfo.xt];
 
     short[] pdata = new short[vinfo.yt * vinfo.xt];
-    //byte[] b2 = new byte[2];
-    //int t = 0;
+    // byte[] b2 = new byte[2];
+    // int t = 0;
     bos.position(0);
 
     for (int row = 0; row < vinfo.yt; row++) {
-      int runLen = bos.getShort();   //   getInt(vdata, doff, 2 );
+      int runLen = bos.getShort(); // getInt(vdata, doff, 2 );
       doff += 2;
 
       byte[] rdata = new byte[runLen];
@@ -1476,7 +1263,7 @@ short arrowHeadValue = 0;    */
       }
       // copy into odata
       System.arraycopy(bdata, 0, pdata, vinfo.xt * row, vinfo.xt);
-    }   //end of for loop
+    } // end of for loop
 
     return pdata;
 
@@ -1488,13 +1275,13 @@ short arrowHeadValue = 0;    */
    * @param ddata is encoded data values
    * @return the data array of row data
    */
-  public short[] readOneRowData1(byte[] ddata, int rLen, int xt) throws IOException, InvalidRangeException {
+  public short[] readOneRowData1(byte[] ddata, int rLen, int xt) {
     int run;
     short[] bdata = new short[xt];
 
     int nbin = 0;
     int total = 0;
-    for (run = 0; run < rLen-1; run++) {
+    for (run = 0; run < rLen - 1; run++) {
       int drun = DataType.unsignedByteToShort(ddata[run]);
       run++;
       short dcode1 = (DataType.unsignedByteToShort(ddata[run]));
@@ -1512,35 +1299,6 @@ short arrowHeadValue = 0;    */
 
     return bdata;
   }
-    /**
-     * Read data from encoded values and run len into regular data array
-     *
-     * @param ddata is encoded data values
-     * @return the data array of row data
-     */
-    public short[] readOneRowData2(byte[] ddata, int rLen, int xt) throws IOException, InvalidRangeException {
-      int run;
-      short[] bdata = new short[xt];
-
-      int nbin = 0;
-      int total = 0;
-      for (run = 0; run < rLen; run++) {
-        int drun = DataType.unsignedByteToShort(ddata[run]) >> 4;
-        short dcode1 = (short)(DataType.unsignedByteToShort(ddata[run]) & 0Xf);
-        for (int i = 0; i < drun; i++) {
-          bdata[nbin++] = dcode1;
-          total++;
-        }
-      }
-
-      if (total < xt) {
-        for (run = total; run < xt; run++) {
-          bdata[run] = 0;
-        }
-      }
-
-      return bdata;
-    }
 
   /**
    * Read data from encoded values and run len into regular data array
@@ -1548,7 +1306,37 @@ short arrowHeadValue = 0;    */
    * @param ddata is encoded data values
    * @return the data array of row data
    */
-  public byte[] readOneRowData(byte[] ddata, int rLen, int xt) throws IOException, InvalidRangeException {
+  public short[] readOneRowData2(byte[] ddata, int rLen, int xt) {
+    int run;
+    short[] bdata = new short[xt];
+
+    int nbin = 0;
+    int total = 0;
+    for (run = 0; run < rLen; run++) {
+      int drun = DataType.unsignedByteToShort(ddata[run]) >> 4;
+      short dcode1 = (short) (DataType.unsignedByteToShort(ddata[run]) & 0Xf);
+      for (int i = 0; i < drun; i++) {
+        bdata[nbin++] = dcode1;
+        total++;
+      }
+    }
+
+    if (total < xt) {
+      for (run = total; run < xt; run++) {
+        bdata[run] = 0;
+      }
+    }
+
+    return bdata;
+  }
+
+  /**
+   * Read data from encoded values and run len into regular data array
+   *
+   * @param ddata is encoded data values
+   * @return the data array of row data
+   */
+  public byte[] readOneRowData(byte[] ddata, int rLen, int xt) {
     int run;
     byte[] bdata = new byte[xt];
 
@@ -1576,53 +1364,49 @@ short arrowHeadValue = 0;    */
    * read radail elevation array
    *
    * @param bos
+   * 
    * @param vinfo
+   * 
    * @return data elevation array
+   * 
    * @throws IOException
+   * 
    * @throws InvalidRangeException
    */
-  public Object readRadialDataEle(ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  private Object readRadialDataEle(ByteBuffer bos, Nidsheader.Vinfo vinfo) {
 
     float[] elvdata = new float[vinfo.yt];
     float elvAngle = vinfo.y0 * 0.1f;
-    //Float ra = new Float(elvAngle);
+    // Float ra = new Float(elvAngle);
 
     for (int radial = 0; radial < vinfo.yt; radial++) {
       elvdata[radial] = elvAngle;
-    }   //end of for loop
+    } // end of for loop
 
     return elvdata;
 
   }
 
-  /**
-   * read radial data
-   *
-   * @param t
-   * @param vinfo
-   * @return data output
-   * @throws IOException
-   * @throws InvalidRangeException
-   */
-  public Object readRadialDataLatLonAlt(double t, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  /** read radial data */
+  private Object readRadialDataLatLonAlt(double t, Nidsheader.Vinfo vinfo) {
 
     float[] vdata = new float[vinfo.yt];
 
     for (int radial = 0; radial < vinfo.yt; radial++) {
       vdata[radial] = (float) t;
-    }   //end of for loop
+    } // end of for loop
 
     return vdata;
 
   }
 
-  public Object readRadialDataAzi(ByteBuffer bos, Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
+  private Object readRadialDataAzi(ByteBuffer bos, Nidsheader.Vinfo vinfo) {
     int doff = 0;
     float[] azidata = new float[vinfo.yt];
 
     for (int radial = 0; radial < vinfo.yt; radial++) {
 
-      int runLen = bos.getShort();   //   getInt(vdata, doff, 2 );
+      int runLen = bos.getShort(); // getInt(vdata, doff, 2 );
       doff += 2;
       float radialAngle = (float) bos.getShort() / 10.0f;
       doff += 2;
@@ -1633,43 +1417,42 @@ short arrowHeadValue = 0;    */
       else
         doff += runLen;
       bos.position(doff);
-      Float ra = new Float(radialAngle);
-      azidata[radial] = ra.floatValue();
+      Float ra = radialAngle;
+      azidata[radial] = ra;
 
-    }   //end of for loop
+    } // end of for loop
 
     return azidata;
 
   }
 
-  public Object readDistance(Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
-    //int doff = 0;
+  private Object readDistance(Nidsheader.Vinfo vinfo) {
+    // int doff = 0;
     int[] data = new int[vinfo.yt * vinfo.xt];
 
     for (int row = 0; row < vinfo.yt; row++) {
       for (int col = 0; col < vinfo.xt; col++) {
         int i = row * vinfo.yt + col;
         data[i] = col + vinfo.x0;
-        //data[i] = val;
+        // data[i] = val;
       }
-    }   //end of for loop
+    } // end of for loop
 
     return data;
 
   }
 
-  public Object readRadialDataGate(Nidsheader.Vinfo vinfo) throws IOException, InvalidRangeException {
-    //int doff = 0;
+  private Object readRadialDataGate(Nidsheader.Vinfo vinfo) {
+    // int doff = 0;
     float[] gatedata = new float[vinfo.xt];
     double ddg = Nidsheader.code_reslookup(pcode);
-    if(pcode == 169 || pcode == 170 || pcode == 171 || pcode == 175
-            || pcode == 172  || pcode == 173 || pcode == 174 )
-        ddg = 1.0f;
+    if (pcode == 169 || pcode == 170 || pcode == 171 || pcode == 175 || pcode == 172 || pcode == 173 || pcode == 174)
+      ddg = 1.0f;
     float sc = vinfo.y0 * 1.0f;
     for (int rad = 0; rad < vinfo.xt; rad++) {
       gatedata[rad] = (vinfo.x0) + rad * sc * (float) ddg;
 
-    }   //end of for loop
+    } // end of for loop
 
     return gatedata;
 
@@ -1678,18 +1461,19 @@ short arrowHeadValue = 0;    */
   // for the compressed data read all out into a array and then parse into requested
   // This routine reads compressed image data for Level III formatted file.
   // We referenced McIDAS GetNexrLine function
-  public byte[] readCompData1(byte[] uncomp, long hoff, long doff) throws IOException {
+  public byte[] readCompData1(byte[] uncomp, long hoff, long doff) {
     int off;
     off = 2 * (((uncomp[0] & 0x3F) << 8) | (uncomp[1] & 0xFF));
     /* eat WMO and PIL */
     for (int i = 0; i < 2; i++) {
-      while ((off < uncomp.length) && (uncomp[off] != '\n')) off++;
+      while ((off < uncomp.length) && (uncomp[off] != '\n'))
+        off++;
       off++;
     }
 
     byte[] data = new byte[(int) (uncomp.length - off - doff)];
 
-    //byte[] hedata = new byte[(int)doff];
+    // byte[] hedata = new byte[(int)doff];
 
     // System.arraycopy(uncomp, off, hedata, 0, (int)doff);
     System.arraycopy(uncomp, off + (int) doff, data, 0, uncomp.length - off - (int) doff);
@@ -1705,7 +1489,7 @@ short arrowHeadValue = 0;    */
    * @return the array of data
    */
   public byte[] readCompData(long hoff, long doff) throws IOException {
-    int numin;                /* # input bytes processed       */
+    int numin; /* # input bytes processed */
     long pos = 0;
     long len = raf.length();
     raf.seek(pos);
@@ -1726,9 +1510,9 @@ short arrowHeadValue = 0;    */
 
     int resultLength;
     int result = 0;
-    //byte[] inflateData = null;
+    // byte[] inflateData = null;
     byte[] tmp;
-    int uncompLen = 24500;        /* length of decompress space    */
+    int uncompLen = 24500; /* length of decompress space */
     byte[] uncomp = new byte[uncompLen];
 
     inf.setInput(b, (int) hoff, numin - 4);
@@ -1737,10 +1521,8 @@ short arrowHeadValue = 0;    */
     while (inf.getRemaining() > 0) {
       try {
         resultLength = inf.inflate(uncomp, result, 4000);
-      }
-      catch (DataFormatException ex) {
-        System.out.println("ERROR on inflation " + ex.getMessage());
-        ex.printStackTrace();
+      } catch (DataFormatException ex) {
+        logger.error("ERROR on inflation ", ex);
         throw new IOException(ex.getMessage());
       }
 
@@ -1767,56 +1549,20 @@ short arrowHeadValue = 0;    */
       }
 
     }
-    /*
-  while ( inf.getRemaining() > 0) {
-   try{
-     resultLength = inf.inflate(uncomp);
-   }
-   catch (DataFormatException ex) {
-    System.out.println("ERROR on inflation");
-    ex.printStackTrace();
-  }
-   if(resultLength > 0 ) {
-       result = result + resultLength;
-       inflateData = new byte[result];
-       if(tmp != null) {
-          System.arraycopy(tmp, 0, inflateData, 0, tmp.length);
-          System.arraycopy(uncomp, 0, inflateData, tmp.length, resultLength);
-       } else {
-          System.arraycopy(uncomp, 0, inflateData, 0, resultLength);
-       }
-       tmp = new byte[result];
-       System.arraycopy(inflateData, 0, tmp, 0, result);
-       uncomp = new byte[(int)uncompLen];
-   } else {
-       int tt = inf.getRemaining();
-       byte [] b2 = new byte[2];
-       System.arraycopy(b,(int)hoff+numin-4-tt, b2, 0, 2);
-       if( headerParser.isZlibHed( b2 ) == 0 ) {
-          result = result + tt;
-          inflateData = new byte[result];
-          System.arraycopy(tmp, 0, inflateData, 0, tmp.length);
-          System.arraycopy(b, (int)hoff+numin-4-tt, inflateData, tmp.length, tt);
-          break;
-      }
-       inf.reset();
-       inf.setInput(b, (int)hoff+numin-4-tt, tt);
-
-   }
-  }  */
     inf.end();
 
     int off;
     off = 2 * (((uncomp[0] & 0x3F) << 8) | (uncomp[1] & 0xFF));
     /* eat WMO and PIL */
     for (int i = 0; i < 2; i++) {
-      while ((off < result) && (uncomp[off] != '\n')) off++;
+      while ((off < result) && (uncomp[off] != '\n'))
+        off++;
       off++;
     }
 
     byte[] data = new byte[(int) (result - off - doff)];
 
-    //byte[] hedata = new byte[(int)doff];
+    // byte[] hedata = new byte[(int)doff];
 
     // System.arraycopy(uncomp, off, hedata, 0, (int)doff);
     System.arraycopy(uncomp, off + (int) doff, data, 0, result - off - (int) doff);
@@ -1830,7 +1576,7 @@ short arrowHeadValue = 0;    */
    *
    * @param hoff header offset
    * @param doff data offset
-   * @return the array  of data
+   * @return the array of data
    */
   public byte[] readUCompData(long hoff, long doff) throws IOException {
     int numin;
@@ -1862,15 +1608,15 @@ short arrowHeadValue = 0;    */
     int i;
     int word = 0;
 
-    int bv[] = new int[num];
+    int[] bv = new int[num];
 
     for (i = 0; i < num; i++) {
       bv[i] = DataType.unsignedByteToShort(b[offset + i]);
     }
 
     /*
-    ** Calculate the integer value of the byte sequence
-    */
+     ** Calculate the integer value of the byte sequence
+     */
 
     for (i = num - 1; i >= 0; i--) {
       word += base * bv[i];
@@ -1886,7 +1632,7 @@ short arrowHeadValue = 0;    */
     int i;
     int word = 0;
 
-    int bv[] = new int[num];
+    int[] bv = new int[num];
 
     for (i = 0; i < num; i++) {
       bv[i] = DataType.unsignedByteToShort(b[offset + i]);
@@ -1897,8 +1643,8 @@ short arrowHeadValue = 0;    */
       base = -1;
     }
     /*
-    ** Calculate the integer value of the byte sequence
-    */
+     ** Calculate the integer value of the byte sequence
+     */
 
     for (i = num - 1; i >= 0; i--) {
       word += base * bv[i];

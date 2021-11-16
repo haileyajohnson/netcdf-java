@@ -14,7 +14,6 @@ import ucar.nc2.time.CalendarDate;
 import ucar.nc2.units.DateFromString;
 import ucar.nc2.units.DateUnit;
 import ucar.nc2.util.CancelTask;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -29,24 +28,24 @@ import java.util.concurrent.ExecutorCompletionService;
  * @since Aug 10, 2007
  */
 
-public abstract class AggregationOuterDimension extends Aggregation implements ProxyReader  {
-  static protected boolean debugCache = false, debugInvocation = false, debugStride = false;
-  static public int invocation = 0;  // debugging
+public abstract class AggregationOuterDimension extends Aggregation implements ProxyReader {
+  protected static boolean debugCache, debugInvocation, debugStride;
+  public static int invocation; // debugging
 
-  protected List<String> aggVarNames = new ArrayList<String>(); // explicitly specified in the NcML
-  protected List<VariableDS> aggVars = new ArrayList<VariableDS>(); // actual vars that will be aggregated
-  private int totalCoords = 0;  // the aggregation dimension size
+  protected List<String> aggVarNames = new ArrayList<>(); // explicitly specified in the NcML
+  protected List<VariableDS> aggVars = new ArrayList<>(); // actual vars that will be aggregated
+  private int totalCoords; // the aggregation dimension size
 
-  protected List<CacheVar> cacheList = new ArrayList<CacheVar>(); // promote global attribute to variable
-  protected boolean timeUnitsChange = false;
+  protected List<CacheVar> cacheList = new ArrayList<>(); // promote global attribute to variable
+  protected boolean timeUnitsChange;
 
   /**
    * Create an Aggregation for the given NetcdfDataset.
    * The following addXXXX methods are called, then finish(), before the object is ready for use.
    *
-   * @param ncd      Aggregation belongs to this NetcdfDataset
-   * @param dimName  the aggregation dimension name
-   * @param type     the Aggregation.Type
+   * @param ncd Aggregation belongs to this NetcdfDataset
+   * @param dimName the aggregation dimension name
+   * @param type the Aggregation.Type
    * @param recheckS how often to check if files have changes
    */
   protected AggregationOuterDimension(NetcdfDataset ncd, String dimName, Type type, String recheckS) {
@@ -60,7 +59,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
    */
   void setTimeUnitsChange(boolean timeUnitsChange) {
     this.timeUnitsChange = timeUnitsChange;
-    if (timeUnitsChange) isDate = true;
+    if (timeUnitsChange)
+      isDate = true;
   }
 
 
@@ -86,8 +86,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
   /**
    * Promote a global attribute to a variable
    *
-   * @param varName   name of agg variable
-   * @param format    java.util.Format string
+   * @param varName name of agg variable
+   * @param format java.util.Format string
    * @param gattNames space delimited list of global attribute names
    */
   void addVariableFromGlobalAttributeCompose(String varName, String format, String gattNames) {
@@ -99,16 +99,18 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
    * Useful for Variables that are used a lot, and not too large, like coordinate variables.
    *
    * @param varName name of variable to cache. must exist.
-   * @param dtype   datatype of variable
+   * @param dtype datatype of variable
    */
   void addCacheVariable(String varName, DataType dtype) {
-    if (findCacheVariable(varName) != null) return; // no duplicates
+    if (findCacheVariable(varName) != null)
+      return; // no duplicates
     cacheList.add(new CacheVar(varName, dtype));
   }
 
   CacheVar findCacheVariable(String varName) {
     for (CacheVar cv : cacheList)
-      if (cv.varName.equals(varName)) return cv;
+      if (cv.varName.equals(varName))
+        return cv;
     return null;
   }
 
@@ -152,7 +154,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
         ncfile = dataset.acquireFile(cancelTask);
         Variable v = ncfile.findVariable(timeAxis.getFullNameEscaped());
         if (v == null) {
-          logger.warn("readTimeCoordinates: variable = " + timeAxis.getFullName() + " not found in file " + dataset.getLocation());
+          logger.warn("readTimeCoordinates: variable = " + timeAxis.getFullName() + " not found in file "
+              + dataset.getLocation());
           return;
         }
         VariableDS vds = (v instanceof VariableDS) ? (VariableDS) v : new VariableDS(null, v, true);
@@ -165,7 +168,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
       } finally {
         dataset.close(ncfile);
       }
-      if (cancelTask != null && cancelTask.isCancel()) return;
+      if (cancelTask != null && cancelTask.isCancel())
+        return;
     }
     assert timeUnits != null;
 
@@ -211,26 +215,29 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
   protected void promoteGlobalAttributes(DatasetOuterDimension typicalDataset) throws IOException {
 
     for (CacheVar cv : cacheList) {
-      if (!(cv instanceof PromoteVar)) continue;
+      if (!(cv instanceof PromoteVar))
+        continue;
       PromoteVar pv = (PromoteVar) cv;
 
       Array data = pv.read(typicalDataset);
       if (data == null)
-        throw new IOException("cant read "+typicalDataset);
+        throw new IOException("cant read " + typicalDataset);
 
       pv.dtype = DataType.getType(data);
       VariableDS promotedVar = new VariableDS(ncDataset, null, null, pv.varName, pv.dtype, dimName, null, null);
-      /* if (data.getSize() > 1) { // LOOK case of non-scalar global attribute not delat with
-        Dimension outer = ncDataset.getRootGroup().findDimension(dimName);
-        Dimension inner = new Dimension("", (int) data.getSize(), false); //anonymous
-        List<Dimension> dims = new ArrayList<Dimension>(2);
-        dims.add(outer);
-        dims.add(inner);
-        promotedVar.setDimensions(dims);       
-      } */
+      /*
+       * if (data.getSize() > 1) { // LOOK case of non-scalar global attribute not delat with
+       * Dimension outer = ncDataset.getRootGroup().findDimension(dimName);
+       * Dimension inner = new Dimension("", (int) data.getSize(), false); //anonymous
+       * List<Dimension> dims = new ArrayList<Dimension>(2);
+       * dims.add(outer);
+       * dims.add(inner);
+       * promotedVar.setDimensions(dims);
+       * }
+       */
 
       ncDataset.addVariable(null, promotedVar);
-      promotedVar.setProxyReader( this);
+      promotedVar.setProxyReader(this);
       promotedVar.setSPobject(pv);
     }
   }
@@ -249,7 +256,7 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
     // reset agg variables
     for (Variable aggVar : aggVars) {
-      //aggVar.setDimensions(dimName); // reset its dimension
+      // aggVar.setDimensions(dimName); // reset its dimension
       aggVar.resetDimensions(); // reset its dimensions
       aggVar.invalidateCache(); // get rid of any cached data, since its now wrong
     }
@@ -279,18 +286,18 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
   /**
    * Read a section of an aggregation variable.
    *
-   * @param section    read just this section of the data, array of Range
+   * @param section read just this section of the data, array of Range
    * @return the data array section
-   * @throws IOException
    */
   @Override
-  public Array reallyRead(Variable mainv, Section section, CancelTask cancelTask) throws IOException, InvalidRangeException {
+  public Array reallyRead(Variable mainv, Section section, CancelTask cancelTask)
+      throws IOException, InvalidRangeException {
 
     // public Array reallyRead(Section section, CancelTask cancelTask) throws IOException, InvalidRangeException {
     if (debugConvert && mainv instanceof VariableDS) {
       DataType dtype = ((VariableDS) mainv).getOriginalDataType();
       if ((dtype != null) && (dtype != mainv.getDataType())) {
-        System.out.printf("Original type = %s mainv type= %s%n", dtype, mainv.getDataType());
+        logger.warn("Original type = {} mainv type= {}", dtype, mainv.getDataType());
       }
     }
 
@@ -304,15 +311,15 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
     // check if its cached
     Object spObj = mainv.getSPobject();
-    if (spObj != null && spObj instanceof CacheVar) {
+    if (spObj instanceof CacheVar) {
       CacheVar pv = (CacheVar) spObj;
       Array cacheArray = pv.read(section, cancelTask);
       return MAMath.convert(cacheArray, dtype); // // cache may keep data as different type
     }
 
     // the case of the agg coordinate var
-    //if (mainv.getShortName().equals(dimName))
-    //  return readAggCoord(mainv, section, cancelTask);
+    // if (mainv.getShortName().equals(dimName))
+    // return readAggCoord(mainv, section, cancelTask);
 
     Array sectionData = Array.factory(dtype, section.getShape());
     int destPos = 0;
@@ -322,7 +329,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     List<Range> nestedSection = new ArrayList<>(ranges); // get copy
     List<Range> innerSection = ranges.subList(1, ranges.size());
 
-    if (debug) System.out.println("   agg wants range=" + mainv.getFullName() + "(" + joinRange + ")");
+    if (debug)
+      System.out.println("   agg wants range=" + mainv.getFullName() + "(" + joinRange + ")");
 
     // LOOK: could multithread here
     List<Dataset> nestedDatasets = getDatasets();
@@ -331,8 +339,6 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
       Range nestedJoinRange = dod.getNestedJoinRange(joinRange);
       if (nestedJoinRange == null)
         continue;
-      //if (debug)
-      //  System.out.println("   agg use " + nested.aggStart + ":" + nested.aggEnd + " range= " + nestedJoinRange + " file " + nested.getLocation());
 
       Array varData;
       if ((type == Type.joinNew) || (type == Type.forecastModelRunCollection)) {
@@ -357,16 +363,15 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
    * Read an aggregation variable: A variable whose data spans multiple files.
    * This is an implementation of ProxyReader, so must fulfill that contract.
    *
-   * @param mainv      the aggregation variable
-   * @throws IOException
+   * @param mainv the aggregation variable
    */
-   @Override
+  @Override
   public Array reallyRead(Variable mainv, CancelTask cancelTask) throws IOException {
 
     if (debugConvert && mainv instanceof VariableDS) {
       DataType dtype = ((VariableDS) mainv).getOriginalDataType();
       if ((dtype != null) && (dtype != mainv.getDataType())) {
-        System.out.printf("Original type = %s mainv type= %s%n", dtype, mainv.getDataType());
+        logger.warn("Original type = {} mainv type= {}", dtype, mainv.getDataType());
       }
     }
 
@@ -374,7 +379,7 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     DataType dtype = (mainv instanceof VariableDS) ? ((VariableDS) mainv).getOriginalDataType() : mainv.getDataType();
 
     Object spObj = mainv.getSPobject();
-    if (spObj != null && spObj instanceof CacheVar) {
+    if (spObj instanceof CacheVar) {
       CacheVar pv = (CacheVar) spObj;
       try {
         Array cacheArray = pv.read(mainv.getShapeAsSection(), cancelTask);
@@ -387,8 +392,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     }
 
     // the case of the agg coordinate var
-    //if (mainv.getShortName().equals(dimName))
-    //  return readAggCoord(mainv, cancelTask);
+    // if (mainv.getShortName().equals(dimName))
+    // return readAggCoord(mainv, cancelTask);
 
     Array allData = Array.factory(dtype, mainv.getShape());
     int destPos = 0;
@@ -462,95 +467,9 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     }
   }
 
-  /* protected Array readAggCoord(Variable aggCoord, Section section, CancelTask cancelTask) throws IOException, InvalidRangeException {
-    DataType dtype = aggCoord.getDataType();
-    Array allData = Array.factory(dtype, section.getShape());
-    IndexIterator result = allData.getIndexIterator();
-
-    List<Range> ranges = section.getRanges();
-    Range joinRange = section.getRange(0);
-    List<Range> nestedSection = new ArrayList<Range>(ranges); // get copy
-    List<Range> innerSection = ranges.subList(1, ranges.size());
-
-    List<Dataset> nestedDatasets = getDatasets();
-    for (Dataset vnested : nestedDatasets) {
-      DatasetOuterDimension dod = (DatasetOuterDimension) vnested;
-      Range nestedJoinRange = dod.getNestedJoinRange(joinRange);
-      if (nestedJoinRange == null)
-        continue;
-      //if (debug)
-      //  System.out.println("   agg use " + vnested.aggStart + ":" + vnested.aggEnd + " range= " + nestedJoinRange + " file " + vnested.getLocation());
-
-      readAggCoord(aggCoord, cancelTask, dod, dtype, result, nestedJoinRange, nestedSection, innerSection);
-
-      if ((cancelTask != null) && cancelTask.isCancel())
-        return null;
-    }
-
-    return allData;
-  }
-
-  // handle the case of cached agg coordinate variables
-  private void readAggCoord(Variable aggCoord, CancelTask cancelTask, DatasetOuterDimension vnested, DataType dtype, IndexIterator result,
-                            Range nestedJoinRange, List<Range> nestedSection, List<Range> innerSection) throws IOException, InvalidRangeException {
-
-    // we have the coordinates as a String
-    if (vnested.coordValue != null) {
-
-      // if theres only one coord
-      if (vnested.ncoord == 1) {
-        if (dtype == DataType.STRING) {
-          result.setObjectNext(vnested.coordValue);
-        } else {
-          double val = Double.parseDouble(vnested.coordValue);
-          result.setDoubleNext(val);
-        }
-
-      } else {
-
-        // joinExisting can have multiple coords
-        int count = 0;
-        StringTokenizer stoker = new StringTokenizer(vnested.coordValue, " ,");
-        while (stoker.hasMoreTokens()) {
-          String toke = stoker.nextToken();
-          if ((nestedJoinRange != null) && !nestedJoinRange.contains(count))
-            continue;
-
-          if (dtype == DataType.STRING) {
-            result.setObjectNext(toke);
-          } else {
-            double val = Double.parseDouble(toke);
-            result.setDoubleNext(val);
-          }
-          count++;
-        }
-
-        if (count != vnested.ncoord)
-          logger.error("readAggCoord incorrect number of coordinates dataset=" + vnested.getLocation());
-      }
-
-    } else { // we gotta read it
-
-      Array varData;
-      if (nestedJoinRange == null) {  // all data
-        varData = vnested.read(aggCoord, cancelTask);
-
-      } else if ((type == Type.JOIN_NEW) || (type == Type.FORECAST_MODEL_COLLECTION)) {
-        varData = vnested.read(aggCoord, cancelTask, innerSection);
-      } else {
-        nestedSection.set(0, nestedJoinRange);
-        varData = vnested.read(aggCoord, cancelTask, nestedSection);
-      }
-
-      // copy it to the result
-      MAMath.copy(dtype, varData.getIndexIterator(), result);
-    }
-
-  } */
-
   @Override
-  protected Dataset makeDataset(String cacheName, String location, String id, String ncoordS, String coordValueS, String sectionSpec,
-                                EnumSet<NetcdfDataset.Enhance> enhance, ucar.nc2.util.cache.FileFactory reader) {
+  protected Dataset makeDataset(String cacheName, String location, String id, String ncoordS, String coordValueS,
+      String sectionSpec, EnumSet<NetcdfDataset.Enhance> enhance, ucar.nc2.util.cache.FileFactory reader) {
     return new DatasetOuterDimension(cacheName, location, id, ncoordS, coordValueS, enhance, reader);
   }
 
@@ -565,26 +484,26 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
   class DatasetOuterDimension extends Dataset {
 
     protected int ncoord; // number of coordinates in outer dimension for this dataset
-    protected String coordValue;  // if theres a coordValue on the netcdf element - may be multiple, blank seperated
-    protected Date coordValueDate;  // if its a date
-    protected boolean isStringValued = false;
-    private int aggStart = 0, aggEnd = 0; // index in aggregated dataset; aggStart <= i < aggEnd
+    protected String coordValue; // if theres a coordValue on the netcdf element - may be multiple, blank seperated
+    protected Date coordValueDate; // if its a date
+    protected boolean isStringValued;
+    private int aggStart, aggEnd; // index in aggregated dataset; aggStart <= i < aggEnd
 
     /**
      * Dataset constructor.
      * With this constructor, the actual opening of the dataset is deferred, and done by the reader.
      * Used with explicit netcdf elements, and scanned files.
      *
-     * @param cacheName   a unique name to use for caching
-     * @param location    attribute "location" on the netcdf element
-     * @param id          attribute "id" on the netcdf element
-     * @param ncoordS     attribute "ncoords" on the netcdf element
+     * @param cacheName a unique name to use for caching
+     * @param location attribute "location" on the netcdf element
+     * @param id attribute "id" on the netcdf element
+     * @param ncoordS attribute "ncoords" on the netcdf element
      * @param coordValueS attribute "coordValue" on the netcdf element
-     * @param enhance     open dataset in enhance mode NOT USED
-     * @param reader      factory for reading this netcdf dataset; if null, use NetcdfDataset.open( location)
+     * @param enhance open dataset in enhance mode NOT USED
+     * @param reader factory for reading this netcdf dataset; if null, use NetcdfDataset.open( location)
      */
     protected DatasetOuterDimension(String cacheName, String location, String id, String ncoordS, String coordValueS,
-                                    EnumSet<NetcdfDataset.Enhance> enhance, ucar.nc2.util.cache.FileFactory reader) {
+        EnumSet<NetcdfDataset.Enhance> enhance, ucar.nc2.util.cache.FileFactory reader) {
 
       super(cacheName, location, id, enhance, reader);
       this.coordValue = coordValueS;
@@ -623,7 +542,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
       int pos = loc.lastIndexOf('/');
       String result = (pos < 0) ? loc : loc.substring(pos + 1);
       pos = result.lastIndexOf('#');
-      if (pos > 0) result = result.substring(0, pos);
+      if (pos > 0)
+        result = result.substring(0, pos);
       return result;
     }
 
@@ -635,7 +555,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
       }
 
       // default is that the coordinates are just the filenames
-      // this can be overriden by an explicit declaration, which will replace the variable afte ther agg is processed in NcMLReader
+      // this can be overriden by an explicit declaration, which will replace the variable afte ther agg is processed in
+      // NcMLReader
       if ((type == Type.joinNew) || (type == Type.joinExistingOne) || (type == Type.forecastModelRunCollection)) {
         this.coordValue = extractCoordNameFromFilename(this.getLocation());
         this.isStringValued = true;
@@ -646,10 +567,12 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
         String filename = cd.getName(); // LOOK operates on name, not path
         coordValueDate = DateFromString.getDateUsingDemarkatedCount(filename, dateFormatMark, '#');
         coordValue = dateFormatter.toDateTimeStringISO(coordValueDate);
-        if (debugDateParse) System.out.println("  adding " + cd.getPath() + " date= " + coordValue);
+        if (debugDateParse)
+          System.out.println("  adding " + cd.getPath() + " date= " + coordValue);
 
       } else {
-        if (debugDateParse) System.out.println("  adding " + cd.getPath());
+        if (debugDateParse)
+          System.out.println("  adding " + cd.getPath());
       }
 
       if ((coordValue == null) && (type == Type.joinNew)) // use filename as coord value
@@ -693,8 +616,9 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
      */
     public int getNcoords(CancelTask cancelTask) throws IOException {
       if (ncoord <= 0) {
-        try (NetcdfFile ncd=acquireFile(cancelTask)) {
-          if ((cancelTask != null) && cancelTask.isCancel()) return 0;
+        try (NetcdfFile ncd = acquireFile(cancelTask)) {
+          if ((cancelTask != null) && cancelTask.isCancel())
+            return 0;
 
           Dimension d = ncd.findDimension(dimName); // long name of dimension
           if (d != null)
@@ -709,7 +633,7 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     /**
      * Set the starting and ending index into the aggregation dimension
      *
-     * @param aggStart   starting index
+     * @param aggStart starting index
      * @param cancelTask allow to bail out
      * @return number of coordinates in this dataset
      * @throws IOException if io error
@@ -722,7 +646,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
     /**
      * Get the desired Range, reletive to this Dataset, if no overlap, return null.
-     * <p> wantStart, wantStop are the indices in the aggregated dataset, wantStart <= i < wantEnd.
+     * <p>
+     * wantStart, wantStop are the indices in the aggregated dataset, wantStart <= i < wantEnd.
      * if this overlaps, set the Range required for the nested dataset.
      * note this should handle strides ok.
      *
@@ -759,23 +684,23 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     private boolean isNeeded(int wantStart, int wantStop) {
       if (wantStart >= wantStop)
         return false;
-      if ((wantStart >= aggEnd) || (wantStop <= aggStart))
-        return false;
+      return (wantStart < aggEnd) && (wantStop > aggStart);
 
-      return true;
     }
 
-    /* @Override
-    protected void cacheCoordValues(NetcdfFile ncfile) throws IOException {
-      if (coordValue != null) return;
-
-      Variable coordVar = ncfile.findVariable(dimName);
-      if (coordVar != null) {
-        Array data = coordVar.read();
-        coordValue = data.toString();
-      }
-
-    } */
+    /*
+     * @Override
+     * protected void cacheCoordValues(NetcdfFile ncfile) throws IOException {
+     * if (coordValue != null) return;
+     * 
+     * Variable coordVar = ncfile.findVariable(dimName);
+     * if (coordVar != null) {
+     * Array data = coordVar.read();
+     * coordValue = data.toString();
+     * }
+     * 
+     * }
+     */
 
     // read any cached variables that need it
 
@@ -787,7 +712,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     }
 
     @Override
-    protected Array read(Variable mainv, CancelTask cancelTask, List<Range> section) throws IOException, InvalidRangeException {
+    protected Array read(Variable mainv, CancelTask cancelTask, List<Range> section)
+        throws IOException, InvalidRangeException {
       NetcdfFile ncd = null;
       try {
         ncd = acquireFile(cancelTask);
@@ -796,13 +722,16 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
         Variable v = findVariable(ncd, mainv);
         if (v == null) {
-          logger.error("AggOuterDimension cant find " + mainv.getFullName() + " in " + ncd.getLocation() + "; return all zeroes!!!");
-          return Array.factory(mainv.getDataType(), new Section(section).getShape()); // all zeros LOOK need missing value
+          logger.error("AggOuterDimension cant find " + mainv.getFullName() + " in " + ncd.getLocation()
+              + "; return all zeroes!!!");
+          return Array.factory(mainv.getDataType(), new Section(section).getShape()); // all zeros LOOK need missing
+                                                                                      // value
         }
 
         if (debugRead) {
           Section want = new Section(section);
-          System.out.printf("AggOuter.read(%s) %s from %s in %s%n", want, mainv.getNameAndDimensions(), v.getNameAndDimensions(), getLocation());
+          System.out.printf("AggOuter.read(%s) %s from %s in %s%n", want, mainv.getNameAndDimensions(),
+              v.getNameAndDimensions(), getLocation());
         }
 
         // its possible that we are asking for more of the time coordinate than actually exists (fmrc ragged time)
@@ -822,12 +751,12 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
       }
     }
 
-    public int compareTo(Object o) {
-      if (coordValueDate == null)
+    @Override
+    public int compareTo(Dataset o) {
+      if (o instanceof DatasetOuterDimension && coordValueDate != null) {
+        return coordValueDate.compareTo(((DatasetOuterDimension) o).coordValueDate);
+      } else {
         return super.compareTo(o);
-      else {
-        DatasetOuterDimension other = (DatasetOuterDimension) o;
-        return coordValueDate.compareTo(other.coordValueDate);
       }
     }
   }
@@ -837,7 +766,7 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
   class CacheVar {
     String varName;
     DataType dtype;
-    private Map<String, Array> dataMap = new HashMap<String, Array>();
+    private Map<String, Array> dataMap = new HashMap<>();
 
     CacheVar(String varName, DataType dtype) {
       this.varName = varName;
@@ -865,7 +794,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
     // public access to the data
     Array read(Section section, CancelTask cancelTask) throws IOException, InvalidRangeException {
-      if (debugCache) System.out.println("caching " + varName + " section= " + section);
+      if (debugCache)
+        System.out.println("caching " + varName + " section= " + section);
       Array allData = null;
 
       List<Range> ranges = section.getRanges();
@@ -883,20 +813,20 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
         // can we skip ?
         Range nestedJoinRange = dod.getNestedJoinRange(joinRange);
-        if (nestedJoinRange == null)  {
-          // if (debugStride) System.out.printf("  skip [%d,%d) (%d) %f for %s%n", dod.aggStart, dod.aggEnd, dod.ncoord, dod.aggStart / 8.0, vnested.getLocation());
+        if (nestedJoinRange == null) {
           continue;
         }
-        if (debugStride) System.out.printf("%d: %s [%d,%d) (%d) %f for %s%n",
-                resultPos, nestedJoinRange, dod.aggStart, dod.aggEnd, dod.ncoord,  dod.aggStart / 8.0, vnested.getLocation());
+        if (debugStride)
+          System.out.printf("%d: %s [%d,%d) (%d) %f for %s%n", resultPos, nestedJoinRange, dod.aggStart, dod.aggEnd,
+              dod.ncoord, dod.aggStart / 8.0, vnested.getLocation());
         Array varData = read(dod);
         if (varData == null)
-          throw new IOException("cant read "+dod);
+          throw new IOException("cant read " + dod);
 
         // which subset do we want?
         // bit tricky - assume returned array's rank depends on type LOOK is this true?
-        if (((type == Type.joinNew) || (type == Type.forecastModelRunCollection)) &&
-                ((innerSection != null) && (varData.getSize() != innerSection.computeSize()))) {
+        if (((type == Type.joinNew) || (type == Type.forecastModelRunCollection))
+            && ((innerSection != null) && (varData.getSize() != innerSection.computeSize()))) {
           varData = varData.section(innerSection.getRanges());
 
         } else if ((innerSection == null) && (varData.getSize() != nestedJoinRange.length())) {
@@ -910,7 +840,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
           dtype = DataType.getType(varData);
         if (allData == null) {
           allData = Array.factory(dtype, section.getShape());
-          if (debugStride) System.out.printf("total result section = %s (%d)%n", section, Index.computeSize(section.getShape()));
+          if (debugStride)
+            System.out.printf("total result section = %s (%d)%n", section, Index.computeSize(section.getShape()));
         }
 
         // copy to result array
@@ -937,16 +868,13 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     protected Array read(DatasetOuterDimension dset) throws IOException {
 
       Array data = getData(dset.getId());
-      if (data != null) return data;
-      if (type == Type.joinNew) return null;  // ??
+      if (data != null)
+        return data;
+      if (type == Type.joinNew)
+        return null; // ??
 
-      NetcdfFile ncfile = null;
-      try {
-        ncfile = dset.acquireFile(null);
+      try (NetcdfFile ncfile = dset.acquireFile(null)) {
         return read(dset, ncfile);
-
-      } finally {
-        if (ncfile != null) ncfile.close();
       }
     }
 
@@ -955,13 +883,16 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
       invocation++;
 
       Array data = getData(dset.getId());
-      if (data != null) return data;
-      if (type == Type.joinNew) return null;
+      if (data != null)
+        return data;
+      if (type == Type.joinNew)
+        return null;
 
       Variable v = ncfile.findVariable(varName);
       data = v.read();
       putData(dset.getId(), data);
-      if (debugCache) System.out.println("caching " + varName + " complete data");
+      if (debugCache)
+        System.out.println("caching " + varName + " complete data");
       return data;
     }
   }
@@ -985,22 +916,25 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     // these deal with possible setting of the coord values in the NcML
     protected Array read(DatasetOuterDimension dset) throws IOException {
       Array data = readCached(dset);
-      if (data != null) return data;
+      if (data != null)
+        return data;
       return super.read(dset);
     }
 
     protected Array read(DatasetOuterDimension dset, NetcdfFile ncfile) throws IOException {
       Array data = readCached(dset);
-      if (data != null) return data;
+      if (data != null)
+        return data;
       return super.read(dset, ncfile);
     }
 
     // only deals with possible setting of the coord values in the NcML
-    private Array readCached(DatasetOuterDimension dset) throws IOException {
+    private Array readCached(DatasetOuterDimension dset) {
       Array data = getData(dset.getId());
-      if (data != null) return data;
+      if (data != null)
+        return data;
 
-      data = Array.factory(dtype, new int[]{dset.ncoord});
+      data = Array.factory(dtype, new int[] {dset.ncoord});
       IndexIterator ii = data.getIndexIterator();
 
       if (dset.coordValueDate != null) { // its a date, typicallly parsed from the filename
@@ -1050,7 +984,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
           if (count != dset.ncoord) {
             logger.error("readAggCoord incorrect number of coordinates dataset=" + dset.getLocation());
-            throw new IllegalArgumentException("readAggCoord incorrect number of coordinates dataset=" + dset.getLocation());
+            throw new IllegalArgumentException(
+                "readAggCoord incorrect number of coordinates dataset=" + dset.getLocation());
           }
         }
 
@@ -1078,9 +1013,10 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     }
 
     @Override
-    protected Array read(DatasetOuterDimension dset, NetcdfFile ncfile) throws IOException {
+    protected Array read(DatasetOuterDimension dset, NetcdfFile ncfile) {
       Array data = getData(dset.getId());
-      if (data != null) return data;
+      if (data != null)
+        return data;
 
       Attribute att = ncfile.findGlobalAttribute(gattName);
       if (att == null)
@@ -1093,7 +1029,7 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
         putData(dset.getId(), data);
       else {
         // duplicate the value to each of the coordinates
-        Array allData = Array.factory(dtype, new int[]{dset.ncoord});
+        Array allData = Array.factory(dtype, new int[] {dset.ncoord});
         for (int i = 0; i < dset.ncoord; i++)
           Array.arraycopy(data, 0, allData, i, 1); // LOOK generalize to vectors ??
         putData(dset.getId(), allData);
@@ -1112,8 +1048,8 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     String[] gattNames;
 
     /**
-     * @param varName   name of agg variable
-     * @param format    java.util.Format string
+     * @param varName name of agg variable
+     * @param format java.util.Format string
      * @param gattNames space delimited list of global attribute names
      */
     PromoteVarCompose(String varName, String format, String gattNames) {
@@ -1126,9 +1062,10 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
     }
 
     @Override
-    protected Array read(DatasetOuterDimension dset, NetcdfFile ncfile) throws IOException {
+    protected Array read(DatasetOuterDimension dset, NetcdfFile ncfile) {
       Array data = getData(dset.getId());
-      if (data != null) return data;
+      if (data != null)
+        return data;
 
       List<Object> vals = new ArrayList<>();
       for (String gattName : gattNames) {
@@ -1142,7 +1079,7 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
       f.format(format, vals.toArray());
       String result = f.toString();
 
-      Array allData = Array.factory(dtype, new int[]{dset.ncoord});
+      Array allData = Array.factory(dtype, new int[] {dset.ncoord});
       for (int i = 0; i < dset.ncoord; i++)
         allData.setObject(i, result);
       putData(dset.getId(), allData);
@@ -1151,14 +1088,13 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
   }
 
-
   @Override
   public void getDetailInfo(Formatter f) {
     super.getDetailInfo(f);
     f.format("  timeUnitsChange=%s%n", timeUnitsChange);
     f.format("  totalCoords=%d%n", totalCoords);
 
-    if (aggVarNames.size() > 0) {
+    if (!aggVarNames.isEmpty()) {
       f.format("  Aggregation Variables specified in NcML%n");
       for (String vname : aggVarNames)
         f.format("   %s%n", vname);
@@ -1171,7 +1107,7 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
       f.format("%n");
     }
 
-    if (cacheList.size() > 0) {
+    if (!cacheList.isEmpty()) {
       f.format("%nCache Variables%n");
       for (CacheVar cv : cacheList)
         f.format("   %s%n", cv);
@@ -1188,20 +1124,4 @@ public abstract class AggregationOuterDimension extends Aggregation implements P
 
 
   }
-
-  public static void main(String args[]) throws IOException {
-    String format = "%04d-%02d-%02dT%02d:%02d:%02.0f";
-    Formatter f = new Formatter();
-    Object[] vals = new Object[6];
-    vals[0] = new Integer(2002);
-    vals[1] = new Integer(10);
-    vals[2] = new Integer(20);
-    vals[3] = new Integer(23);
-    vals[4] = new Integer(0);
-    vals[5] = new Float(2.1);
-    f.format(format, vals);
-    System.out.println(f);
-  }
-
-
 }

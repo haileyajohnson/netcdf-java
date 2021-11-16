@@ -4,7 +4,6 @@
  */
 package ucar.nc2.iosp.netcdf3;
 
-import ucar.nc2.iosp.netcdf3.N3raf;
 import ucar.nc2.iosp.IOServiceProvider;
 
 /**
@@ -16,25 +15,26 @@ import ucar.nc2.iosp.IOServiceProvider;
 
 public class SPFactory {
 
-  static private Class spClass = N3raf.class;
-  static private boolean debug = false;
+  private static Class spClass = N3raf.class;
+  private static boolean debug;
 
-  static public IOServiceProvider getServiceProvider() {
+  public static IOServiceProvider getServiceProvider() {
     try {
-      if (debug) System.out.println("**********using Service Provider Class = "+spClass.getName());
+      if (debug)
+        System.out.println("**********using Service Provider Class = " + spClass.getName());
       return (IOServiceProvider) spClass.newInstance();
-    } catch (InstantiationException e) {
-      e.printStackTrace();
-    } catch (IllegalAccessException e) {
+    } catch (InstantiationException | IllegalAccessException e) {
       e.printStackTrace();
     }
     return null;
   }
 
-  static public void setServiceProvider(String spName) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+  public static void setServiceProvider(String spName)
+      throws ClassNotFoundException, InstantiationException, IllegalAccessException {
     spClass = Class.forName(spName);
     spClass.newInstance(); // fail fast
-    if (debug) System.out.println("**********NetcCDF Service Provider Class set to = "+spName);
+    if (debug)
+      System.out.println("**********NetcCDF Service Provider Class set to = " + spName);
   }
 
 }

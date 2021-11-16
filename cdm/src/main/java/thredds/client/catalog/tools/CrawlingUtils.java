@@ -13,7 +13,6 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.util.CancelTask;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,11 +25,12 @@ import java.util.Random;
  * @since 3/14/2015
  */
 public class CrawlingUtils {
+  private static Random random = new Random();
 
   // read a 2D slice out all the variables in the dataset, report stats
   // Its a Runnable, so you can put it into a Thread for mulithreaded testing
   public static class TDSdatasetReader implements Runnable {
-    private boolean showDetail = false;
+    private boolean showDetail;
     private String who;
     private String datasetUrl;
     private CancelTask cancel;
@@ -53,16 +53,17 @@ public class CrawlingUtils {
           long took = System.currentTimeMillis() - start;
 
           long size = result.getSize();
-          double rate = (took == 0) ? 0.0 : size / took / 1000.0;
-          if (showDetail) System.out.printf(" took= %d msecs rate= %f MB/sec%n", took, rate);
+          double rate = (took == 0) ? 0.0 : (double) size / took / 1000.0;
+          if (showDetail)
+            System.out.printf(" took= %d msecs rate= %f MB/sec%n", took, rate);
           total += size;
           time += took;
-          //if (stop.isCancel()) break;
+          // if (stop.isCancel()) break;
           count++;
         }
 
         double totald = total / (1000. * 1000.);
-        double rate = (time == 0) ? 0 : total / time / 1000.0;
+        double rate = (time == 0) ? 0 : (double) total / time / 1000.0;
 
         System.out.printf("%n%s%n", ncfile.getLocation());
         System.out.printf(" took= %f secs rate= %f MB/sec%n", totald, rate);
@@ -76,7 +77,8 @@ public class CrawlingUtils {
     private Array doLimitedRead(Variable v) throws IOException, InvalidRangeException {
       long size = v.getSize() * v.getElementSize();
       if (size < 1000 * 1000 || v.getRank() < 3) {
-        if (showDetail) System.out.printf(" thread %s read %s bytes = %d ", who, v.getFullName(), size);
+        if (showDetail)
+          System.out.printf(" thread %s read %s bytes = %d ", who, v.getFullName(), size);
         return v.read();
 
       } else {
@@ -84,10 +86,9 @@ public class CrawlingUtils {
         int rank = v.getRank();
         List<Range> ranges = new ArrayList<>();
         int i = 0;
-        Random r = new Random();
         for (Dimension dim : v.getDimensions()) {
           if (i < rank - 2) {
-            int first = r.nextInt(dim.getLength());
+            int first = random.nextInt(dim.getLength());
             ranges.add(new Range(first, first));
           } else {
             ranges.add(new Range(0, dim.getLength() - 1));
@@ -95,7 +96,8 @@ public class CrawlingUtils {
           i++;
         }
         Section s = new Section(ranges);
-        if (showDetail) System.out.printf(" thread %s read %s(%s) bytes= %d ", who, v.getFullName(), s, s.computeSize());
+        if (showDetail)
+          System.out.printf(" thread %s read %s(%s) bytes= %d ", who, v.getFullName(), s, s.computeSize());
         Array result = v.read(s);
         assert result.getSize() == s.computeSize();
         return result;

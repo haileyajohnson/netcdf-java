@@ -7,7 +7,6 @@ package ucar.nc2.iosp.bufr;
 import ucar.nc2.iosp.bufr.tables.BufrTables;
 import ucar.nc2.iosp.bufr.tables.TableB;
 import ucar.nc2.iosp.bufr.tables.TableD;
-
 import javax.annotation.concurrent.Immutable;
 import java.io.IOException;
 
@@ -19,8 +18,8 @@ import java.io.IOException;
  */
 @Immutable
 public class TableLookup {
-  static private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TableLookup.class);
-  static private final boolean showErrors = false;
+  private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TableLookup.class);
+  private static final boolean showErrors = false;
 
   /////////////////////////////////////////
   private final TableB localTableB;
@@ -107,13 +106,13 @@ public class TableLookup {
         b = localTableB.getDescriptor(fxy);
     }
 
-    if (b == null) {  // look forward in standard WMO table; often the version number of the message is wrong
+    if (b == null) { // look forward in standard WMO table; often the version number of the message is wrong
       b = BufrTables.getWmoTableBlatest().getDescriptor(fxy);
     }
 
     if (b == null && showErrors)
       log.warn(" TableLookup cant find Table B descriptor = {} in tables {}, {} mode={}", Descriptor.makeString(fxy),
-              getLocalTableBName(), getWmoTableBName(), mode);
+          getLocalTableBName(), getWmoTableBName(), mode);
     return b;
   }
 
@@ -142,13 +141,13 @@ public class TableLookup {
         d = localTableD.getDescriptor(fxy);
     }
 
-    if (d == null) {  // look forward in standard WMO table; often the version number of the message is wrong
+    if (d == null) { // look forward in standard WMO table; often the version number of the message is wrong
       d = BufrTables.getWmoTableDlatest().getDescriptor(fxy);
     }
 
     if (d == null && showErrors)
-      System.out.printf(" TableLookup cant find Table D descriptor %s in tables %s,%s mode=%s%n", Descriptor.makeString(fxy),
-              getLocalTableDName(), getWmoTableDName(), mode);
+      log.warn(String.format(" TableLookup cant find Table D descriptor %s in tables %s,%s mode=%s%n",
+          Descriptor.makeString(fxy), getLocalTableDName(), getWmoTableDName(), mode));
     return d;
   }
 

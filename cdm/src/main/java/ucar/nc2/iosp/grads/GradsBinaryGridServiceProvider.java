@@ -12,7 +12,6 @@ import ucar.ma2.IndexIterator;
 import ucar.ma2.InvalidRangeException;
 import ucar.ma2.Range;
 import ucar.ma2.Section;
-
 import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFile;
@@ -23,23 +22,19 @@ import ucar.nc2.constants.CF;
 import ucar.nc2.constants._Coordinate;
 import ucar.nc2.iosp.AbstractIOServiceProvider;
 import ucar.nc2.util.CancelTask;
-
 import ucar.unidata.io.RandomAccessFile;
-
 import java.io.IOException;
-
 import java.util.HashMap;
 import java.util.List;
 
-
 /**
- * IOSP for GrADS Binary data files.  This IOSP only handles the binary formatted grids,
+ * IOSP for GrADS Binary data files. This IOSP only handles the binary formatted grids,
  * most other GrADS data types can be read directly through other IOSPs.
  *
  * Notes jcaron
- *  Apparently we need the control file (.ctl), which then references the data file (.dat)
- *  Dont see any test data - added to cdmUnitTest/formats/grads
- *  Possible File leaks - remove from standard IOSP's until we can resolve this. Also need to override  release, reacquire
+ * Apparently we need the control file (.ctl), which then references the data file (.dat)
+ * Dont see any test data - added to cdmUnitTest/formats/grads
+ * Possible File leaks - remove from standard IOSP's until we can resolve this. Also need to override release, reacquire
  *
  * @author Don Murray - CU/CIRES
  * @see "http://www.iges.org/grads/gadoc/descriptorfile.html"
@@ -65,37 +60,37 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
   /**
    * the size of the x dimension
    */
-  private int sizeX = 0;
+  private int sizeX;
 
   /**
    * the size of the y dimension
    */
-  private int sizeY = 0;
+  private int sizeY;
 
   /**
    * the number of xy header bytes
    */
-  private int xyHeaderBytes = 0;
+  private int xyHeaderBytes;
 
   /**
    * the sequential record bytes
    */
-  private int sequentialRecordBytes = 0;
+  private int sequentialRecordBytes;
 
   /**
    * the number of file header bytes
    */
-  private int fileHeaderBytes = 0;
+  private int fileHeaderBytes;
 
   /**
    * the number of time header bytes
    */
-  private int timeHeaderBytes = 0;
+  private int timeHeaderBytes;
 
   /**
    * the number of time trailer bytes
    */
-  private int timeTrailerBytes = 0;
+  private int timeTrailerBytes;
 
   /**
    * The name for the ensemble varaible
@@ -125,11 +120,8 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
   /**
    * The dimension names
    */
-  private String[] dimNames = {GradsDataDescriptorFile.EDEF,
-          GradsDataDescriptorFile.TDEF,
-          GradsDataDescriptorFile.ZDEF,
-          GradsDataDescriptorFile.YDEF,
-          GradsDataDescriptorFile.XDEF};
+  private String[] dimNames = {GradsDataDescriptorFile.EDEF, GradsDataDescriptorFile.TDEF, GradsDataDescriptorFile.ZDEF,
+      GradsDataDescriptorFile.YDEF, GradsDataDescriptorFile.XDEF};
 
   /**
    * The corresponding variable names
@@ -142,7 +134,7 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
   private int wordSize = 4;
 
   /**
-   * Is this a valid file?  For this GrADS IOSP, the valid file must be:
+   * Is this a valid file? For this GrADS IOSP, the valid file must be:
    * <ul>
    * <li>raw binary grid (not GRIB, netCDF, HDF, etc)
    * <li>not a cross section (x and y > 1)
@@ -162,19 +154,18 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
     // we think its a GRADS file, but we have lots of restrictions on what we can handle
     try {
       gradsDDF = new GradsDataDescriptorFile(raf.getLocation(), 5000);
-      if (gradsDDF.error) return false;
+      if (gradsDDF.error)
+        return false;
 
       GradsDimension x = gradsDDF.getXDimension();
       GradsDimension y = gradsDDF.getYDimension();
-      //J-
+      // J-
 
       return gradsDDF.getDataType() == null && // only handle raw binary
-              gradsDDF.getDataFile() != null &&
-              !gradsDDF.hasProjection() &&  // can't handle projections
-              !gradsDDF.getVariables().isEmpty() &&  // must have valid entries
-              !gradsDDF.getDimensions().isEmpty() &&
-              (x.getSize() > 1) && (y.getSize() > 1);  // can't handle cross sections
-//J+
+          gradsDDF.getDataFile() != null && !gradsDDF.hasProjection() && // can't handle projections
+          !gradsDDF.getVariables().isEmpty() && // must have valid entries
+          !gradsDDF.getDimensions().isEmpty() && (x.getSize() > 1) && (y.getSize() > 1); // can't handle cross sections
+      // J+
     } catch (Exception ioe) {
       return false;
     }
@@ -201,8 +192,8 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
   /**
    * Open the service provider for reading.
    *
-   * @param raf        file to read from
-   * @param ncfile     netCDF file we are writing to (memory)
+   * @param raf file to read from
+   * @param ncfile netCDF file we are writing to (memory)
    * @param cancelTask task for cancelling
    * @throws IOException problem reading file
    */
@@ -223,34 +214,28 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
     // assume all files are the same as the first
     if (gradsDDF.isSequential()) {
       GradsDimension ensDim = gradsDDF.getEnsembleDimension();
-      int numens = ((ensDim != null) && !gradsDDF.isTemplate())
-              ? ensDim.getSize()
-              : 1;
+      int numens = ((ensDim != null) && !gradsDDF.isTemplate()) ? ensDim.getSize() : 1;
       GradsTimeDimension timeDim = gradsDDF.getTimeDimension();
-      int numtimes = 0;
+      int numtimes;
       if (gradsDDF.isTemplate()) {
-        int[] timesPerFile =
-                gradsDDF.getTimeStepsPerFile(dataFile.getLocation());
+        int[] timesPerFile = gradsDDF.getTimeStepsPerFile(dataFile.getLocation());
         numtimes = timesPerFile[0];
       } else {
         numtimes = timeDim.getSize();
       }
       int gridsPerTimeStep = gradsDDF.getGridsPerTimeStep();
-      int numrecords = numens * numtimes
-              * gridsPerTimeStep;
+      int numrecords = numens * numtimes * gridsPerTimeStep;
       int xlen = gradsDDF.getXDimension().getSize();
       int ylen = gradsDDF.getYDimension().getSize();
       long fileSize = dataFile.length();
       // calculate record indicator length
-      long dataSize = fileHeaderBytes
-              + (xlen * ylen * 4l + xyHeaderBytes) * numrecords;
+      long dataSize = fileHeaderBytes + (xlen * ylen * 4L + xyHeaderBytes) * numrecords;
       // add on the bytes for the time header/trailers
       dataSize += numtimes * (timeHeaderBytes + timeTrailerBytes);
       int leftovers = (int) (fileSize - dataSize);
       sequentialRecordBytes = (leftovers / numrecords) / 2;
       if (sequentialRecordBytes < 0) {
-        throw new IOException("Incorrect sequential record byte size: " +
-                sequentialRecordBytes);
+        throw new IOException("Incorrect sequential record byte size: " + sequentialRecordBytes);
       }
     }
 
@@ -263,21 +248,17 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
    * @return the byte order
    */
   private int getByteOrder() {
-    return (gradsDDF.isBigEndian())
-            ? RandomAccessFile.BIG_ENDIAN
-            : RandomAccessFile.LITTLE_ENDIAN;
+    return (gradsDDF.isBigEndian()) ? RandomAccessFile.BIG_ENDIAN : RandomAccessFile.LITTLE_ENDIAN;
   }
 
   /**
    * Build the netCDF file
    *
-   * @throws IOException problem reading the file
    */
-  protected void buildNCFile() throws IOException {
+  protected void buildNCFile() {
     ncFile.empty();
     fillNCFile();
     ncFile.finish();
-    //System.out.println(ncfile);
   }
 
   /**
@@ -298,68 +279,61 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
   /**
    * Fill out the netCDF file
    *
-   * @throws IOException problem reading or writing stuff
    */
-  private void fillNCFile() throws IOException {
+  private void fillNCFile() {
 
     List<GradsVariable> vars = gradsDDF.getVariables();
     List<GradsAttribute> attrs = gradsDDF.getAttributes();
-    //TODO: ensembles
+    // TODO: ensembles
     List<GradsDimension> dims = gradsDDF.getDimensions();
     Variable v;
     int numZ = 0;
-    HashMap<String, Dimension> zDims = new HashMap<String, Dimension>();
+    HashMap<String, Dimension> zDims = new HashMap<>();
     for (GradsDimension dim : dims) {
       String name = getVarName(dim);
       int size = dim.getSize();
       Dimension ncDim = new Dimension(name, size, true);
       ncFile.addDimension(null, ncDim);
       if (name.equals(ENS_VAR)) {
-        v = new Variable(ncFile, null, null, name, DataType.STRING,
-                name);
+        v = new Variable(ncFile, null, null, name, DataType.STRING, name);
         v.addAttribute(new Attribute("standard_name", "ensemble"));
-        v.addAttribute(new Attribute(_Coordinate.AxisType,
-                AxisType.Ensemble.toString()));
-        List<String> names =
-                gradsDDF.getEnsembleDimension().getEnsembleNames();
+        v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Ensemble.toString()));
+        List<String> names = gradsDDF.getEnsembleDimension().getEnsembleNames();
         String[] nameArray = new String[names.size()];
         for (int i = 0; i < nameArray.length; i++) {
           nameArray[i] = names.get(i);
         }
-        Array dataArray = Array.factory(DataType.STRING,
-                new int[]{nameArray.length},
-                nameArray);
+        Array dataArray = Array.factory(DataType.STRING, new int[] {nameArray.length}, nameArray);
         v.setCachedData(dataArray, false);
       } else {
         double[] vals = dim.getValues();
-        v = new Variable(ncFile, null, null, name, DataType.DOUBLE,
-                name);
+        v = new Variable(ncFile, null, null, name, DataType.DOUBLE, name);
         v.addAttribute(new Attribute(CDM.UNITS, dim.getUnit()));
-        if (name.equals(Y_VAR)) {
-          v.addAttribute(new Attribute(CDM.LONG_NAME, "latitude"));
-          v.addAttribute(new Attribute("standard_name",
-                  "latitude"));
-          v.addAttribute(new Attribute("axis", "Y"));
-          sizeY = dim.getSize();
-          v.addAttribute(new Attribute(_Coordinate.AxisType,
-                  AxisType.Lat.toString()));
-        } else if (name.equals(X_VAR)) {
-          v.addAttribute(new Attribute(CDM.LONG_NAME, "longitude"));
-          v.addAttribute(new Attribute("standard_name",
-                  "longitude"));
-          v.addAttribute(new Attribute("axis", "X"));
-          v.addAttribute(new Attribute(_Coordinate.AxisType,
-                  AxisType.Lon.toString()));
-          sizeX = dim.getSize();
-        } else if (name.equals(Z_VAR)) {
-          numZ = size;
-          zDims.put(name, ncDim);
-          v.addAttribute(new Attribute(CDM.LONG_NAME, "level"));
-          addZAttributes(dim, v);
-        } else if (name.equals(TIME_VAR)) {
-          v.addAttribute(new Attribute(CDM.LONG_NAME, "time"));
-          v.addAttribute(new Attribute(_Coordinate.AxisType,
-                  AxisType.Time.toString()));
+        switch (name) {
+          case Y_VAR:
+            v.addAttribute(new Attribute(CDM.LONG_NAME, "latitude"));
+            v.addAttribute(new Attribute("standard_name", "latitude"));
+            v.addAttribute(new Attribute("axis", "Y"));
+            sizeY = dim.getSize();
+            v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Lat.toString()));
+            break;
+          case X_VAR:
+            v.addAttribute(new Attribute(CDM.LONG_NAME, "longitude"));
+            v.addAttribute(new Attribute("standard_name", "longitude"));
+            v.addAttribute(new Attribute("axis", "X"));
+            v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Lon.toString()));
+            sizeX = dim.getSize();
+            break;
+          case Z_VAR:
+            numZ = size;
+            zDims.put(name, ncDim);
+            v.addAttribute(new Attribute(CDM.LONG_NAME, "level"));
+            addZAttributes(dim, v);
+            break;
+          case TIME_VAR:
+            v.addAttribute(new Attribute(CDM.LONG_NAME, "time"));
+            v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Time.toString()));
+            break;
         }
         ArrayDouble.D1 varArray = new ArrayDouble.D1(size);
         for (int i = 0; i < vals.length; i++) {
@@ -379,11 +353,9 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
           if (zDims.get(name) == null) {
             Dimension ncDim = new Dimension(name, nl, true);
             ncFile.addDimension(null, ncDim);
-            Variable vz = new Variable(ncFile, null, null, name,
-                    DataType.DOUBLE, name);
+            Variable vz = new Variable(ncFile, null, null, name, DataType.DOUBLE, name);
             vz.addAttribute(new Attribute(CDM.LONG_NAME, name));
-            vz.addAttribute(new Attribute(CDM.UNITS,
-                    zDim.getUnit()));
+            vz.addAttribute(new Attribute(CDM.UNITS, zDim.getUnit()));
             addZAttributes(zDim, vz);
             ArrayDouble.D1 varArray = new ArrayDouble.D1(nl);
             for (int i = 0; i < nl; i++) {
@@ -396,7 +368,6 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
         }
       }
     }
-    zDims = null;
     for (GradsVariable var : vars) {
       String coords = "latitude longitude";
       int nl = var.getNumLevels();
@@ -411,54 +382,41 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
       if (gradsDDF.getEnsembleDimension() != null) {
         coords = "ensemble " + coords;
       }
-      v = new Variable(ncFile, null, null, var.getName(),
-              DataType.FLOAT, coords);
+      v = new Variable(ncFile, null, null, var.getName(), DataType.FLOAT, coords);
       v.addAttribute(new Attribute(CDM.LONG_NAME, var.getDescription()));
       if (var.getUnitName() != null) {
         v.addAttribute(new Attribute(CDM.UNITS, var.getUnitName()));
       }
-      v.addAttribute(new Attribute(CDM.FILL_VALUE, new Float(gradsDDF.getMissingValue())));
-      v.addAttribute(new Attribute(CDM.MISSING_VALUE, new Float(gradsDDF.getMissingValue())));
+      v.addAttribute(new Attribute(CDM.FILL_VALUE, (float) gradsDDF.getMissingValue()));
+      v.addAttribute(new Attribute(CDM.MISSING_VALUE, (float) gradsDDF.getMissingValue()));
       for (GradsAttribute attr : attrs) {
         if (attr.getVariable().equalsIgnoreCase(var.getName())) {
           // TODO: what to do about a UINT16/32
-          if (attr.getType().equalsIgnoreCase(
-                  GradsAttribute.STRING)) {
-            v.addAttribute(new Attribute(attr.getName(),
-                    attr.getValue()));
-          } else if (attr.getType().equalsIgnoreCase(
-                  GradsAttribute.BYTE)) {
+          if (attr.getType().equalsIgnoreCase(GradsAttribute.STRING)) {
+            v.addAttribute(new Attribute(attr.getName(), attr.getValue()));
+          } else if (attr.getType().equalsIgnoreCase(GradsAttribute.BYTE)) {
             try {
-              v.addAttribute(new Attribute(attr.getName(),
-                      new Byte(attr.getValue())));
+              v.addAttribute(new Attribute(attr.getName(), new Byte(attr.getValue())));
             } catch (NumberFormatException nfe) {
             }
-          } else if (attr.getType().equalsIgnoreCase(
-                  GradsAttribute.INT16)) {
+          } else if (attr.getType().equalsIgnoreCase(GradsAttribute.INT16)) {
             try {
-              v.addAttribute(new Attribute(attr.getName(),
-                      new Short(attr.getValue())));
+              v.addAttribute(new Attribute(attr.getName(), new Short(attr.getValue())));
             } catch (NumberFormatException nfe) {
             }
-          } else if (attr.getType().equalsIgnoreCase(
-                  GradsAttribute.INT32)) {
+          } else if (attr.getType().equalsIgnoreCase(GradsAttribute.INT32)) {
             try {
-              v.addAttribute(new Attribute(attr.getName(),
-                      new Integer(attr.getValue())));
+              v.addAttribute(new Attribute(attr.getName(), new Integer(attr.getValue())));
             } catch (NumberFormatException nfe) {
             }
-          } else if (attr.getType().equalsIgnoreCase(
-                  GradsAttribute.FLOAT32)) {
+          } else if (attr.getType().equalsIgnoreCase(GradsAttribute.FLOAT32)) {
             try {
-              v.addAttribute(new Attribute(attr.getName(),
-                      new Float(attr.getValue())));
+              v.addAttribute(new Attribute(attr.getName(), new Float(attr.getValue())));
             } catch (NumberFormatException nfe) {
             }
-          } else if (attr.getType().equalsIgnoreCase(
-                  GradsAttribute.FLOAT64)) {
+          } else if (attr.getType().equalsIgnoreCase(GradsAttribute.FLOAT64)) {
             try {
-              v.addAttribute(new Attribute(attr.getName(),
-                      new Double(attr.getValue())));
+              v.addAttribute(new Attribute(attr.getName(), new Double(attr.getValue())));
             } catch (NumberFormatException nfe) {
             }
           }
@@ -468,20 +426,14 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
     }
     // Global Attributes
     ncFile.addAttribute(null, new Attribute(CDM.CONVENTIONS, "CF-1.0"));
-    ncFile.addAttribute(
-            null,
-            new Attribute(
-                    CDM.HISTORY,
-                    "Direct read of GrADS binary grid into NetCDF-Java 4 API"));
+    ncFile.addAttribute(null, new Attribute(CDM.HISTORY, "Direct read of GrADS binary grid into NetCDF-Java 4 API"));
     String title = gradsDDF.getTitle();
     if ((title != null) && !title.isEmpty()) {
       ncFile.addAttribute(null, new Attribute("title", title));
     }
     for (GradsAttribute attr : attrs) {
       if (attr.getVariable().equalsIgnoreCase(GradsAttribute.GLOBAL)) {
-        ncFile.addAttribute(null,
-                new Attribute(attr.getName(),
-                        attr.getValue()));
+        ncFile.addAttribute(null, new Attribute(attr.getName(), attr.getValue()));
       }
     }
 
@@ -491,17 +443,15 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
    * Add the appropriate attributes for a Z dimension
    *
    * @param zDim The GrADS Z dimension
-   * @param v    the variable to augment
+   * @param v the variable to augment
    */
   private void addZAttributes(GradsDimension zDim, Variable v) {
-    if (zDim.getUnit().indexOf("Pa") >= 0) {
+    if (zDim.getUnit().contains("Pa")) {
       v.addAttribute(new Attribute(CF.POSITIVE, CF.POSITIVE_DOWN));
-      v.addAttribute(new Attribute(_Coordinate.AxisType,
-              AxisType.Pressure.toString()));
+      v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Pressure.toString()));
     } else {
       v.addAttribute(new Attribute(CF.POSITIVE, CF.POSITIVE_UP));
-      v.addAttribute(new Attribute(_Coordinate.AxisType,
-              AxisType.Height.toString()));
+      v.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Height.toString()));
     }
   }
 
@@ -513,24 +463,21 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
    * @throws IOException problem reading stuff
    */
   private float[] readGrid(int index) throws IOException {
-    //System.out.println("grid number: " + index);
-    // NB: RandomAccessFile.skipBytes only takes an int.   For files larger than
+    // NB: RandomAccessFile.skipBytes only takes an int. For files larger than
     // 2GB, that is problematic, so we use offset as a long
     long offset = 0;
     dataFile.seek(offset);
     // skip over the file header
-    //dataFile.skipBytes(fileHeaderBytes);
+    // dataFile.skipBytes(fileHeaderBytes);
     offset += fileHeaderBytes;
     // The full record structure of a Fortran sequential binary file is:
-    //  [Length] [Record 1 data] [Length]
-    //  [Length] [Record 2 data] [Length]
-    //  [Length] [Record 3 data] [Length]
-    //  ...
-    //  [End of file]
+    // [Length] [Record 1 data] [Length]
+    // [Length] [Record 2 data] [Length]
+    // [Length] [Record 3 data] [Length]
+    // ...
+    // [End of file]
     // so we have to add 2*sequentialRecordBytes for each record we skip,
-    offset += (sizeX * sizeY * wordSize + xyHeaderBytes
-            + 2l * sequentialRecordBytes) * (long) index;
-    //System.out.println("offset to grid = " + offset);
+    offset += (sizeX * sizeY * wordSize + xyHeaderBytes + 2L * sequentialRecordBytes) * (long) index;
 
     // TODO: make sure this works - need an example
     int curTimeStep = index / gradsDDF.getGridsPerTimeStep();
@@ -540,7 +487,7 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
     offset += curTimeStep * timeTrailerBytes;
     // and then 1 sequentialRecordBytes for the record itself (+ xyHeader)
     offset += (xyHeaderBytes + sequentialRecordBytes);
-    //dataFile.skipBytes(offset);
+    // dataFile.skipBytes(offset);
     dataFile.seek(offset);
     float[] data = new float[sizeX * sizeY];
     dataFile.readFloat(data, 0, sizeX * sizeY);
@@ -585,37 +532,31 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
       }
     }
 
-    return null;  // can't happen?
+    return null; // can't happen?
   }
 
 
   /**
    * Read the data for the variable
    *
-   * @param v2      Variable to read
+   * @param v2 Variable to read
    * @param section section infomation
    * @return Array of data
-   * @throws IOException           problem reading from file
+   * @throws IOException problem reading from file
    * @throws InvalidRangeException invalid Range
    */
-  public Array readData(Variable v2, Section section)
-          throws IOException, InvalidRangeException {
+  public Array readData(Variable v2, Section section) throws IOException, InvalidRangeException {
 
     Array dataArray = Array.factory(DataType.FLOAT, section.getShape());
     GradsVariable gradsVar = findVar(v2);
-    if (gradsVar == null) throw new IOException();
+    if (gradsVar == null)
+      throw new IOException();
 
     // Canonical ordering is ens, time, level, lat, lon
     int rangeIdx = 0;
-    Range ensRange = (gradsDDF.getEnsembleDimension() != null)
-            ? section.getRange(rangeIdx++)
-            : new Range(0, 0);
-    Range timeRange = (section.getRank() > 2)
-            ? section.getRange(rangeIdx++)
-            : new Range(0, 0);
-    Range levRange = (gradsVar.getNumLevels() > 0)
-            ? section.getRange(rangeIdx++)
-            : new Range(0, 0);
+    Range ensRange = (gradsDDF.getEnsembleDimension() != null) ? section.getRange(rangeIdx++) : new Range(0, 0);
+    Range timeRange = (section.getRank() > 2) ? section.getRange(rangeIdx++) : new Range(0, 0);
+    Range levRange = (gradsVar.getNumLevels() > 0) ? section.getRange(rangeIdx++) : new Range(0, 0);
     Range yRange = section.getRange(rangeIdx++);
     Range xRange = section.getRange(rangeIdx);
 
@@ -632,46 +573,33 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
   /**
    * read one YX array
    *
-   * @param v2      variable to put the data into
-   * @param ensIdx  ensemble index
+   * @param v2 variable to put the data into
+   * @param ensIdx ensemble index
    * @param timeIdx time index
-   * @param levIdx  level index
-   * @param yRange  x range
-   * @param xRange  y range
-   * @param ii      index iterator
-   * @throws IOException           problem reading the file
-   * @throws InvalidRangeException invalid range
+   * @param levIdx level index
+   * @param yRange x range
+   * @param xRange y range
+   * @param ii index iterator
+   * @throws IOException problem reading the file
    */
-  private void readXY(Variable v2, int ensIdx, int timeIdx, int levIdx,
-                      Range yRange, Range xRange, IndexIterator ii)
-          throws IOException, InvalidRangeException {
-
-    //System.out.println("ens: " + ensIdx + " , time = " + timeIdx
-    //                   + ", lev = " + levIdx);
-
+  private void readXY(Variable v2, int ensIdx, int timeIdx, int levIdx, Range yRange, Range xRange, IndexIterator ii)
+      throws IOException {
 
     dataFile = getDataFile(ensIdx, timeIdx);
     List<GradsVariable> vars = gradsDDF.getVariables();
     // if it's an ensemble template, then all data is in this file
-    int numEns =
-            ((gradsDDF.getTemplateType()
-                    == GradsDataDescriptorFile.ENS_TEMPLATE) || (gradsDDF
-                    .getTemplateType() == GradsDataDescriptorFile
-                    .ENS_TIME_TEMPLATE))
-                    ? 0
-                    : ensIdx;
+    int numEns = ((gradsDDF.getTemplateType() == GradsDataDescriptorFile.ENS_TEMPLATE)
+        || (gradsDDF.getTemplateType() == GradsDataDescriptorFile.ENS_TIME_TEMPLATE)) ? 0 : ensIdx;
     // if it's a time template figure out how many previous times we should use
     int numTimes = gradsDDF.getTimeDimension().getSize();
-    if ((gradsDDF.getTemplateType() == GradsDataDescriptorFile
-            .TIME_TEMPLATE) || (gradsDDF
-            .getTemplateType() == GradsDataDescriptorFile
-            .ENS_TIME_TEMPLATE)) {
+    if ((gradsDDF.getTemplateType() == GradsDataDescriptorFile.TIME_TEMPLATE)
+        || (gradsDDF.getTemplateType() == GradsDataDescriptorFile.ENS_TIME_TEMPLATE)) {
       int[] tpf = gradsDDF.getTimeStepsPerFile(dataFile.getLocation());
       numTimes = tpf[0];
       timeIdx = (timeIdx - tpf[1]) % numTimes;
     }
     int gridNum = numEns * numTimes * gradsDDF.getGridsPerTimeStep();
-    // loop up to  the last time in the last ensemble
+    // loop up to the last time in the last ensemble
     for (int t = 0; t < timeIdx; t++) {
       for (GradsVariable var : vars) {
         int numVLevels = var.getNumLevels();
@@ -683,7 +611,7 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
         }
       }
     }
-    // loop up to  the last level in the last time in the last ensemble
+    // loop up to the last level in the last time in the last ensemble
     for (GradsVariable var : vars) {
       int numVLevels = var.getNumLevels();
       if (numVLevels == 0) {
@@ -719,7 +647,7 @@ public class GradsBinaryGridServiceProvider extends AbstractIOServiceProvider {
   private RandomAccessFile getDataFile(int eIndex, int tIndex) throws IOException {
 
     String dataFilePath = gradsDDF.getFileName(eIndex, tIndex);
-    if (!gradsDDF.isTemplate()) {  // we only have one file
+    if (!gradsDDF.isTemplate()) { // we only have one file
       if (dataFile != null) {
         return dataFile;
       }

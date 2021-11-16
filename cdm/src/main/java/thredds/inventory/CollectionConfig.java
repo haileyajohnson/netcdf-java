@@ -22,22 +22,7 @@ public class CollectionConfig {
 
   /**
    * Constructor
-   * @param name name of collection
-   * @param dirName top directory name
-   * @param wantSubdirs if want subdirectories
-   * @param filters optional list of MFileFilter (may be null) - applies only to non-directories, assumed include OR include ....
-   * @param auxInfo optional info added to each MFile
-   *
-  public CollectionConfig(String name, String dirName, boolean wantSubdirs, List<MFileFilter> filters, Object auxInfo) {
-    this.name = name;
-    this.dirName = dirName;
-    this.wantSubdirs = wantSubdirs;
-    ff = (filters == null || filters.size() == 0) ? null : ((filters.size() == 1) ? filters.get(0) : new CompositeMFileFilter(filters));
-    this.auxInfo = auxInfo;
-  } */
-
-  /**
-   * Constructor
+   * 
    * @param name name of collection
    * @param dirName top directory name
    * @param wantSubdirs if want subdirectories
@@ -53,7 +38,8 @@ public class CollectionConfig {
   }
 
   public CollectionConfig subdir(MFile child) {
-    return new CollectionConfig( name+"/"+child.getName(), dirName+"/"+child.getName(), wantSubdirs, ff, child.getAuxInfo());
+    return new CollectionConfig(name + "/" + child.getName(), dirName + "/" + child.getName(), wantSubdirs, ff,
+        child.getAuxInfo());
   }
 
   public String getName() {
@@ -79,12 +65,8 @@ public class CollectionConfig {
 
   @Override
   public String toString() {
-    return "MCollection{" +
-        "name='" + name + '\'' +
-        ", dirName='" + dirName + '\'' +
-        ", wantSubdirs=" + wantSubdirs +
-        ", filter=" + ff +
-        '}';
+    return "MCollection{" + "name='" + name + '\'' + ", dirName='" + dirName + '\'' + ", wantSubdirs=" + wantSubdirs
+        + ", filter=" + ff + '}';
   }
 
 

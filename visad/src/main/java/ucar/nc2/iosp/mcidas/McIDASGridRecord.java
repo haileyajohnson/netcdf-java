@@ -9,9 +9,7 @@ package ucar.nc2.iosp.mcidas;
 import edu.wisc.ssec.mcidas.GridDirectory;
 import edu.wisc.ssec.mcidas.McIDASException;
 import edu.wisc.ssec.mcidas.McIDASUtil;
-
 import ucar.nc2.iosp.grid.*;
-
 import java.util.Formatter;
 
 
@@ -25,7 +23,7 @@ public class McIDASGridRecord extends GridDirectory implements GridRecord {
   /**
    * offset to header
    */
-  private int offsetToHeader;  // offset to header
+  private int offsetToHeader; // offset to header
 
   /**
    * grid definition
@@ -35,7 +33,7 @@ public class McIDASGridRecord extends GridDirectory implements GridRecord {
   /**
    * decimal scale
    */
-  private int decimalScale = 0;
+  private int decimalScale;
 
   /**
    * Create a grid header from the integer bits
@@ -74,9 +72,9 @@ public class McIDASGridRecord extends GridDirectory implements GridRecord {
    * @return level type
    */
   public int getLevelType1() {
-    // TODO:  flush this out
+    // TODO: flush this out
     int gribLevel = getDirBlock()[51];
-    int levelType = 0;
+    int levelType;
     if (!((gribLevel == McIDASUtil.MCMISSING) || (gribLevel == 0))) {
       levelType = gribLevel;
     } else {
@@ -191,7 +189,7 @@ public class McIDASGridRecord extends GridDirectory implements GridRecord {
 
     if (useLevel) {
       String levelName = lookup.getLevelName(this);
-      if (levelName.length() != 0) {
+      if (!levelName.isEmpty()) {
         if (lookup.isLayer(this))
           f.format("_%s_layer", lookup.getLevelName(this));
         else

@@ -4,8 +4,8 @@
  */
 package thredds.client.catalog;
 
-import ucar.nc2.constants.CDM;
-
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -26,10 +26,10 @@ public class Documentation {
   /**
    * Constructor.
    *
-   * @param href          : href of documentation, may be null.
-   * @param uri           : absolute URL, or null
-   * @param title         : Xlink title, may be null.
-   * @param type          : user-defined InvDocumentation type
+   * @param href : href of documentation, may be null.
+   * @param uri : absolute URL, or null
+   * @param title : Xlink title, may be null.
+   * @param type : user-defined InvDocumentation type
    * @param inlineContent : optional inline contents.
    */
   public Documentation(String href, URI uri, String title, String type, String inlineContent) {
@@ -92,49 +92,49 @@ public class Documentation {
    * @return inline content as a string, else null
    */
   public String readXlinkContent() throws java.io.IOException {
-    if (uri == null) return "";
+    if (uri == null)
+      return "";
 
     URL url = uri.toURL();
-    InputStream is = url.openStream();
-    ByteArrayOutputStream os = new ByteArrayOutputStream(is.available());
+    try (InputStream is = url.openStream(); ByteArrayOutputStream os = new ByteArrayOutputStream(is.available())) {
 
-    // copy to string
-    byte[] buffer = new byte[1024];
-    while (true) {
-      int bytesRead = is.read(buffer);
-      if (bytesRead == -1) break;
-      os.write(buffer, 0, bytesRead);
+      // copy to string
+      byte[] buffer = new byte[1024];
+      while (true) {
+        int bytesRead = is.read(buffer);
+        if (bytesRead == -1)
+          break;
+        os.write(buffer, 0, bytesRead);
+      }
+      return new String(os.toByteArray(), StandardCharsets.UTF_8);
     }
-    is.close();
-
-    return new String(os.toByteArray(), CDM.utf8Charset);
   }
 
   @Override
   public String toString() {
-    return "Documentation{" +
-            "href='" + href + '\'' +
-            ", title='" + title + '\'' +
-            ", type='" + type + '\'' +
-            ", inlineContent='" + inlineContent + '\'' +
-            ", uri=" + uri +
-            '}';
+    return "Documentation{" + "href='" + href + '\'' + ", title='" + title + '\'' + ", type='" + type + '\''
+        + ", inlineContent='" + inlineContent + '\'' + ", uri=" + uri + '}';
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
 
     Documentation that = (Documentation) o;
 
-    if (href != null ? !href.equals(that.href) : that.href != null) return false;
-    if (inlineContent != null ? !inlineContent.equals(that.inlineContent) : that.inlineContent != null) return false;
-    if (title != null ? !title.equals(that.title) : that.title != null) return false;
-    if (type != null ? !type.equals(that.type) : that.type != null) return false;
-    if (uri != null ? !uri.equals(that.uri) : that.uri != null) return false;
+    if (!Objects.equals(href, that.href))
+      return false;
+    if (!Objects.equals(inlineContent, that.inlineContent))
+      return false;
+    if (!Objects.equals(title, that.title))
+      return false;
+    if (!Objects.equals(type, that.type))
+      return false;
+    return Objects.equals(uri, that.uri);
 
-    return true;
   }
 
   @Override

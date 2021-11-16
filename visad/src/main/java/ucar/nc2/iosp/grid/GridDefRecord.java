@@ -6,7 +6,6 @@
 package ucar.nc2.iosp.grid;
 
 import ucar.nc2.util.Misc;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +33,8 @@ public abstract class GridDefRecord {
 
   /**
    * Wind flag
-   * @deprecated  use Grib2Tables.VectorComponentFlag
+   * 
+   * @deprecated use Grib2Tables.VectorComponentFlag
    */
   public static final String WIND_FLAG = "Winds";
 
@@ -256,8 +256,7 @@ public abstract class GridDefRecord {
   /**
    * Radius of spherical earth
    */
-  public static final String RADIUS_SPHERICAL_EARTH =
-      "grid_radius_spherical_earth";
+  public static final String RADIUS_SPHERICAL_EARTH = "grid_radius_spherical_earth";
 
   /**
    * major axis of earth
@@ -289,37 +288,37 @@ public abstract class GridDefRecord {
   /**
    * A Map to hold grid parameter definitions of String
    */
-  private final Map<String, String> paramStr = new HashMap<String, String>();
+  private final Map<String, String> paramStr = new HashMap<>();
 
   /**
    * A Map to hold grid parameter definitions of Integer
    */
-  private final Map<String, Integer> paramInt = new HashMap<String, Integer>();
+  private final Map<String, Integer> paramInt = new HashMap<>();
 
   /**
    * A Map to hold grid parameter definitions of Double
    */
-  private final Map<String, Double> paramDbl = new HashMap<String, Double>();
+  private final Map<String, Double> paramDbl = new HashMap<>();
 
   /**
    * String of all parameters with their values
    */
   private String paramsValues;
-  
+
 
   /*
-  * These and other projection type int/double vars are store in the
-  * approprite MAPs  paramInt and paramDble for quick access without
-  * conversion except for the first request. Use routines:
-  * getInt( String ) and getDouble( String )
-  *
-  * public String gdsKey, winds;
-  * public int grid_type, nx, ny, resolution;
-  * public double dx, dy;
-  * public double latin1, latin2, La1, Lo1, LaD, LoV;
-  * public int grid_shape_code;
-  * public double radius_spherical_earth, major_axis_earth, minor_axis_earth;
-  */
+   * These and other projection type int/double vars are store in the
+   * approprite MAPs paramInt and paramDble for quick access without
+   * conversion except for the first request. Use routines:
+   * getInt( String ) and getDouble( String )
+   *
+   * public String gdsKey, winds;
+   * public int grid_type, nx, ny, resolution;
+   * public double dx, dy;
+   * public double latin1, latin2, La1, Lo1, LaD, LoV;
+   * public int grid_shape_code;
+   * public double radius_spherical_earth, major_axis_earth, minor_axis_earth;
+   */
 
   /**
    * constructors.
@@ -339,70 +338,64 @@ public abstract class GridDefRecord {
   /**
    * adds a param and value.
    *
-   * @param key   name of the param
+   * @param key name of the param
    * @param value of the param
    */
   public final void addParam(String key, String value) {
-    //System.out.println(" adding " + key + " = " + value);
     paramStr.put(key.trim(), value);
-    paramsValues = paramsValues +"\t"+ key +"\t"+ value;
+    paramsValues = paramsValues + "\t" + key + "\t" + value;
   }
 
   /**
    * adds a param and value.
    *
-   * @param key   name of the param
+   * @param key name of the param
    * @param value of the param
    */
   public final void addParam(String key, int value) {
-    //System.out.println(" adding " + key + " = " + value);
-    paramInt.put(key, new Integer(value));
+    paramInt.put(key, value);
     paramStr.put(key, Integer.toString(value));
   }
 
   /**
    * adds a param and value.
    *
-   * @param key   name of the param
+   * @param key name of the param
    * @param value of the param
    */
   public final void addParam(String key, Integer value) {
-    //System.out.println(" adding " + key + " = " + value);
     paramInt.put(key, value);
   }
 
   /**
    * adds a param and value.
    *
-   * @param key   name of the param
+   * @param key name of the param
    * @param value of the param
    */
   public final void addParam(String key, float value) {
-    //System.out.println(" adding " + key + " = " + value);
-    paramDbl.put(key, new Double (value));
+    paramDbl.put(key, (double) value);
     paramStr.put(key, Float.toString(value));
   }
 
   /**
    * adds a param and value.
    *
-   * @param key   name of the param
+   * @param key name of the param
    * @param value of the param
    */
   public final void addParam(String key, double value) {
-    //System.out.println(" adding " + key + " = " + value);
-    paramDbl.put(key, new Double (value));
+    paramDbl.put(key, value);
     paramStr.put(key, Double.toString(value));
   }
 
   /**
    * adds a param and value.
    *
-   * @param key   name of the param
+   * @param key name of the param
    * @param value of the param
    */
   public final void addParam(String key, Double value) {
-    //System.out.println(" adding " + key + " = " + value);
     paramDbl.put(key, value);
   }
 
@@ -414,32 +407,33 @@ public abstract class GridDefRecord {
    */
   public final String getParam(String key) {
     String value = paramStr.get(key);
-    if(value == null) { // check the dbl and int tables
-        Double result = paramDbl.get(key);
-        if (result != null) {
-            value = result.toString();
-        } else {
-            Integer intResult = paramInt.get(key);
-            if (intResult != null) {
-                value = intResult.toString();
-            }
+    if (value == null) { // check the dbl and int tables
+      Double result = paramDbl.get(key);
+      if (result != null) {
+        value = result.toString();
+      } else {
+        Integer intResult = paramInt.get(key);
+        if (intResult != null) {
+          value = intResult.toString();
         }
-        // save it back off to the string table for next time
-        if (value != null) {
-            paramStr.put(key, value);
-        }
+      }
+      // save it back off to the string table for next time
+      if (value != null) {
+        paramStr.put(key, value);
+      }
     }
     if (debug && value == null) {
-        System.out.println( key +" value not found");
+      System.out.println(key + " value not found");
     }
     return value;
   }
 
   /*
-  * Only converts the String param to a int once, then stores it as a
-  * Integer in paramInt Map for future accesses
-  * @deprecated use getInt()
-  */
+   * Only converts the String param to a int once, then stores it as a
+   * Integer in paramInt Map for future accesses
+   * 
+   * @deprecated use getInt()
+   */
   public final int getParamInt(String key) {
     return getInt(key);
   }
@@ -447,7 +441,7 @@ public abstract class GridDefRecord {
   public final int getInt(String key) {
     Integer result = paramInt.get(key);
     if (result != null) {
-      return result.intValue();
+      return result;
     } else {
       String value = paramStr.get(key);
       if (value != null) {
@@ -455,32 +449,33 @@ public abstract class GridDefRecord {
           result = new Integer(value.trim());
         } catch (NumberFormatException e) {
           // number might be written as int like 65.0
-          double dvalue = getDouble( key );
-          if ( ! Double.isNaN(dvalue )) {
-            result = new Integer( (int) dvalue );
+          double dvalue = getDouble(key);
+          if (!Double.isNaN(dvalue)) {
+            result = (int) dvalue;
             paramInt.put(key, result);
-            return result.intValue();
+            return result;
           }
           e.printStackTrace();
-          if( debug )
-            System.out.println( key +" cannot be convert to Int");
+          if (debug)
+            System.out.println(key + " cannot be convert to Int");
           return UNDEFINED;
         }
         paramInt.put(key, result);
-        return result.intValue();
+        return result;
       } else {
-        if( debug )
-          System.out.println( key +" value not found");
+        if (debug)
+          System.out.println(key + " value not found");
         return UNDEFINED;
       }
     }
   }
 
   /*
-  * Only converts the String param to a double once, then stores it as a
-  * Double in paramDbl Map for future accesses
-  * @deprecated use getDouble()
-  */
+   * Only converts the String param to a double once, then stores it as a
+   * Double in paramDbl Map for future accesses
+   * 
+   * @deprecated use getDouble()
+   */
   public final double getParamDouble(String key) {
     return getDouble(key);
   }
@@ -488,7 +483,7 @@ public abstract class GridDefRecord {
   public final double getDouble(String key) {
     Double result = paramDbl.get(key);
     if (result != null) {
-      return result.doubleValue();
+      return result;
     } else {
       String value = paramStr.get(key);
       if (value != null) {
@@ -496,15 +491,15 @@ public abstract class GridDefRecord {
           result = new Double(value.trim());
         } catch (NumberFormatException e) {
           e.printStackTrace();
-          if( debug )
-            System.out.println( key +" cannot be convert to Double");
+          if (debug)
+            System.out.println(key + " cannot be convert to Double");
           return Double.NaN;
         }
         paramDbl.put(key, result);
-        return result.doubleValue();
+        return result;
       } else {
-        if( debug )
-          System.out.println( key +" value not found");
+        if (debug)
+          System.out.println(key + " value not found");
         return Double.NaN;
       }
     }
@@ -512,6 +507,7 @@ public abstract class GridDefRecord {
 
   /**
    * get the hcs as a String of params values
+   * 
    * @return the hcs as a String of params values
    */
   public String getParamsValues() {
@@ -551,33 +547,32 @@ public abstract class GridDefRecord {
    * differ in 3 or 4th decimal places will return equal. This is being coded
    * because the NDFD model dx differ in the 3 decimal place otherwise equal.
    */
-  public static boolean compare( GridDefRecord local, GridDefRecord other ) {
+  public static boolean compare(GridDefRecord local, GridDefRecord other) {
     java.util.Set<String> keys = local.getKeys();
     java.util.Set<String> okeys = other.getKeys();
-    if( keys.size() != okeys.size() )
+    if (keys.size() != okeys.size())
       return false;
 
-    for( String key : keys ) {
-      if( key.equals(WIND_FLAG) || key.equals(RESOLUTION) || key.equals(VECTOR_COMPONENT_FLAG)
-        || key.equals(GDS_KEY))
+    for (String key : keys) {
+      if (key.equals(WIND_FLAG) || key.equals(RESOLUTION) || key.equals(VECTOR_COMPONENT_FLAG) || key.equals(GDS_KEY))
         continue;
 
-      String val = local.getParam( key );
-      String oval = other.getParam( key );   //
+      String val = local.getParam(key);
+      String oval = other.getParam(key); //
 
-      if( val.matches( "^[0-9]+\\.[0-9]*")) {
-        //double
-        double d = local.getDouble( key );
-        double od = other.getDouble( key );
-        if( ! Misc.nearlyEquals(d, od) )
+      if (val.matches("^[0-9]+\\.[0-9]*")) {
+        // double
+        double d = local.getDouble(key);
+        double od = other.getDouble(key);
+        if (!Misc.nearlyEquals(d, od))
           return false;
-      } else if( val.matches( "^[0-9]+")) {
+      } else if (val.matches("^[0-9]+")) {
         // int
-        if( !val.equals( oval ))
+        if (!val.equals(oval))
           return false;
       } else {
         // String
-        if( !val.equals( oval ))
+        if (!val.equals(oval))
           return false;
       }
     }
