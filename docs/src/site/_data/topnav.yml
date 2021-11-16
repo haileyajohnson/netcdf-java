@@ -21,10 +21,6 @@ topnav_dropdowns:
             external_url: https://docs.unidata.ucar.edu/netcdf-java/5.0/userguide/index.html
           - title: Public API
             external_url: https://docs.unidata.ucar.edu/netcdf-java/5.0/javadoc/index.html
-          - title: Current Developer's Guide
-            external_url: https://docs.unidata.ucar.edu/netcdf-java/current/developer/index.html
-          - title: NcML
-            external_url: https://docs.unidata.ucar.edu/thredds/current/2.2/index.html
 
       - title: TDS
         folderitems:
