@@ -1,0 +1,5 @@
+// Explicitly name the root project. See: http://stackoverflow.com/questions/20128416
+rootProject.name = 'netcdf-java'
+
+// These all refer to subdirectory names.
+include 'docs'

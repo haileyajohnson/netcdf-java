@@ -1,0 +1,107 @@
+// The buildscript {} block is evaluated before anything else in the script (regardless of location in file).
+// See http://goo.gl/EO8S1k. So, might as well put it first.
+//
+// Due to a Gradle limitation, we cannot externalize this buildscript block into a script plugin. However, we can
+// exploit the fact that dependencies specified in a parent's buildscript block are visible to all children.
+// Thus, as long as we declare all plugins here, no child needs its own buildscript block. See http://goo.gl/2y3KhZ.
+buildscript {
+    // Add the "libraries" ExtraProperty. It should be usable from the rest of this script as well.
+    // See http://goo.gl/9bixNV
+    apply from: "$rootDir/gradle/any/dependencies.gradle"
+
+    // The buildscript {} block is odd: even though we applied dependencies.gradle above, the repositories therein
+    // do not get included here. Instead, we must explicitly define the repos again. Yay for duplication.
+    repositories {
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"  // For Gradle plugins.
+        }
+        // Unidata jekyll and nexus plugins
+        maven {
+            url "https://artifacts.unidata.ucar.edu/repository/unidata-all/"
+        }
+    }
+
+    dependencies {
+        classpath libraries["gretty"]
+        classpath libraries["shadow"]
+        classpath libraries["coveralls-gradle-plugin"]
+        classpath libraries["sonarqube-gradle-plugin"]
+        classpath libraries["license-gradle-plugin"]
+
+        classpath libraries["guava"]  // For various utility methods used in the build scripts.
+        classpath libraries['nexus']
+        classpath libraries['jekyll']
+    }
+}
+
+allprojects {
+    // Matches Maven's "project.groupId". Used in MANIFEST.MF for "Implementation-Vendor-Id".
+    group = "edu.ucar"
+    // Matches Maven's "project.version". Used in MANIFEST.MF for "Implementation-Version".
+    // We try to follow semantic versioning, and thus we use <major>.<minor>.<patch>-<prerelease version>
+    // <prerelease version> may be SNAPSHOT, alphax, betax, etc.
+    version = '5.0.0'
+    // Eventually, we'll stop appending "SNAPSHOT" to our versions and just use this.
+    status = 'release'
+}
+
+// Matches Maven's "project.description".
+description = "The Unidata netCDF-Java library (aka CDM) "
+
+import java.text.SimpleDateFormat
+
+// These will be inherited by subprojects: http://goo.gl/5mvqf7
+// After declaration, they should NOT be referred to using the "ext" namespace, instead preferring e.g.
+// "project.title" or simply "title": http://stackoverflow.com/questions/14530901
+// That way, the property will be robustly resolved, as described here: http://goo.gl/UBq0en
+// Otherwise, only the one specific ExtraPropertiesExtension will be searched.
+ext {
+    // Matches Maven's "project.name". Used in MANIFEST.MF for "Implementation-Title".
+    title = "CDM modules"
+
+    // Matches Maven's "project.organization.name". Used in MANIFEST.MF for "Implementation-Vendor".
+    vendor = "UCAR/Unidata"
+
+    // It makes sense to publish major.minor versions of the docs, as
+    // any patch bumps should be backwards compatible bug fixes only
+    // To do this, we need to make a special "doc version" string.
+    // First, drop any dangling snapshot, alpha, beta tags
+    cleanVersion = "$version".split("-")[0]
+
+    // tokenize version on the '.' character, which gives us a list of [major, minor, patch]
+    docVersionParts = cleanVersion.tokenize('.')
+
+    // we should always have a major, minor, and patch value in our version
+    assert docVersionParts.size == 3
+
+    // keep major and minor parts of the version and use those to version the docs
+    docVersion = docVersionParts[0] + "." + docVersionParts[1]
+    
+    // Matches Maven's "project.url". Used in MANIFEST.MF for "Implementation-URL".
+    url = "https://docs.unidata.ucar.edu/netcdf-java/$docVersion/userguide/index.html"
+
+    SimpleDateFormat iso_8601_format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+    buildTimestamp = iso_8601_format.format(new Date())
+    
+    // Project groups
+    javaProjects = subprojects.findAll { it.plugins.withType(JavaPlugin) }
+    
+    internalProjects = subprojects.findAll { it.path in [
+            ':dap4', ':dap4:d4tests', ':docs', ':cdm-test', ':testUtil'
+    ] }
+    
+    publishedProjects = subprojects - internalProjects
+}
+
+//apply from: "$rootDir/gradle/root/testing.gradle"
+//apply from: "$rootDir/gradle/root/coverage.gradle"
+//apply from: "$rootDir/gradle/root/fatJars.gradle"
+//apply from: "$rootDir/gradle/root/publishing.gradle" // Creates pubs for artifacts created in fatJars.gradle
+//apply from: "$rootDir/gradle/root/sonarqube.gradle"
+//apply from: "$rootDir/gradle/root/license.gradle"
+
+//apply from: "$rootDir/gradle/any/coverage.gradle"    // Modifies Test task from root/testing.gradle and
+                                                     // JacocoReport task from root/coverage.gradle
+//apply from: "$rootDir/gradle/any/archiving.gradle"   // Modifies Jar tasks created in fatJars.gradle
+//apply from: "$rootDir/gradle/any/publishing.gradle"  // Modifies pubs created in root/publishing.gradle
