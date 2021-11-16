@@ -1,0 +1,264 @@
+/*
+ * Copyright (c) 1998-2020 John Caron and University Corporation for Atmospheric Research/Unidata
+ * See LICENSE for license information.
+ */
+
+package ucar.nc2.internal.dataset;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.stream.Collectors;
+import javax.annotation.concurrent.Immutable;
+import ucar.nc2.Variable;
+import ucar.nc2.constants.AxisType;
+import ucar.nc2.dataset.CoordinateAxis;
+import ucar.nc2.dataset.CoordinateSystem;
+import ucar.nc2.dataset.CoordinateTransform;
+import ucar.nc2.dataset.NetcdfDataset;
+import ucar.nc2.dataset.VariableDS;
+import ucar.nc2.internal.dataset.transform.vertical.VerticalCTBuilder;
+
+/**
+ * A helper class for NetcdfDataset to build and manage coordinates.
+ * Probably want to move to ucar.nc2.internal.dataset, so its not part of the public API.
+ */
+@Immutable
+public class CoordinatesHelper {
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CoordinatesHelper.class);
+  private final List<CoordinateAxis> coordAxes;
+  private final List<CoordinateSystem> coordSystems;
+  private final List<CoordinateTransform> coordTransforms;
+
+  public List<CoordinateAxis> getCoordAxes() {
+    return coordAxes;
+  }
+
+  public List<CoordinateSystem> getCoordSystems() {
+    return coordSystems;
+  }
+
+  public Optional<CoordinateSystem> findCoordSystem(String name) {
+    return coordSystems.stream().filter(cs -> cs.getName().equals(name)).findFirst();
+  }
+
+  public List<CoordinateTransform> getCoordTransforms() {
+    return coordTransforms;
+  }
+
+  private CoordinatesHelper(Builder builder, NetcdfDataset ncd) {
+    this.coordAxes = new ArrayList<>();
+    for (Variable v : ncd.getVariables()) {
+      if (v instanceof CoordinateAxis) {
+        this.coordAxes.add((CoordinateAxis) v);
+      }
+    }
+    coordTransforms =
+        builder.coordTransforms.stream().map(ct -> ct.build(ncd)).filter(Objects::nonNull).collect(Collectors.toList());
+
+    coordTransforms.addAll(builder.verticalCTBuilder.stream().map(ct -> ct.makeVerticalCT(ncd)).filter(Objects::nonNull)
+        .collect(Collectors.toList()));
+
+    this.coordSystems = builder.coordSys.stream().map(s -> s.build(ncd, this.coordAxes, this.coordTransforms))
+        .collect(Collectors.toList());
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+    public List<CoordinateAxis.Builder> coordAxes = new ArrayList<>();
+    public List<CoordinateSystem.Builder> coordSys = new ArrayList<>();
+    public List<CoordinateTransform.Builder> coordTransforms = new ArrayList<>();
+    public List<VerticalCTBuilder> verticalCTBuilder = new ArrayList<>();
+    private boolean built;
+
+    public Builder addCoordinateAxis(CoordinateAxis.Builder axis) {
+      if (axis == null) {
+        return this;
+      }
+      coordAxes.add(axis);
+      return this;
+    }
+
+    public Builder addCoordinateAxes(Collection<CoordinateAxis.Builder> axes) {
+      Preconditions.checkNotNull(axes);
+      axes.forEach(a -> addCoordinateAxis(a));
+      return this;
+    }
+
+    public Optional<CoordinateAxis.Builder> findCoordinateAxis(String fullName) {
+      return coordAxes.stream().filter(axis -> axis.getFullName().equals(fullName)).findFirst();
+    }
+
+    public Optional<CoordinateAxis.Builder> findAxisByType(CoordinateSystem.Builder csys, AxisType type) {
+      for (CoordinateAxis.Builder<?> axis : getAxesForSystem(csys)) {
+        if (axis.axisType == type) {
+          return Optional.of(axis);
+        }
+      }
+      return Optional.empty();
+    }
+
+    public boolean replaceCoordinateAxis(CoordinateAxis.Builder<?> axis) {
+      Optional<CoordinateAxis.Builder> want = findCoordinateAxis(axis.getFullName());
+      want.ifPresent(v -> coordAxes.remove(v));
+      addCoordinateAxis(axis);
+      return want.isPresent();
+    }
+
+    // LOOK dedup
+    public Builder addCoordinateSystem(CoordinateSystem.Builder cs) {
+      Preconditions.checkNotNull(cs);
+      coordSys.add(cs);
+      return this;
+    }
+
+    public Builder addVerticalCTBuilder(VerticalCTBuilder vctb) {
+      verticalCTBuilder.add(vctb);
+      return this;
+    }
+
+    public Optional<CoordinateSystem.Builder> findCoordinateSystem(String coordAxesNames) {
+      Preconditions.checkNotNull(coordAxesNames);
+      return coordSys.stream().filter(cs -> cs.coordAxesNames.equals(coordAxesNames)).findFirst();
+    }
+
+    public Builder addCoordinateSystems(Collection<CoordinateSystem.Builder> systems) {
+      Preconditions.checkNotNull(systems);
+      coordSys.addAll(systems);
+      return this;
+    }
+
+    public Builder addCoordinateTransform(CoordinateTransform.Builder ct) {
+      Preconditions.checkNotNull(ct);
+      if (!findCoordinateTransform(ct.name).isPresent()) {
+        coordTransforms.add(ct);
+      }
+      return this;
+    }
+
+    public Builder addCoordinateTransforms(Collection<CoordinateTransform.Builder> transforms) {
+      Preconditions.checkNotNull(transforms);
+      transforms.forEach(ct -> addCoordinateTransform(ct));
+      return this;
+    }
+
+    private Optional<CoordinateTransform.Builder> findCoordinateTransform(String ctName) {
+      Preconditions.checkNotNull(ctName);
+      return coordTransforms.stream().filter(ct -> ct.name.equals(ctName)).findFirst();
+    }
+
+    public List<CoordinateAxis.Builder<?>> getAxesForSystem(CoordinateSystem.Builder cs) {
+      Preconditions.checkNotNull(cs);
+      List<CoordinateAxis.Builder<?>> axes = new ArrayList<>();
+      StringTokenizer stoker = new StringTokenizer(cs.coordAxesNames);
+      while (stoker.hasMoreTokens()) {
+        String vname = stoker.nextToken();
+        Optional<CoordinateAxis.Builder> vbOpt = findCoordinateAxis(vname);
+        if (vbOpt.isPresent()) {
+          axes.add(vbOpt.get());
+        } else {
+          findCoordinateAxis(vname);
+          throw new IllegalArgumentException("Cant find axis " + vname);
+        }
+      }
+      return axes;
+    }
+
+    public String makeCanonicalName(String axesNames) {
+      Preconditions.checkNotNull(axesNames);
+      List<CoordinateAxis.Builder> axes = new ArrayList<>();
+      StringTokenizer stoker = new StringTokenizer(axesNames);
+      while (stoker.hasMoreTokens()) {
+        String vname = stoker.nextToken();
+        Optional<CoordinateAxis.Builder> vbOpt = findCoordinateAxis(vname);
+        if (vbOpt.isPresent()) {
+          axes.add(vbOpt.get());
+        } else {
+          // TODO this should fail, leaving it here to match current behavior.
+          log.warn("No axis named {}", vname);
+          // throw new IllegalArgumentException("Cant find axis " + vname);
+        }
+      }
+      return makeCanonicalName(axes);
+    }
+
+    public String makeCanonicalName(List<CoordinateAxis.Builder> axes) {
+      Preconditions.checkNotNull(axes);
+      return axes.stream().sorted(new AxisComparator()).map(a -> a.getFullName()).collect(Collectors.joining(" "));
+    }
+
+    public CoordinatesHelper build(NetcdfDataset ncd) {
+      Preconditions.checkNotNull(ncd);
+      if (built)
+        throw new IllegalStateException("already built");
+      built = true;
+      return new CoordinatesHelper(this, ncd);
+    }
+
+    // Check if this Coordinate System is complete for v, ie if v dimesnsions are a subset..
+    public boolean isComplete(CoordinateSystem.Builder<?> cs, VariableDS.Builder<?> vb) {
+      Preconditions.checkNotNull(cs);
+      Preconditions.checkNotNull(vb);
+      // TODO using strings instead of Dimensions, to avoid exposing mutable Dimension objects.
+      // TODO Might reconsider in 6.
+      Set<String> varDomain = ImmutableSet.copyOf(vb.getDimensionNames().iterator());
+      HashSet<String> csDomain = new HashSet<>();
+      getAxesForSystem(cs).forEach(axis -> axis.getDimensionNames().forEach(csDomain::add));
+      return CoordinateSystem.isSubset(varDomain, csDomain);
+    }
+
+    public boolean containsAxes(CoordinateSystem.Builder cs, List<CoordinateAxis.Builder> dataAxes) {
+      Preconditions.checkNotNull(cs);
+      Preconditions.checkNotNull(dataAxes);
+      List<CoordinateAxis.Builder<?>> csAxes = getAxesForSystem(cs);
+      return csAxes.containsAll(dataAxes);
+    }
+
+    public boolean containsAxisTypes(CoordinateSystem.Builder cs, List<AxisType> axisTypes) {
+      Preconditions.checkNotNull(cs);
+      Preconditions.checkNotNull(axisTypes);
+      List<CoordinateAxis.Builder<?>> csAxes = getAxesForSystem(cs);
+      for (AxisType axisType : axisTypes) {
+        if (!containsAxisTypes(csAxes, axisType))
+          return false;
+      }
+      return true;
+    }
+
+    private boolean containsAxisTypes(List<CoordinateAxis.Builder<?>> axes, AxisType want) {
+      for (CoordinateAxis.Builder axis : axes) {
+        if (axis.axisType == want)
+          return true;
+      }
+      return false;
+    }
+  }
+
+  private static class AxisComparator implements java.util.Comparator<CoordinateAxis.Builder> {
+    public int compare(CoordinateAxis.Builder c1, CoordinateAxis.Builder c2) {
+      AxisType t1 = c1.axisType;
+      AxisType t2 = c2.axisType;
+
+      if ((t1 == null) && (t2 == null))
+        return c1.getFullName().compareTo(c2.getFullName());
+      if (t1 == null)
+        return -1;
+      if (t2 == null)
+        return 1;
+
+      return t1.axisOrder() - t2.axisOrder();
+    }
+  }
+}

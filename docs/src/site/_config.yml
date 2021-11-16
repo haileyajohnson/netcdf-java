@@ -2,7 +2,7 @@
 theme: unidata-jekyll-theme
 
 # this will appear in an HTML meta tag, sidebar, and perhaps elsewhere
-docset_version: 5.2
+docset_version: 5.3
 
 # this appears on the top navigation bar next to the home button
 topnav_title: netCDF-Java
@@ -85,5 +85,3 @@ description: "This is a documentation site for the netCDF-Java, which is part of
 # needed for sitemap.xml file only
 # must include trailing slash, leave off the version :-)
 base_docs_url: https://docs.unidata.ucar.edu/netcdf-java/
-
-google_analytics: UA-92978945-1

@@ -86,12 +86,12 @@ public class IFPSConvention extends CoordSysBuilder {
     parseInfo.format("IFPS augmentDataset %n");
 
     // Figure out projection info. Assume the same for all variables
-    Variable lonVar = ds.findVariable("longitude");
-    lonVar.addAttribute(new Attribute(CDM.UNITS, CDM.LON_UNITS));
+    VariableDS lonVar = (VariableDS) ds.findVariable("longitude");
+    lonVar.setUnitsString(CDM.LON_UNITS);
     lonVar.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Lon.toString()));
-    Variable latVar = ds.findVariable("latitude");
+    VariableDS latVar = (VariableDS) ds.findVariable("latitude");
     latVar.addAttribute(new Attribute(_Coordinate.AxisType, AxisType.Lat.toString()));
-    latVar.addAttribute(new Attribute(CDM.UNITS, CDM.LAT_UNITS));
+    latVar.setUnitsString(CDM.LAT_UNITS);
 
     projVar = latVar;
     String projName = ds.findAttValueIgnoreCase(projVar, "projectionType", null);
@@ -192,8 +192,8 @@ public class IFPSConvention extends CoordSysBuilder {
   }
 
   private Projection makeLCProjection(NetcdfDataset ds) {
-    Attribute latLonOrigin = projVar.findAttributeIgnoreCase("latLonOrigin");
-    if (latLonOrigin == null)
+    Attribute latLonOrigin = projVar.attributes().findAttributeIgnoreCase("latLonOrigin");
+    if (latLonOrigin == null || latLonOrigin.isString())
       throw new IllegalStateException();
     double centralLon = latLonOrigin.getNumericValue(0).doubleValue();
     double centralLat = latLonOrigin.getNumericValue(1).doubleValue();
@@ -267,8 +267,8 @@ public class IFPSConvention extends CoordSysBuilder {
   }
 
   private double findAttributeDouble(String attname) {
-    Attribute att = projVar.findAttributeIgnoreCase(attname);
-    return (att == null) ? Double.NaN : att.getNumericValue().doubleValue();
+    Attribute att = projVar.attributes().findAttributeIgnoreCase(attname);
+    return (att == null || att.isString()) ? Double.NaN : att.getNumericValue().doubleValue();
   }
 
 }

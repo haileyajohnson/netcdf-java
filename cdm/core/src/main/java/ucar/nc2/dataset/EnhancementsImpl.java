@@ -14,10 +14,12 @@ import java.util.*;
  * Factored out so that it can be used as a 'mixin' in VariablesDS and StructureDS.
  * 
  * @author caron
+ * @deprecated do not use
  */
+@Deprecated
 class EnhancementsImpl implements Enhancements {
   private Variable forVar;
-  private String desc, units;
+  String desc, units;
   private List<CoordinateSystem> coordSys; // dont allocate unless its used
 
   /**
@@ -115,6 +117,9 @@ class EnhancementsImpl implements Enhancements {
    * @param units unit string
    */
   public void setUnitsString(String units) {
+    if (units != null) {
+      units = units.trim();
+    }
     this.units = units;
     forVar.addAttribute(new Attribute(CDM.UNITS, units));
   }
@@ -127,9 +132,7 @@ class EnhancementsImpl implements Enhancements {
   public String getUnitsString() {
     String result = units;
     if ((result == null) && (forVar != null)) {
-      Attribute att = forVar.findAttribute(CDM.UNITS);
-      if (att == null)
-        att = forVar.findAttributeIgnoreCase(CDM.UNITS);
+      Attribute att = forVar.findAttributeIgnoreCase(CDM.UNITS);
       if ((att != null) && att.isString())
         result = att.getStringValue();
     }

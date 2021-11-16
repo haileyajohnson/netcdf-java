@@ -25,7 +25,7 @@ import java.util.*;
  * <pre>
  *  F = (A1, A2, ...An)
  *    A1(i,j,k,...) -> S1
- *    A2(i,j,k,...) -> S1
+ *    A2(i,j,k,...) -> S2
  *    An(i,j,k,...) -> Sn
  * </pre>
  *
@@ -44,8 +44,8 @@ import java.util.*;
  * ucar.nc2.ft2.coverage.grid.GridCoordSys.
  *
  * @author caron
- * @see <a href="http://www.unidata.ucar.edu/software/netcdf-java/reference/CSObjectModel.html">Coordinate System Object
- *      Model</a>
+ * @see <a href="https://www.unidata.ucar.edu/software/netcdf-java/reference/CSObjectModel.html">Coordinate System
+ *      Object Model</a>
  */
 public class CoordinateSystem {
   private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CoordinateSystem.class);
@@ -71,17 +71,9 @@ public class CoordinateSystem {
 
   //////////////////////////////////////////////////////////////////////////////////////
 
-  protected NetcdfDataset ds;
-  protected List<CoordinateAxis> coordAxes = new ArrayList<>();
-  protected List<CoordinateTransform> coordTrans = new ArrayList<>();
-  protected Set<Dimension> domain = new HashSet<>(); // set of dimension
-  protected String name;
-  protected CoordinateAxis xAxis, yAxis, zAxis, tAxis, latAxis, lonAxis, hAxis, pAxis, ensAxis;
-  protected CoordinateAxis aziAxis, elevAxis, radialAxis;
-  protected boolean isImplicit;
-  protected String dataType; // Grid, Station, etc
 
-  // subclasses
+  /** @deprecated Use CoordinateSystem.builder() */
+  @Deprecated
   protected CoordinateSystem() {}
 
   /**
@@ -90,7 +82,9 @@ public class CoordinateSystem {
    * @param ds the containing dataset
    * @param axes Collection of type CoordinateAxis, must be at least one.
    * @param coordTrans Collection of type CoordinateTransform, may be empty or null.
+   * @deprecated Use CoordinateSystem.builder()
    */
+  @Deprecated
   public CoordinateSystem(NetcdfDataset ds, Collection<CoordinateAxis> axes,
       Collection<CoordinateTransform> coordTrans) {
     this.ds = ds;
@@ -148,7 +142,9 @@ public class CoordinateSystem {
    * add a CoordinateTransform
    * 
    * @param ct add this CoordinateTransform
+   * @deprecated Use CoordinateSystem.builder()
    */
+  @Deprecated
   public void addCoordinateTransform(CoordinateTransform ct) {
     coordTrans.add(ct);
     ds.addCoordinateTransform(ct);
@@ -158,7 +154,9 @@ public class CoordinateSystem {
    * add a Collection of CoordinateTransform
    * 
    * @param ct add all CoordinateTransform in this collection
+   * @deprecated Use CoordinateSystem.builder()
    */
+  @Deprecated
   public void addCoordinateTransforms(Collection<CoordinateTransform> ct) {
     if (ct != null)
       coordTrans.addAll(ct);
@@ -226,13 +224,6 @@ public class CoordinateSystem {
   public int getRankRange() {
     return coordAxes.size();
   }
-
-  /*
-   * Scientific Data type, if known, eg Grid, Station, etc. Considered Experimental
-   * public String getDataType() { return dataType; }
-   * /* Set the Scientific Data type, eg Grid, Station, etc. Considered Experimental
-   * public void setDataType(String dataType) { this.dataType = dataType; }
-   */
 
   ///////////////////////////////////////////////////////////////////////////
   // Convenience routines for finding georeferencing axes
@@ -482,8 +473,8 @@ public class CoordinateSystem {
    * @param v check for this variable
    * @return true if all dimensions in V (including parents) are in the domain of this coordinate system.
    */
-  public boolean isComplete(VariableIF v) {
-    return isSubset(v.getDimensionsAll(), domain);
+  public boolean isComplete(Variable v) {
+    return isSubset(Dimensions.makeDimensionsAll(v), domain);
   }
 
   /**
@@ -495,8 +486,8 @@ public class CoordinateSystem {
    * @param v check for this variable
    * @return true if all dimensions in the domain of this coordinate system are in V (including parents).
    */
-  public boolean isCoordinateSystemFor(VariableIF v) {
-    return isSubset(domain, v.getDimensionsAll());
+  public boolean isCoordinateSystemFor(Variable v) {
+    return isSubset(domain, Dimensions.makeDimensionsAll(v));
   }
 
   /**
@@ -508,6 +499,14 @@ public class CoordinateSystem {
    */
   public static boolean isSubset(Collection<Dimension> subset, Collection<Dimension> set) {
     for (Dimension d : subset) {
+      if (!(set.contains(d)))
+        return false;
+    }
+    return true;
+  }
+
+  public static boolean isSubset(Set<String> subset, Set<String> set) {
+    for (String d : subset) {
       if (!(set.contains(d)))
         return false;
     }
@@ -545,7 +544,9 @@ public class CoordinateSystem {
    * Set whether this Coordinate System is implicit
    * 
    * @param isImplicit true if constructed implicitly.
+   * @deprecated Use CoordinateSystem.builder()
    */
+  @Deprecated
   protected void setImplicit(boolean isImplicit) {
     this.isImplicit = isImplicit;
   }
@@ -639,6 +640,8 @@ public class CoordinateSystem {
     return false;
   }
 
+  /** @deprecated Use CoordinateSystem.builder() */
+  @Deprecated
   void makeTimeAxis() {
 
     if ((tAxis != null) && (tAxis instanceof CoordinateAxis1D) && !(tAxis instanceof CoordinateAxis1DTime)) {
@@ -660,7 +663,7 @@ public class CoordinateSystem {
 
   ////////////////////////////////////////////////////////////////////////////
   /**
-   * Instances which have same name are equal.
+   * Instances which have same name, axes and transforms are equal.
    */
   public boolean equals(Object oo) {
     if (this == oo)
@@ -703,6 +706,150 @@ public class CoordinateSystem {
 
   public String toString() {
     return name;
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  // TODO make these final and immutable in 6.
+  protected NetcdfDataset ds; // needed?
+  protected List<CoordinateAxis> coordAxes = new ArrayList<>();
+  protected List<CoordinateTransform> coordTrans = new ArrayList<>();
+
+  // these are calculated
+  protected String name;
+  protected Set<Dimension> domain = new HashSet<>(); // set of dimension
+  protected CoordinateAxis xAxis, yAxis, zAxis, tAxis, latAxis, lonAxis, hAxis, pAxis, ensAxis;
+  protected CoordinateAxis aziAxis, elevAxis, radialAxis;
+  protected boolean isImplicit; // where set?
+  protected String dataType; // Grid, Station, etc. where set?
+
+  protected CoordinateSystem(Builder<?> builder, NetcdfDataset ncd, List<CoordinateAxis> axes,
+      List<CoordinateTransform> allTransforms) {
+    this.ds = ncd;
+    this.isImplicit = builder.isImplicit;
+
+    // find referenced coordinate axes
+    List<CoordinateAxis> axesList = new ArrayList<>();
+    StringTokenizer stoker = new StringTokenizer(builder.coordAxesNames);
+    while (stoker.hasMoreTokens()) {
+      String vname = stoker.nextToken();
+      CoordinateAxis axis = axes.stream().filter(a -> a.getFullName().equals(vname)).findFirst()
+          .orElseThrow(() -> new IllegalStateException("Cant find vname " + vname));
+      axesList.add(axis);
+    }
+    this.coordAxes = axesList;
+
+    // calculated
+    this.name = makeName(coordAxes);
+
+    for (CoordinateAxis axis : this.coordAxes) {
+      // look for AxisType
+      AxisType axisType = axis.getAxisType();
+      if (axisType != null) {
+        if (axisType == AxisType.GeoX)
+          xAxis = lesserRank(xAxis, axis);
+        if (axisType == AxisType.GeoY)
+          yAxis = lesserRank(yAxis, axis);
+        if (axisType == AxisType.GeoZ)
+          zAxis = lesserRank(zAxis, axis);
+        if (axisType == AxisType.Time)
+          tAxis = lesserRank(tAxis, axis);
+        if (axisType == AxisType.Lat)
+          latAxis = lesserRank(latAxis, axis);
+        if (axisType == AxisType.Lon)
+          lonAxis = lesserRank(lonAxis, axis);
+        if (axisType == AxisType.Height)
+          hAxis = lesserRank(hAxis, axis);
+        if (axisType == AxisType.Pressure)
+          pAxis = lesserRank(pAxis, axis);
+        if (axisType == AxisType.Ensemble)
+          ensAxis = lesserRank(ensAxis, axis);
+
+        if (axisType == AxisType.RadialAzimuth)
+          aziAxis = lesserRank(aziAxis, axis);
+        if (axisType == AxisType.RadialDistance)
+          radialAxis = lesserRank(radialAxis, axis);
+        if (axisType == AxisType.RadialElevation)
+          elevAxis = lesserRank(elevAxis, axis);
+      }
+      // collect dimensions
+      List<Dimension> dims = axis.getDimensionsAll();
+      domain.addAll(dims);
+    }
+
+    // Find the named coordinate transforms in allTransforms.
+    for (String wantTransName : builder.transNames) {
+      CoordinateTransform got = allTransforms.stream()
+          .filter(ct -> (wantTransName.equals(ct.getName())
+              || ct.getAttributeContainer() != null && wantTransName.equals(ct.getAttributeContainer().getName())))
+          .findFirst().orElse(null);
+      if (got != null) {
+        coordTrans.add(got);
+      }
+
+    }
+  }
+
+  public Builder<?> toBuilder() {
+    return addLocalFieldsToBuilder(builder());
+  }
+
+  // Add local fields to the passed - in builder.
+  protected Builder<?> addLocalFieldsToBuilder(Builder<? extends Builder<?>> b) {
+    return b.setImplicit(this.isImplicit).setCoordAxesNames(this.name).addCoordinateTransforms(this.coordTrans);
+  }
+
+  /**
+   * Get Builder for this class that allows subclassing.
+   * 
+   * @see "https://community.oracle.com/blogs/emcmanus/2010/10/24/using-builder-pattern-subclasses"
+   */
+  public static Builder<?> builder() {
+    return new Builder2();
+  }
+
+  private static class Builder2 extends Builder<Builder2> {
+    @Override
+    protected Builder2 self() {
+      return this;
+    }
+  }
+
+  public static abstract class Builder<T extends Builder<T>> {
+    public String coordAxesNames; // canonicalized list of names
+    private List<String> transNames = new ArrayList<>();
+    private boolean isImplicit;
+    private boolean built;
+
+    protected abstract T self();
+
+    // LOOK need to be canonicalized
+    public T setCoordAxesNames(String names) {
+      this.coordAxesNames = names;
+      return self();
+    }
+
+    public T addCoordinateTransformByName(String ct) {
+      transNames.add(ct);
+      return self();
+    }
+
+    public T addCoordinateTransforms(Collection<CoordinateTransform> axes) {
+      axes.forEach(axis -> addCoordinateTransformByName(axis.name));
+      return self();
+    }
+
+    public T setImplicit(boolean isImplicit) {
+      this.isImplicit = isImplicit;
+      return self();
+    }
+
+    // LOOK do we really need NetcdfDataset?
+    public CoordinateSystem build(NetcdfDataset ncd, List<CoordinateAxis> axes, List<CoordinateTransform> transforms) {
+      if (built)
+        throw new IllegalStateException("already built");
+      built = true;
+      return new CoordinateSystem(this, ncd, axes, transforms);
+    }
   }
 
 }

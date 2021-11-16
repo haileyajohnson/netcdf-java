@@ -31,9 +31,11 @@ dependencies {
     compile libraries["httpcore"]
     compile libraries["bounce"]
     compile libraries["re2j"]
+    compile libraries["lgooddatepicker"]
 
     compile libraries["slf4j-api"]
     runtime libraries["logback-classic"]
+    runtime project(":cdm:cdm-s3")
 }
 
 //////////////////////////////////////////////////////////

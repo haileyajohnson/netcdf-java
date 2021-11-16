@@ -85,7 +85,7 @@ class Construct2 {
   }
 
   private void makeObsRecord(BufrConfig bufrConfig) {
-    recordStructure = new Sequence(ncfile, null, null, BufrIosp2.obsRecord);
+    recordStructure = new Sequence(ncfile, null, null, BufrIosp2.obsRecordName);
     ncfile.addVariable(null, recordStructure);
 
     BufrConfig.FieldConverter root = bufrConfig.getRootConverter();
@@ -142,8 +142,6 @@ class Construct2 {
 
     parent.addMemberVariable(struct);
     struct.setSPobject(fld);
-
-    dkey.refersTo = struct;
   }
 
   private void addSequence(Structure parent, BufrConfig.FieldConverter fld) {
@@ -217,8 +215,6 @@ class Construct2 {
     parent.addMemberVariable(struct);
     struct.setSPobject(dpiField); // ??
 
-    dpiKey.refersTo = struct;
-
     // add some fake dkeys corresponding to above
     // DataDescriptor nameDD = new DataDescriptor();
   }
@@ -266,12 +262,13 @@ class Construct2 {
         log.warn("dataDesc.units == null for " + uname);
     } else {
       String units = fld.getUnits();
-      if (units.equalsIgnoreCase("Code_Table") || units.equalsIgnoreCase("Code Table"))
+      if (DataDescriptor.isCodeTableUnit(units)) {
         v.addAttribute(new Attribute(CDM.UNITS, "CodeTable " + fld.dds.getFxyName()));
-      else if (units.equalsIgnoreCase("Flag_Table") || units.equalsIgnoreCase("Flag Table"))
+      } else if (DataDescriptor.isFlagTableUnit(units)) {
         v.addAttribute(new Attribute(CDM.UNITS, "FlagTable " + fld.dds.getFxyName()));
-      else if (!units.startsWith("CCITT") && !units.startsWith("Numeric"))
+      } else if (!DataDescriptor.isInternationalAlphabetUnit(units) && !units.startsWith("Numeric")) {
         v.addAttribute(new Attribute(CDM.UNITS, units));
+      }
     }
 
     DataDescriptor dataDesc = fld.dds;

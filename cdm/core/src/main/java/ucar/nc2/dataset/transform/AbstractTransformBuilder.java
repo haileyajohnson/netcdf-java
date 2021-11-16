@@ -5,9 +5,11 @@
 
 package ucar.nc2.dataset.transform;
 
+import javax.annotation.Nullable;
 import ucar.nc2.*;
 import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.CF;
+import ucar.nc2.constants._Coordinate;
 import ucar.nc2.units.SimpleUnit;
 import ucar.nc2.constants.AxisType;
 import ucar.nc2.dataset.*;
@@ -48,6 +50,12 @@ public abstract class AbstractTransformBuilder {
           break;
         }
       }
+      if (units == null) {
+        Variable xvar = ds.findVariableByAttribute(null, _Coordinate.AxisType.toString(), AxisType.GeoX.toString());
+        if (xvar != null) {
+          units = xvar.getUnitsString();
+        }
+      }
     }
     return units;
   }
@@ -65,7 +73,7 @@ public abstract class AbstractTransformBuilder {
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
-  protected Formatter errBuffer;
+  private Formatter errBuffer;
   protected double lat0, lon0, false_easting, false_northing, earth_radius;
   protected Earth earth;
 
@@ -75,7 +83,8 @@ public abstract class AbstractTransformBuilder {
 
   public abstract String getTransformName();
 
-  protected void readStandardParams(AttributeContainer ctv, String units) {
+  // WTF ?
+  void readStandardParams(AttributeContainer ctv, String units) {
     lon0 = readAttributeDouble(ctv, CF.LONGITUDE_OF_CENTRAL_MERIDIAN, Double.NaN);
     if (Double.isNaN(lon0))
       lon0 = readAttributeDouble(ctv, CF.LONGITUDE_OF_PROJECTION_ORIGIN, Double.NaN);
@@ -101,15 +110,15 @@ public abstract class AbstractTransformBuilder {
   }
 
   /**
-   * Read a variable attribute as a double.
+   * Read an attribute as a double.
    *
-   * @param v the variable
+   * @param atts the attribute container
    * @param attname name of variable
    * @param defValue default value if attribute is not found
    * @return attribute value as a double, else NaN if not found
    */
-  protected double readAttributeDouble(AttributeContainer v, String attname, double defValue) {
-    Attribute att = v.findAttributeIgnoreCase(attname);
+  protected double readAttributeDouble(AttributeContainer atts, String attname, double defValue) {
+    Attribute att = atts.findAttributeIgnoreCase(attname);
     if (att == null)
       return defValue;
     if (att.isString())
@@ -124,7 +133,7 @@ public abstract class AbstractTransformBuilder {
    * @param att the attribute. May be numeric or String.
    * @return attribute value as a double[2]
    */
-  protected double[] readAttributeDouble2(Attribute att) {
+  double[] readAttributeDouble2(Attribute att) {
     if (att == null)
       return null;
 
@@ -142,8 +151,7 @@ public abstract class AbstractTransformBuilder {
 
   /**
    * Add a Parameter to a CoordinateTransform.
-   * Make sure that the variable exists. If readData is true, read the data and use it as the value of the
-   * parameter, otherwise use the variable name as the value of the parameter.
+   * Make sure that the variable exists.
    *
    * @param rs the CoordinateTransform
    * @param paramName the parameter name
@@ -162,7 +170,7 @@ public abstract class AbstractTransformBuilder {
     return true;
   }
 
-  protected String getFormula(AttributeContainer ctv) {
+  String getFormula(AttributeContainer ctv) {
     String formula = ctv.findAttValueIgnoreCase("formula_terms", null);
     if (null == formula) {
       if (null != errBuffer)
@@ -173,7 +181,7 @@ public abstract class AbstractTransformBuilder {
     return formula;
   }
 
-  public String[] parseFormula(String formula_terms, String termString) {
+  String[] parseFormula(String formula_terms, String termString) {
     String[] formulaTerms = formula_terms.split("[\\s:]+"); // split on 1 or more whitespace or ':'
     String[] terms = termString.split("[\\s]+"); // split on 1 or more whitespace
     String[] values = new String[terms.length];
@@ -208,7 +216,7 @@ public abstract class AbstractTransformBuilder {
    * @param ctv coord transform variable
    * @return earth radius in km
    */
-  protected double getEarthRadiusInKm(AttributeContainer ctv) {
+  double getEarthRadiusInKm(AttributeContainer ctv) {
     double earth_radius = readAttributeDouble(ctv, CF.EARTH_RADIUS, Earth.getRadius());
     if (earth_radius > 10000.0)
       earth_radius *= .001;

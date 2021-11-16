@@ -37,11 +37,13 @@ import java.util.TreeMap;
  * @author cwardgar
  * @see ucar.nc2.NetcdfFile
  * @see <a href=
- *      "http://www.unidata.ucar.edu/software/netcdf/ncml/">http://www.unidata.ucar.edu/software/netcdf/ncml/</a>
+ *      "https://www.unidata.ucar.edu/software/netcdf/ncml/">https://www.unidata.ucar.edu/software/netcdf/ncml/</a>
+ * @deprecated use ucar.nc2.write.NcmlWriter
  */
+@Deprecated
 public class NcMLWriter {
   /**
-   * A default namespace constructed from the NcML URI: {@code http://www.unidata.ucar.edu/namespaces/netcdf/ncml-2.2}.
+   * A default namespace constructed from the NcML URI: {@code https://www.unidata.ucar.edu/namespaces/netcdf/ncml-2.2}.
    */
   // A default namespace means that we can use it without having to prepend the "ncml:" prefix to every element name.
   // thredds.client.catalog.Catalog.ncmlNS is *not* default and therefore *does* require the prefix.
@@ -283,7 +285,7 @@ public class NcMLWriter {
     }
 
     // attributes
-    for (Attribute att : group.getAttributes()) {
+    for (Attribute att : group.attributes()) {
       elem.addContent(makeAttributeElement(att));
     }
 
@@ -355,7 +357,7 @@ public class NcMLWriter {
 
 
     // attributes
-    for (Attribute att : var.getAttributes()) {
+    for (Attribute att : var.attributes()) {
       varElem.addContent(makeAttributeElement(att));
     }
 

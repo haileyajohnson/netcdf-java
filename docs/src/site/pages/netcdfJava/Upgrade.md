@@ -1,6 +1,6 @@
 ---
 title: Upgrading to netCDF-Java version 5.x
-last_updated: 2021-06-08
+last_updated: 2021-06-02
 sidebar: netcdfJavaTutorial_sidebar
 toc: false
 permalink: upgrade.html
@@ -21,9 +21,26 @@ Java WebStart has been deprecated as of [Java 9](https://www.oracle.com/technetw
 As such, we no longer utilize WebStart.
 
 ## Quick Navigation
+* [Summary of changes for v5.3.x](#netcdf-java-api-changes-53x)
 * [Summary of changes for v5.2.x](#netcdf-java-api-changes-52x)
 * [Summary of changes for v5.1.x](#netcdf-java-api-changes-51x)
 * [Summary of changes for v5.0.x](#netcdf-java-api-changes-50x)
+
+## netCDF-Java API Changes (5.3.x)
+
+Point release notes:
+* [5.3.3](https://github.com/Unidata/netcdf-java/releases/tag/v5.3.3){:target="_blank"} (_2020-06-18_)
+* [5.3.2](https://github.com/Unidata/netcdf-java/releases/tag/v5.3.2){:target="_blank"} (_2020-04-29_)
+* `5.3.0` and `5.3.1` were released but not announced due to various issues with the release process.
+  These should not be used.
+
+### Opening remote files on Object Stores that support the AWS S3 API
+
+Object Store support has been extended to interface with any AWS S3 API compatible system, and has been tested against Google Cloud Storage, Azure Blob Storage, ActiveScale Object Store, and Ceph.
+Note: AWS specific S3 support was added in `5.3`.
+Objects were identified using a specific URI of the form `s3://bucket-name/key`.
+Usage of that URI has been deprecated in favor of the more flexible `cdms3 ":" [ // [ userinfo "@" ] host [ ":" port ] / ]  [path] "/" bucket_name ? key`.
+For more information, see the [DatasetUrl](dataset_urls.html#object-stores) documentation.
 
 ## netCDF-Java API Changes (5.2.x)
 

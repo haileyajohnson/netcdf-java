@@ -73,7 +73,7 @@ class EnhanceScaleMissingUnsignedImpl implements EnhanceScaleMissingUnsigned {
    * @param invalidDataIsMissing use valid_range for isMissing()
    * @param missingDataIsMissing use missing_value for isMissing()
    */
-  private EnhanceScaleMissingUnsignedImpl(VariableDS forVar, boolean fillValueIsMissing, boolean invalidDataIsMissing,
+  EnhanceScaleMissingUnsignedImpl(VariableDS forVar, boolean fillValueIsMissing, boolean invalidDataIsMissing,
       boolean missingDataIsMissing) {
     this.fillValueIsMissing = fillValueIsMissing;
     this.invalidDataIsMissing = invalidDataIsMissing;
@@ -92,8 +92,8 @@ class EnhanceScaleMissingUnsignedImpl implements EnhanceScaleMissingUnsigned {
     // 1. origDataType is unsigned, but variable has "_Unsigned == false" attribute.
     // 2. origDataType is signed, but variable has "_Unsigned == true" attribute.
     if (signedness == Signedness.SIGNED) {
-      Attribute unsignedAtt = forVar.findAttributeIgnoreCase(CDM.UNSIGNED);
-      if (unsignedAtt != null && unsignedAtt.getStringValue().equalsIgnoreCase("true")) {
+      String unsignedAtt = forVar.attributes().findAttValueIgnoreCase(CDM.UNSIGNED, null);
+      if (unsignedAtt != null && unsignedAtt.equalsIgnoreCase("true")) {
         this.signedness = Signedness.UNSIGNED;
       }
     }
@@ -105,7 +105,7 @@ class EnhanceScaleMissingUnsignedImpl implements EnhanceScaleMissingUnsigned {
     }
 
     DataType scaleType = null, offsetType = null, validType = null;
-    logger.debug("{} for Variable = {}", getClass().getSimpleName(), forVar.getFullName());
+    logger.debug("{} for Variable = {}", getClass().getSimpleName(), forVar.getShortName());
 
     Attribute scaleAtt = forVar.findAttribute(CDM.SCALE_FACTOR);
     if (scaleAtt != null && !scaleAtt.isString()) {
@@ -166,14 +166,15 @@ class EnhanceScaleMissingUnsignedImpl implements EnhanceScaleMissingUnsigned {
       hasFillValue = true;
     } else {
       // No _FillValue attribute found. Instead, if file is NetCDF and variable is numeric, use the default fill value.
-      String fileTypeId = forVar.getNetcdfFile() == null ? null : forVar.getNetcdfFile().getFileTypeId();
-
+      String fileTypeId = forVar.orgFileTypeId;
       boolean isNetcdfIosp = DataFormatType.NETCDF.getDescription().equals(fileTypeId)
           || DataFormatType.NETCDF4.getDescription().equals(fileTypeId);
 
-      if (isNetcdfIosp && unsignedConversionType.isNumeric()) {
-        fillValue = applyScaleOffset(N3iosp.getFillValueDefault(unsignedConversionType));
-        hasFillValue = true;
+      if (isNetcdfIosp) {
+        if (unsignedConversionType.isNumeric()) {
+          fillValue = applyScaleOffset(N3iosp.getFillValueDefault(unsignedConversionType));
+          hasFillValue = true;
+        }
       }
     }
 

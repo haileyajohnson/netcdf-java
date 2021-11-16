@@ -135,9 +135,8 @@ public class AWIPSConvention extends CoordSysBuilder {
     // kludge in fixing the units
     List<Variable> vlist = ds.getVariables();
     for (Variable v : vlist) {
-      Attribute att = v.findAttributeIgnoreCase(CDM.UNITS);
-      if (att != null) {
-        String units = att.getStringValue();
+      String units = v.attributes().findAttValueIgnoreCase(CDM.UNITS, null);
+      if (units != null) {
         v.addAttribute(new Attribute(CDM.UNITS, normalize(units))); // removes the old
       }
     }
@@ -330,7 +329,6 @@ public class AWIPSConvention extends CoordSysBuilder {
   }
 
   // create new variables as sections of ncVar
-
   private void createNewVariables(NetcdfDataset ds, Variable ncVar, List<Dimension> newDims, Dimension levelDim)
       throws InvalidRangeException {
 

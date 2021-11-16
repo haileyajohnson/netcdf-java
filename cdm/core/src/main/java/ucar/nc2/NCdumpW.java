@@ -7,27 +7,29 @@ package ucar.nc2;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import java.nio.charset.StandardCharsets;
+import java.util.Formatter;
 import org.jdom2.Element;
 import ucar.ma2.*;
-import ucar.nc2.dataset.NetcdfDataset;
+import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.ncml.NcMLWriter;
 import ucar.nc2.util.CancelTask;
 import ucar.nc2.util.Indent;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.StringTokenizer;
+import ucar.nc2.write.CDLWriter;
 
 /**
  * Print contents of an existing netCDF file, using a Writer.
  * <p/>
  * A difference with ncdump is that the nesting of multidimensional array data is represented by nested brackets,
  * so the output is not legal CDL that can be used as input for ncgen. Also, the default is header only (-h)
- * LOOK XML routines should go away in 5.0
  *
  * @author caron
  * @since Nov 4, 2007
+ * @deprecated will move in ver 6
  */
-
+@Deprecated
 public class NCdumpW {
   private static String usage =
       "usage: NCdumpW <filename> [-cdl | -ncml] [-c | -vall] [-v varName1;varName2;..] [-v varName(0:1,:,12)]\n";
@@ -59,7 +61,7 @@ public class NCdumpW {
       return false;
     }
 
-    try (NetcdfFile nc = NetcdfDataset.openFile(filename, ct)) {
+    try (NetcdfFile nc = NetcdfDatasets.openFile(filename, ct)) {
       // the rest of the command
       int pos = command.indexOf(filename);
       command = command.substring(pos + filename.length());
@@ -148,15 +150,13 @@ public class NCdumpW {
    */
   public static boolean print(String filename, Writer out, boolean showAll, boolean showCoords, boolean ncml,
       boolean strict, String varNames, ucar.nc2.util.CancelTask ct) throws IOException {
-    try (NetcdfFile nc = NetcdfDataset.openFile(filename, ct)) {
+    try (NetcdfFile nc = NetcdfDatasets.openFile(filename, ct)) {
       return print(nc, out, showAll, showCoords, ncml, strict, varNames, ct);
-
     } catch (java.io.FileNotFoundException e) {
       out.write("file not found= ");
       out.write(filename);
       out.flush();
       return false;
-
     }
   }
 
@@ -209,11 +209,11 @@ public class NCdumpW {
     boolean headerOnly = (showValues == WantValues.none) && (varNames == null);
 
     try {
-      if (ncml)
+      if (ncml) {
         writeNcML(nc, out, showValues, null); // output schema in NcML
-      else if (headerOnly)
-        nc.writeCDL(new PrintWriter(out), strict); // output schema in CDL form (like ncdump)
-      else {
+      } else if (headerOnly) {
+        CDLWriter.writeCDL(nc, out, strict);
+      } else {
         PrintWriter ps = new PrintWriter(out);
         nc.toStringStart(ps, strict);
 
@@ -286,17 +286,8 @@ public class NCdumpW {
    * @return String result
    * @throws IOException on write error
    */
-  public static String printVariableData(VariableIF v, ucar.nc2.util.CancelTask ct) throws IOException {
+  public static String printVariableData(Variable v, ucar.nc2.util.CancelTask ct) throws IOException {
     Array data = v.read();
-    /*
-     * try {
-     * data = v.isMemberOfStructure() ? v.readAllStructures(null, true) : v.read();
-     * }
-     * catch (InvalidRangeException ex) {
-     * return ex.getMessage();
-     * }
-     */
-
     StringWriter writer = new StringWriter(10000);
     printArray(data, v.getFullName(), new PrintWriter(writer), new Indent(2), ct);
     return writer.toString();
@@ -321,7 +312,7 @@ public class NCdumpW {
     return writer.toString();
   }
 
-
+  /** Print named array to returned String. */
   public static String toString(Array array, String name, CancelTask ct) {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
@@ -346,7 +337,6 @@ public class NCdumpW {
     if (array == null) {
       out.println("null array for " + name);
       ilev.decr();
-      // throw new IllegalArgumentException("null array for " + name);
       return;
     }
 
@@ -534,7 +524,6 @@ public class NCdumpW {
       if (ii > 0)
         out.print(",");
       printStringArray(out, slice, indent, ct);
-      // out.print("\n");
     }
     indent.decr();
 
@@ -542,14 +531,13 @@ public class NCdumpW {
   }
 
   private static void printStructureDataArray(PrintWriter out, ArrayStructure array, Indent indent,
-      ucar.nc2.util.CancelTask ct) { // throws IOException {
+      ucar.nc2.util.CancelTask ct) {
     try (StructureDataIterator sdataIter = array.getStructureDataIterator()) {
       int count = 0;
       while (sdataIter.hasNext()) {
         StructureData sdata = sdataIter.next();
         out.println("\n" + indent + "{");
         printStructureData(out, sdata, indent, ct);
-        // ilev.setIndentLevel(saveIndent);
         out.print(indent + "} " + sdata.getName() + "(" + count + ")");
         if (ct != null && ct.isCancel())
           return;
@@ -560,9 +548,7 @@ public class NCdumpW {
     }
   }
 
-  private static void printVariableArray(PrintWriter out, ArrayObject array, Indent indent, CancelTask ct) { // throws
-                                                                                                             // IOException
-                                                                                                             // {
+  private static void printVariableArray(PrintWriter out, ArrayObject array, Indent indent, CancelTask ct) {
     out.print("\n" + indent + "{");
     indent.incr();
     IndexIterator iter = array.getIndexIterator();
@@ -579,8 +565,7 @@ public class NCdumpW {
     out.print("\n" + indent + "}");
   }
 
-  private static void printSequence(PrintWriter out, ArraySequence seq, Indent indent, CancelTask ct) { // throws
-                                                                                                        // IOException {
+  private static void printSequence(PrintWriter out, ArraySequence seq, Indent indent, CancelTask ct) {
     try (StructureDataIterator iter = seq.getStructureDataIterator()) {
       while (iter.hasNext()) {
         StructureData sdata = iter.next();
@@ -606,9 +591,7 @@ public class NCdumpW {
     out.flush();
   }
 
-  private static void printStructureData(PrintWriter out, StructureData sdata, Indent indent, CancelTask ct) { // throws
-                                                                                                               // IOException
-                                                                                                               // {
+  private static void printStructureData(PrintWriter out, StructureData sdata, Indent indent, CancelTask ct) {
     indent.incr();
     for (StructureMembers.Member m : sdata.getMembers()) {
       Array sdataArray = sdata.getArray(m);
@@ -619,6 +602,7 @@ public class NCdumpW {
     indent.decr();
   }
 
+  /** Print StructureData to returned String. */
   public static String toString(StructureData sdata) {
     CharArrayWriter carray = new CharArrayWriter(1000);
     PrintWriter pw = new PrintWriter(carray);
@@ -647,13 +631,12 @@ public class NCdumpW {
     }
   }
 
-  /**
-   * Print array to PrintWriter
-   */
+  /** Print array to named PrintWriter */
   public static void printArray(Array array, PrintWriter pw) {
     printArray(array, null, null, pw, new Indent(2), null, true);
   }
 
+  /** Print array to returned String. */
   public static String toString(Array ma) {
     return toString(ma, "", null);
   }
@@ -671,7 +654,9 @@ public class NCdumpW {
    * @param showValues do you want the variable values printed?
    * @param url use this for the url attribute; if null use getLocation(). // ??
    * @throws IOException on write error
+   * @deprecated will move in ver 6
    */
+  @Deprecated
   public static void writeNcML(NetcdfFile ncfile, Writer writer, WantValues showValues, String url) throws IOException {
     Preconditions.checkNotNull(ncfile);
     Preconditions.checkNotNull(writer);
@@ -728,25 +713,17 @@ public class NCdumpW {
       return;
     }
 
-    try {
-      Writer writer = new BufferedWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
-      // pull out the filename from the command
-      String filename = args[0];
-      ucar.nc2.util.CancelTask ct = null;
-      try (NetcdfFile nc = NetcdfDataset.openFile(filename, ct)) {
-        // the rest of the command
-        StringBuilder command = new StringBuilder();
-        for (int i = 1; i < args.length; i++) {
-          command.append(args[i]);
-          command.append(" ");
-        }
-        print(nc, command.toString(), writer, ct);
-      } catch (java.io.FileNotFoundException e) {
-        writer.write("file not found= ");
-        writer.write(filename);
-      } finally {
-        writer.close();
+    // pull out the filename from the command
+    String filename = args[0];
+    try (Writer writer = new BufferedWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
+        NetcdfFile nc = NetcdfDatasets.openFile(filename, null)) {
+      // the rest of the command
+      StringBuilder command = new StringBuilder();
+      for (int i = 1; i < args.length; i++) {
+        command.append(args[i]);
+        command.append(" ");
       }
+      print(nc, command.toString(), writer, null);
     } catch (IOException ioe) {
       ioe.printStackTrace();
     }

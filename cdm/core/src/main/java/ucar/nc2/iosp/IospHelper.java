@@ -23,13 +23,13 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Helper methods for IOSP's
+ * Helper methods for IOSP's for reading data.
  *
  * @author caron
  * @since Jan 3, 2008
  */
 public class IospHelper {
-  private static boolean showLayoutTypes;
+  private static boolean showLayoutTypes = false;
 
   /**
    * Read data subset from RandomAccessFile, create primitive array of size Layout.getTotalNelems.

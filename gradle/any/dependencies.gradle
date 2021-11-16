@@ -28,11 +28,6 @@ repositories {
         // still use. We should really try to eliminate our use of it.
         url "https://artifacts.unidata.ucar.edu/repository/unidata-3rdparty/"
     }
-    
-    // Third-party repositories.
-    maven {
-        url "https://dl.bintray.com/cwardgar/maven/"  // For "gretty".
-    }
 }
 
 //================================================ Dependencies ================================================//
@@ -46,7 +41,7 @@ ext {
 
 ////////////////////////////////////////// Plugins //////////////////////////////////////////
 
-libraries["gretty"] = "com.cwardgar.gretty-fork:gretty:2.0.1"
+libraries["gretty"] = "org.gretty:gretty:3.0.1"
 
 libraries["shadow"] = "com.github.jengelman.gradle.plugins:shadow:1.2.3"
 
@@ -153,6 +148,17 @@ libraries["httpcore"] = "org.apache.httpcomponents:httpcore:4.4.11"
 
 libraries["httpmime"] = "org.apache.httpcomponents:httpmime:4.5.9"
 
+// s3 RandomAccessFile
+libraries["aws-s3"] = dependencies.create("software.amazon.awssdk:s3:2.10.76") {
+    // exclude netty nio client due to open CVEs. See
+    // https://github.com/aws/aws-sdk-java-v2/issues/1632
+    // we don't use the nio http client in our S3 related code,
+    // so we should be ok here (others may need to add it specifically to
+    // their code if they are using our S3 stuff, but then it's their
+    // explicit decision to run it).
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+}
+
 //// command line parser
 libraries["jcommander"] = "com.beust:jcommander:1.78"
 
@@ -173,6 +179,8 @@ libraries["protobuf-java"] = "com.google.protobuf:protobuf-java:3.9.1"
 
 libraries["re2j"] = "com.google.re2j:re2j:1.3"
 
+libraries["visad-mcidas-slim-ucar-ns"] = "edu.wisc.ssec:visad-mcidas-slim-ucar-ns:20200507-2"
+
 libraries["visad"] = "edu.wisc.ssec:visad:2.0-20130124"
 
 //// GRIB
@@ -181,8 +189,8 @@ libraries["jj2000"] = "edu.ucar:jj2000:5.4"
 // The easy HTTP client for Groovy (and Java). Used in buildSrc.
 libraries["http-builder-ng-okhttp"] = "io.github.http-builder-ng:http-builder-ng-okhttp:1.0.3"
 
-//////////////////////////////// TDS ///////////////////////////////////////////
-//
+////////////////////////////// legacy gradle module /////////////////////////////////////////
+
 libraries["aws-java-sdk-s3"] = dependencies.create("com.amazonaws:aws-java-sdk-s3:1.11.236") {
     // exclude jackson deps so that they can be overridden
     // with 2.7.x deps to address security issue. See
@@ -200,6 +208,8 @@ libraries["aws-java-sdk-s3"] = dependencies.create("com.amazonaws:aws-java-sdk-s
 libraries["jackson-core"] = "com.fasterxml.jackson.core:jackson-core:2.10.0"
 libraries["jackson-annotations"] = "com.fasterxml.jackson.core:jackson-annotations:2.10.0"
 libraries["jackson-databind"] = "com.fasterxml.jackson.core:jackson-databind:2.10.0"
+
+////////////////////////////// end /////////////////////////////////////////
 
 libraries["javax.servlet-api"] = "javax.servlet:javax.servlet-api:3.1.0"
 
@@ -222,13 +232,17 @@ libraries["jfreechart"] = "org.jfree:jfreechart:1.0.19"
 // http://www.jgoodies.com/. Latest version is 1.9.0, but there is breakage when we try to upgrade.
 libraries["jgoodies-forms"] = "com.jgoodies:jgoodies-forms:1.6.0"
 
+// LGoodDatePicker - swing calendar widget used in TdsMonitor
+libraries["lgooddatepicker"] = "com.github.lgooddatepicker:LGoodDatePicker:10.3.1"
+
 /////////////////////////////// Servlets to run tests against ////////////////////////////////
 
+versions["dapwars"] = "5.0.0-SNAPSHOT"
 // used by :dap4 test
-libraries["d4ts"] = "edu.ucar:d4ts:5.0.0-SNAPSHOT"
+libraries["d4ts"] = "edu.ucar:d4ts:${versions["dapwars"]}"
 
 // :opendap and :httpservices test.
-libraries["dts"] = "edu.ucar:dtswar:5.0.0-SNAPSHOT"
+libraries["dts"] = "edu.ucar:dtswar:${versions["dapwars"]}"
 
 //////////////////////////// Transitive dependency replacements and exclusions ////////////////////////////
 

@@ -22,7 +22,7 @@ import java.util.*;
 
 /**
  * NUWG Convention (ad hoc).
- * see http://www.unidata.ucar.edu/packages/netcdf/NUWG/
+ * see https://www.unidata.ucar.edu/software/netcdf/NUWG/
  *
  * @author caron
  */
@@ -164,7 +164,7 @@ public class NUWGConvention extends CoordSysBuilder {
             if (units != null) {
               units = StringUtil2.remove(units, '(');
               units = StringUtil2.remove(units, ')');
-              ncvar.addAttribute(new Attribute(CDM.UNITS, units));
+              ((VariableDS) ncvar).setUnitsString(units);
             }
           } else {
             parseInfo.format("Couldnt add referential coordAxis = %s%n", ncvar.getFullName());
@@ -410,7 +410,7 @@ public class NUWGConvention extends CoordSysBuilder {
     }
 
     public String getDescription() {
-      Attribute att = ncvar.findAttributeIgnoreCase(CDM.LONG_NAME);
+      Attribute att = ncvar.attributes().findAttributeIgnoreCase(CDM.LONG_NAME);
       return (att == null) ? getName() : att.getStringValue();
     }
 
