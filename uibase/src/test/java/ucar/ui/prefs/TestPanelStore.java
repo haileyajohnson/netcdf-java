@@ -5,6 +5,7 @@
 
 package ucar.ui.prefs;
 
+import java.awt.HeadlessException;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -13,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.util.prefs.PreferencesExt;
 import ucar.util.prefs.XMLStore;
-
 import javax.swing.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -26,7 +26,8 @@ import java.util.Date;
 public class TestPanelStore {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @ClassRule public static TemporaryFolder tempFolder = new TemporaryFolder();
+  @ClassRule
+  public static TemporaryFolder tempFolder = new TemporaryFolder();
 
   private static PreferencesExt store;
   private static XMLStore xstore;
@@ -37,8 +38,8 @@ public class TestPanelStore {
 
     xstore = XMLStore.createFromFile(tempFolder.newFile().getAbsolutePath(), null);
     store = xstore.getPreferences();
-    //store = new PreferencesExt(null,"");
-    Debug.setStore( store.node("Debug"));
+    // store = new PreferencesExt(null,"");
+    Debug.setStore(store.node("Debug"));
   }
 
   @Test
@@ -47,7 +48,7 @@ public class TestPanelStore {
   }
 
   private PrefPanel makePP() {
-    PrefPanel pp2 = new PrefPanel( "TestPanelStoreName", (PreferencesExt) store.node("TestPanelStoreNode"));
+    PrefPanel pp2 = new PrefPanel("TestPanelStoreName", (PreferencesExt) store.node("TestPanelStoreNode"));
     pp2.addHeading("Some Input Fileds");
     pp2.addTextField("text1", "text1", "text1");
     pp2.addTextField("nullDefault", "nullDefault", null);
@@ -74,25 +75,31 @@ public class TestPanelStore {
     return pp2;
   }
 
-  /** test */
-  public static void main(String args[]) {
-    JFrame frame = new JFrame("Test PrefPanelStore");
-    frame.addWindowListener(new WindowAdapter() {
-      public void windowClosing(WindowEvent e) {
-        try {
-          xstore.save();
-          System.out.println("write xstore");
-        } catch (java.io.IOException ioe) { ioe.printStackTrace(); }
-        System.exit(0);
-      }
-    });
+  @Test
+  public void testStuff() {
+    try {
+      JFrame frame = new JFrame("Test PrefPanelStore");
+      frame.addWindowListener(new WindowAdapter() {
+        public void windowClosing(WindowEvent e) {
+          try {
+            xstore.save();
+            System.out.println("write xstore");
+          } catch (java.io.IOException ioe) {
+            ioe.printStackTrace();
+          }
+          System.exit(0);
+        }
+      });
 
-    TestPanelStore tp = new TestPanelStore();
-    PrefPanel pp = tp.makePP();
+      TestPanelStore tp = new TestPanelStore();
+      PrefPanel pp = tp.makePP();
 
-    frame.getContentPane().add(pp);
-    frame.pack();
-    frame.setLocation(300, 300);
-    frame.setVisible(true);
+      frame.getContentPane().add(pp);
+      frame.pack();
+      frame.setLocation(300, 300);
+      frame.setVisible(true);
+    } catch (HeadlessException e) {
+      // ok to fail if there is no display
+    }
   }
 }

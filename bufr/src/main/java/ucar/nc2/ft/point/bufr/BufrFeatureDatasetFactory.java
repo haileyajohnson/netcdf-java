@@ -55,74 +55,63 @@ import ucar.unidata.geoloc.LatLonRect;
  * @since 8/14/13
  */
 public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
-  static private org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BufrFeatureDatasetFactory.class);
-  static private CalendarDateUnit bufrDateUnits = CalendarDateUnit.of(null, "msecs since 1970-01-01T00:00:00");
-  static private String bufrAltUnits = "m"; // LOOK fake
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BufrFeatureDatasetFactory.class);
+  private static CalendarDateUnit bufrDateUnits = CalendarDateUnit.of(null, "msecs since 1970-01-01T00:00:00");
+  private static String bufrAltUnits = "m"; // LOOK fake
 
 
   @Override
-  public Object isMine(FeatureType wantFeatureType, NetcdfDataset ncd, Formatter errlog) throws IOException {
+  public Object isMine(FeatureType wantFeatureType, NetcdfDataset ncd, Formatter errlog) {
     IOServiceProvider iosp = ncd.getIosp();
-    return (iosp != null && iosp instanceof BufrIosp2) ? true : null;
+    return (iosp instanceof BufrIosp2) ? true : null;
   }
 
   @Override
   public FeatureType[] getFeatureTypes() {
-    return new FeatureType[]{FeatureType.ANY_POINT};
+    return new FeatureType[] {FeatureType.ANY_POINT};
   }
 
   @Override
-  public FeatureDataset open(FeatureType ftype, NetcdfDataset ncd, Object analysis, CancelTask task, Formatter errlog) throws IOException {
-    /* BufrIosp2 iosp = (BufrIosp2) ncd.getIosp();
-    BufrConfig config = iosp.getConfig();
-    Formatter f = new Formatter();
-    config.show(f);
-    System.out.printf("%s%n", f);
-
-    Element iospParam = iosp.getElem();
-    if (iospParam != null) {
-      Element parent = iospParam.getChild("bufr2nc", NcMLReader.ncNS);
-      show(parent, new Indent(2));
-
-      processSeq((Structure) ncd.findVariable(BufrIosp2.obsRecord), parent);
-    }  */
-
+  public FeatureDataset open(FeatureType ftype, NetcdfDataset ncd, Object analysis, CancelTask task, Formatter errlog)
+      throws IOException {
 
     // must have an index file
     File indexFile = BufrCdmIndex.calcIndexFile(ncd.getLocation());
-    if (indexFile == null) return null;
+    if (indexFile == null)
+      return null;
 
     BufrCdmIndex index = BufrCdmIndex.readIndex(indexFile.getPath());
     return new BufrStationDataset(ncd, index);
   }
 
-  private void show(Element parent, Indent indent) {
-    if (parent == null) return;
+  private void show(Element parent, Indent indent, Formatter f) {
+    if (parent == null)
+      return;
     for (Element child : parent.getChildren("fld", Catalog.ncmlNS)) {
       String idx = child.getAttributeValue("idx");
       String fxy = child.getAttributeValue("fxy");
       String name = child.getAttributeValue("name");
       String action = child.getAttributeValue("action");
-      System.out.printf("%sidx='%s' fxy='%s' name='%s' action='%s'%n", indent, idx, fxy, name, action);
+      f.format("%sidx='%s' fxy='%s' name='%s' action='%s'%n", indent, idx, fxy, name, action);
       indent.incr();
-      show(child, indent);
+      show(child, indent, f);
       indent.decr();
     }
   }
 
-  private void processSeq(Structure struct, Element parent) throws IOException {
-    if (parent == null || struct == null) return;
+  private void processSeq(Structure struct, Element parent) {
+    if (parent == null || struct == null)
+      return;
     List<Variable> vars = struct.getVariables();
     for (Element child : parent.getChildren("fld", Catalog.ncmlNS)) {
       String idxS = child.getAttributeValue("idx");
       int idx = Integer.parseInt(idxS);
       if (idx < 0 || idx >= vars.size()) {
-        log.error("Bad index = %s", child);
+        log.error("Bad index = {}", child);
         continue;
       }
       Variable want = vars.get(idx);
       struct.removeMemberVariable(want);
-      System.out.printf("removed %s%n", want);
     }
   }
 
@@ -135,7 +124,7 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
       super(ncfile, FeatureType.STATION);
       this.index = index;
 
-       // create the list of data variables
+      // create the list of data variables
       munger = new Munge();
       obs = (SequenceDS) ncfile.findVariable(BufrIosp2.obsRecord);
       this.dataVariables = munger.makeDataVariables(index, obs);
@@ -164,7 +153,7 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
       private BufrStationCollection(String name) {
         super(name, null, null);
 
-        // need  the center id to match the standard fields
+        // need the center id to match the standard fields
         Attribute centerAtt = netcdfDataset.findGlobalAttribute(BufrIosp2.centerId);
         int center = (centerAtt == null) ? 0 : centerAtt.getNumericValue().intValue();
         this.extract = new StandardFields.StandardFieldsFromStructure(center, obs);
@@ -172,14 +161,14 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
         try {
           this.timeUnit = bufrDateUnits;
         } catch (Exception e) {
-          e.printStackTrace();  //cant happen
+          e.printStackTrace(); // cant happen
         }
 
         this.altUnits = "m"; // LOOK fake units
       }
 
       @Override
-      protected StationHelper createStationHelper() throws IOException {
+      protected StationHelper createStationHelper() {
         StationHelper stationHelper = new StationHelper();
         for (BufrCdmIndexProto.Station s : index.stations)
           stationHelper.addStation(new BufrStation(s));
@@ -190,7 +179,7 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
       private class BufrStation extends StationTimeSeriesFeatureImpl {
         private BufrStation(BufrCdmIndexProto.Station proto) {
           super(proto.getId(), proto.getDesc(), proto.getWmoId(), proto.getLat(), proto.getLon(), proto.getAlt(),
-                  bufrDateUnits, bufrAltUnits, proto.getCount(), StructureData.EMPTY);
+              bufrDateUnits, bufrAltUnits, proto.getCount(), StructureData.EMPTY);
         }
 
         @Override
@@ -200,13 +189,13 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
 
         @Nonnull
         @Override
-        public StructureData getFeatureData() throws IOException {
+        public StructureData getFeatureData() {
           return StructureData.EMPTY;
         }
 
         // iterates over the records for this station
         public class BufrStationIterator extends PointIteratorFromStructureData {
-          public BufrStationIterator(StructureDataIterator structIter, PointFeatureIterator.Filter filter) throws IOException {
+          public BufrStationIterator(StructureDataIterator structIter, PointFeatureIterator.Filter filter) {
             super(structIter, filter);
           }
 
@@ -214,12 +203,10 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
           protected PointFeature makeFeature(int recnum, StructureData sdata) throws IOException {
             extract.extract(sdata);
             String stationId = extract.getStationId();
-            //System.out.printf("  '%s' '%s' (%d) %n", s.getName(), stationId, countRecords++);
-            //if (count > 10) return null;
             if (!stationId.equals(s.getName()))
               return null;
             CalendarDate date = extract.makeCalendarDate();
-            return new BufrStationPoint(s, date.getMillis(), 0, munger.munge(sdata));  // LOOK  obsTime, nomTime
+            return new BufrStationPoint(s, date.getMillis(), 0, munger.munge(sdata)); // LOOK obsTime, nomTime
           }
         }
 
@@ -233,14 +220,15 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
 
           @Nonnull
           @Override
-          public StructureData getDataAll() throws IOException {
+          public StructureData getDataAll() {
             return sdata;
           }
+
           @Nonnull
           @Override
-           public StructureData getFeatureData() throws IOException {
-             return sdata;
-           }
+          public StructureData getFeatureData() {
+            return sdata;
+          }
 
           @Override
           public StationFeature getStationFeature() {
@@ -269,7 +257,8 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
           }
           createStationHelper();
           stationsWanted = getStationHelper().subset(boundingBox);
-          if (dateRange != null) filter = new PointIteratorFiltered.SpaceAndTimeFilter(null, dateRange);
+          if (dateRange != null)
+            filter = new PointIteratorFiltered.SpaceAndTimeFilter(null, dateRange);
         }
 
         @Override
@@ -279,9 +268,9 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
 
         // iterates once over all the records
         public class BufrRecordIterator extends PointIteratorFromStructureData {
-          int countHere = 0;
+          int countHere;
 
-          public BufrRecordIterator(StructureDataIterator structIter, PointFeatureIterator.Filter filter) throws IOException {
+          public BufrRecordIterator(StructureDataIterator structIter, PointFeatureIterator.Filter filter) {
             super(structIter, filter);
           }
 
@@ -299,7 +288,8 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
 
           @Override
           public void close() {
-            System.out.printf("BufrRecordIterator passed %d features super claims %d%n", countHere, getInfo().nfeatures);
+            log.debug(String.format("BufrRecordIterator passed %d features super claims %d%n", countHere,
+                getInfo().nfeatures));
             super.close();
           }
 
@@ -315,14 +305,15 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
 
           @Nonnull
           @Override
-          public StructureData getDataAll() throws IOException {
+          public StructureData getDataAll() {
             return sdata;
           }
+
           @Nonnull
           @Override
-          public StructureData getFeatureData() throws IOException {
-             return sdata;
-           }
+          public StructureData getFeatureData() {
+            return sdata;
+          }
 
           @Override
           public StationFeature getStation() {
@@ -336,6 +327,7 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
 
   private static class Action {
     BufrCdmIndexProto.FldAction what;
+
     private Action(BufrCdmIndexProto.FldAction what) {
       this.what = what;
     }
@@ -349,7 +341,7 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
     protected Map<String, VariableDS> vars = new HashMap<>(32);
 
     List<VariableSimpleIF> makeDataVariables(BufrCdmIndex index, Structure obs) {
-      this.sdataName = obs.getShortName()+"Munged";
+      this.sdataName = obs.getShortName() + "Munged";
 
       List<Variable> members = obs.getVariables();
       List<VariableSimpleIF> result = new ArrayList<>(members.size());
@@ -377,7 +369,8 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
           }
         }
 
-        if (v.getDataType() == DataType.SEQUENCE) continue;
+        if (v.getDataType() == DataType.SEQUENCE)
+          continue;
         result.add(v);
       }
       return result;
@@ -400,16 +393,13 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
           if (act == null) {
             sm.addMember(m);
 
-          } else if (act.what == BufrCdmIndexProto.FldAction.remove) {
-            continue;
-
           } else if (act.what == BufrCdmIndexProto.FldAction.asMissing) {
             ArraySequence seq = sdata.getArraySequence(m);
             StructureDataIterator iter = seq.getStructureDataIterator();
             if (!iter.hasNext()) {
               for (StructureMembers.Member childMember : seq.getMembers()) {
-                 sm.addMember(childMember); // LOOK ??
-               }
+                sm.addMember(childMember); // LOOK ??
+              }
             } else {
               StructureData childStruct = iter.next();
               for (StructureMembers.Member childMember : childStruct.getMembers()) {
@@ -435,13 +425,13 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
         for (StructureMembers.Member m : sdata.getMembers()) {
           Action act = actions.get(m.getName());
           if (act == null) {
-            continue;
+            // do nothing
 
           } else if (act.what == BufrCdmIndexProto.FldAction.remove) {
-            this.members.hideMember(m) ;
+            this.members.hideMember(m);
 
-          } else if (act.what == BufrCdmIndexProto.FldAction.asMissing) {  // 0 or 1
-            int pos = this.members.hideMember(m) ;
+          } else if (act.what == BufrCdmIndexProto.FldAction.asMissing) { // 0 or 1
+            int pos = this.members.hideMember(m);
             ArraySequence seq = sdata.getArraySequence(m);
             StructureDataIterator iter = seq.getStructureDataIterator();
             if (iter.hasNext()) {
@@ -458,7 +448,8 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
 
     StructureData makeMissing(StructureMembers.Member seqm, ArraySequence seq) {
       StructureData result = missingData.get(seqm.getName());
-      if (result != null) return result;
+      if (result != null)
+        return result;
 
       StructureMembers sm = new StructureMembers(seq.getStructureMembers());
       StructureDataW resultW = new StructureDataW(sm);

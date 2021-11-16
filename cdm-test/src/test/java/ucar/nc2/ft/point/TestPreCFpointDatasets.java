@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.nc2.constants.FeatureType;
 import ucar.unidata.util.test.TestDir;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -31,9 +30,9 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class TestPreCFpointDatasets {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  static public String CFpointObs_pre16 = TestDir.cdmLocalTestDataDir + "pointPre1.6/";
+  static public String CFpointObs_pre16 = TestDir.cdmLocalFromTestDataDir + "pointPre1.6/";
 
-  @Parameterized.Parameters(name="{0}")
+  @Parameterized.Parameters(name = "{0}")
   public static List<Object[]> getTestParameters() {
     return TestPointDatasets.getAllFilesInDirectory(CFpointObs_pre16, new FileFilter() {
       public boolean accept(File f) {

@@ -14,13 +14,10 @@ import ucar.nc2.units.*;
 import ucar.ui.prefs.Field;
 import ucar.ui.prefs.FieldValidator;
 import ucar.ui.prefs.PrefPanel;
-
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Date;
@@ -57,12 +54,12 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
   private JToggleButton disableButton;
   private HelpWindow helpWindow;
 
-    // event management
+  // event management
   private ActionSourceListener actionSource;
   private String actionName = "rangeDateSelection";
   private boolean eventOK = true;
 
-  private static boolean debugEvent = false, debugEvent2 = false;
+  private static boolean debugEvent, debugEvent2;
 
   /**
    * Constructor using info from thredds DQC.
@@ -77,18 +74,17 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
    * @param pointOnly if user can only select one point, otherwise can select a range of dates.
    */
   public RangeDateSelector(String title, String start, String end, String durationS, String minInterval,
-                           boolean enableButton, boolean acceptButton, String help, boolean pointOnly) throws Exception {
+      boolean enableButton, boolean acceptButton, String help, boolean pointOnly) throws Exception {
 
-    this( title,
-          new DateRange( (start == null) ? null : new DateType(start, null, null),
-                         (end == null) ? null : new DateType(end, null, null),
-                         (durationS == null) ? null : new TimeDuration(durationS),
-                         (minInterval == null) ? null : new TimeDuration(minInterval)),
-          enableButton, acceptButton, help, pointOnly, true);
+    this(title, new DateRange((start == null) ? null : new DateType(start, null, null),
+        (end == null) ? null : new DateType(end, null, null), (durationS == null) ? null : new TimeDuration(durationS),
+        (minInterval == null) ? null : new TimeDuration(minInterval)), enableButton, acceptButton, help, pointOnly,
+        true);
   }
 
   /**
    * Constructor.
+   * 
    * @param title widget title displayed to user, may be null
    * @param range range that the user can select from
    * @param acceptButton add an accept Button
@@ -96,8 +92,8 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
    * @param help optional help text
    * @param pointOnly if user can only select one point, otherwise can select a range of dates.
    */
-  public RangeDateSelector(String title, DateRange range,  boolean enableButton, boolean acceptButton, String help,
-                           boolean pointOnly, boolean useLimits) {
+  public RangeDateSelector(String title, DateRange range, boolean enableButton, boolean acceptButton, String help,
+      boolean pointOnly, boolean useLimits) {
     this.title = title;
     this.dateRange = range;
     this.acceptButton = acceptButton;
@@ -123,9 +119,9 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     if (helpMessage != null) {
       helpButton = new JButton("help");
       helpButton.addActionListener(e -> {
-          if (helpWindow == null)
-            helpWindow = new HelpWindow(null, "Help on " + title, helpMessage);
-          helpWindow.show(helpButton);
+        if (helpWindow == null)
+          helpWindow = new HelpWindow(null, "Help on " + title, helpMessage);
+        helpWindow.show(helpButton);
       });
       butts.add(helpButton);
     }
@@ -133,8 +129,8 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     if (acceptButton) {
       JButton okButton = new JButton("accept");
       okButton.addActionListener(e -> {
-          pp.accept();
-          sendEvent();
+        pp.accept();
+        sendEvent();
       });
 
       butts.add(okButton);
@@ -144,12 +140,12 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     if (enableButton) {
       disableButton = new JToggleButton("disable", false);
       disableButton.addActionListener(e -> {
-          boolean b = !disableButton.getModel().isSelected();
-          minField.setEnabled(b);
-          maxField.setEnabled(b);
-          durationField.setEnabled(b);
-          minSlider.setEnabled(b);
-          maxSlider.setEnabled(b);
+        boolean b = !disableButton.getModel().isSelected();
+        minField.setEnabled(b);
+        maxField.setEnabled(b);
+        durationField.setEnabled(b);
+        minSlider.setEnabled(b);
+        maxSlider.setEnabled(b);
       });
 
       butts.add(disableButton);
@@ -189,10 +185,10 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     // the fields use a PrefPanel
     pp = new PrefPanel(null, null);
     int row = 0;
-    //if (tit != null) {
-    //  pp.addComponent(new JLabel(tit), col, 0, null);
-    //  col+=2;
-    //}
+    // if (tit != null) {
+    // pp.addComponent(new JLabel(tit), col, 0, null);
+    // col+=2;
+    // }
     if (isPointOnly) {
       pp.addField(minField, 0, row, null);
     } else {
@@ -210,7 +206,8 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     sliderPanel.add(pp);
 
     if (useLimits) {
-      if (!isPointOnly) sliderPanel.add(maxSlider);
+      if (!isPointOnly)
+        sliderPanel.add(maxSlider);
       sliderPanel.add(minSlider);
       sliderPanel.add(labelPanel);
     }
@@ -221,33 +218,39 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
 
     // listen for changes from user manupulation
     maxSlider.addChangeListener(e -> {
-        if (debugEvent2) System.out.println("maxSlider event= " + maxSlider.getValue());
-        if (!eventOK) return;
+      if (debugEvent2)
+        System.out.println("maxSlider event= " + maxSlider.getValue());
+      if (!eventOK)
+        return;
 
-        int pos = maxSlider.getValue();
-        dateRange.setEnd(scale.slider2world(pos));
-        synchUI(false);
+      int pos = maxSlider.getValue();
+      dateRange.setEnd(scale.slider2world(pos));
+      synchUI(false);
 
-        if (dateRange.isPoint())
-          minSlider.setValue(pos); // drag min along */
+      if (dateRange.isPoint())
+        minSlider.setValue(pos); // drag min along */
     });
 
     minSlider.addChangeListener(e -> {
-        if (debugEvent2) System.out.println("minSlider event= " + minSlider.getValue());
-        if (!eventOK) return;
+      if (debugEvent2)
+        System.out.println("minSlider event= " + minSlider.getValue());
+      if (!eventOK)
+        return;
 
-        int pos = minSlider.getValue();
-        dateRange.setStart(scale.slider2world(pos));
-        synchUI(false);
+      int pos = minSlider.getValue();
+      dateRange.setStart(scale.slider2world(pos));
+      synchUI(false);
 
-        if (dateRange.isPoint() && !isPointOnly)
-          maxSlider.setValue(pos); // drag max along
+      if (dateRange.isPoint() && !isPointOnly)
+        maxSlider.setValue(pos); // drag max along
     });
 
     minField.addPropertyChangeListener(new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent e) {
-        if (debugEvent) System.out.println("minField event= " + e.getNewValue() + " " + e.getNewValue().getClass().getName());
-        if (!eventOK) return;
+        if (debugEvent)
+          System.out.println("minField event= " + e.getNewValue() + " " + e.getNewValue().getClass().getName());
+        if (!eventOK)
+          return;
 
         DateType val = (DateType) minField.getValue();
         dateRange.setStart(val);
@@ -258,8 +261,10 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     if (maxField != null) {
       maxField.addPropertyChangeListener(new PropertyChangeListener() {
         public void propertyChange(PropertyChangeEvent e) {
-          if (debugEvent) System.out.println("maxField event= " + e.getNewValue());
-          if (!eventOK) return;
+          if (debugEvent)
+            System.out.println("maxField event= " + e.getNewValue());
+          if (!eventOK)
+            return;
 
           DateType val = (DateType) maxField.getValue();
           dateRange.setEnd(val);
@@ -271,11 +276,13 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     if (durationField != null) {
       durationField.addPropertyChangeListener(new PropertyChangeListener() {
         public void propertyChange(PropertyChangeEvent e) {
-          if (debugEvent) System.out.println("durationField event= " + e.getNewValue());
-          if (!eventOK) return;
+          if (debugEvent)
+            System.out.println("durationField event= " + e.getNewValue());
+          if (!eventOK)
+            return;
 
           TimeDuration val = durationField.getTimeDuration();
-          dateRange.setDuration( val);
+          dateRange.setDuration(val);
           synchUI(true);
         }
       });
@@ -284,12 +291,14 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     if (resolutionField != null) {
       resolutionField.addPropertyChangeListener(new PropertyChangeListener() {
         public void propertyChange(PropertyChangeEvent e) {
-          if (debugEvent) System.out.println("resolutionField event= " + e.getNewValue());
-          if (!eventOK) return;
+          if (debugEvent)
+            System.out.println("resolutionField event= " + e.getNewValue());
+          if (!eventOK)
+            return;
 
           TimeDuration val = resolutionField.getTimeDuration();
-          dateRange.setResolution( val);
-          //synchUI(true);
+          dateRange.setResolution(val);
+          // synchUI(true);
         }
       });
     }
@@ -297,44 +306,48 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
     // listen for outside changes
     actionSource = new ActionSourceListener(actionName) {
       public void actionPerformed(ActionValueEvent e) {
-        if (debugEvent) System.out.println(" actionSource event " + e);
-        //?? setSelectedByName( e.getValue().toString());
+        if (debugEvent)
+          System.out.println(" actionSource event " + e);
+        // ?? setSelectedByName( e.getValue().toString());
       }
     };
 
     // catch resize events on the slider
-    /* minSlider.addComponentListener( new ComponentAdapter() {
-      public void componentResized( ComponentEvent e) {
-        setLabels();
-      }
-    }); */
+    /*
+     * minSlider.addComponentListener( new ComponentAdapter() {
+     * public void componentResized( ComponentEvent e) {
+     * setLabels();
+     * }
+     * });
+     */
   }
 
   private DateFormatter formatter = new DateFormatter();
 
-  public boolean validate( Field fld, Object editValue, StringBuffer errMessages) {
-    if (!useLimits) return true;
+  public boolean validate(Field fld, Object editValue, StringBuffer errMessages) {
+    if (!useLimits)
+      return true;
 
     DateType checkVal;
 
     if (fld == durationField) {
       TimeDuration duration = (TimeDuration) editValue;
       if (dateRange.getEnd().isPresent())
-        checkVal = dateRange.getEnd().subtract( duration);
+        checkVal = dateRange.getEnd().subtract(duration);
       else
-        checkVal = dateRange.getStart().add( duration);
+        checkVal = dateRange.getStart().add(duration);
     } else
-      checkVal =  (DateType) editValue; // otherwise its one of the dates
+      checkVal = (DateType) editValue; // otherwise its one of the dates
 
     // have to be inside the limits
     Date d = checkVal.getDate();
     if (d.after(maxLimit.getDate()) || d.before(minLimit.getDate())) {
-      errMessages.append( "Date ");
-      errMessages.append(  formatter.toDateTimeString(d));
+      errMessages.append("Date ");
+      errMessages.append(formatter.toDateTimeString(d));
       errMessages.append(" must be between ");
-      errMessages.append( minLimit.getText());
-      errMessages.append( " and ");
-      errMessages.append( maxLimit.getText());
+      errMessages.append(minLimit.getText());
+      errMessages.append(" and ");
+      errMessages.append(maxLimit.getText());
       return false;
     }
 
@@ -344,11 +357,13 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
   // set values on the UI
   private void synchUI(boolean slidersOK) {
     eventOK = false;
-    if (slidersOK) minSlider.setValue(scale.world2slider(dateRange.getStart()));
+    if (slidersOK)
+      minSlider.setValue(scale.world2slider(dateRange.getStart()));
     minField.setValue(dateRange.getStart());
 
     if (maxField != null) {
-      if (slidersOK) maxSlider.setValue(scale.world2slider(dateRange.getEnd()));
+      if (slidersOK)
+        maxSlider.setValue(scale.world2slider(dateRange.getEnd()));
       maxField.setValue(dateRange.getEnd());
     }
 
@@ -361,27 +376,38 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
   public void setDateRange(DateRange dateRange) {
     this.dateRange = dateRange;
 
-    this.minLimit = new DateType( dateRange.getStart());
-    this.maxLimit = new DateType( dateRange.getEnd());
-    this.scale = new Scale( dateRange);
+    this.minLimit = new DateType(dateRange.getStart());
+    this.maxLimit = new DateType(dateRange.getEnd());
+    this.scale = new Scale(dateRange);
 
-    minLabel.setText(" "+minLimit.getText()+" ");
-    maxLabel.setText(" "+maxLimit.getText()+" ");
+    minLabel.setText(" " + minLimit.getText() + " ");
+    maxLabel.setText(" " + maxLimit.getText() + " ");
 
     if (isPointOnly) {
-      minField.setValue( dateRange.getStart());
+      minField.setValue(dateRange.getStart());
     } else {
-      minField.setValue( dateRange.getStart());
-      maxField.setValue( dateRange.getEnd());
-      durationField.setValue( dateRange.getDuration());
-      resolutionField.setValue( dateRange.getResolution());
+      minField.setValue(dateRange.getStart());
+      maxField.setValue(dateRange.getEnd());
+      durationField.setValue(dateRange.getDuration());
+      resolutionField.setValue(dateRange.getResolution());
     }
   }
 
-  public DateField getMinDateField() { return minField; }
-  public DateField getMaxDateField() { return maxField; }
-  public DurationField getDurationField() { return durationField; }
-  public DurationField getResolutionField() { return resolutionField; }
+  public DateField getMinDateField() {
+    return minField;
+  }
+
+  public DateField getMaxDateField() {
+    return maxField;
+  }
+
+  public DurationField getDurationField() {
+    return durationField;
+  }
+
+  public DurationField getResolutionField() {
+    return resolutionField;
+  }
 
   public boolean isEnabled() {
     return (null == disableButton) || !disableButton.getModel().isSelected();
@@ -394,29 +420,33 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
   }
 
   public void sendEvent() {
-        // gotta do this after the dust settles
+    // gotta do this after the dust settles
     SwingUtilities.invokeLater(new Runnable() {
       public void run() {
-        System.out.println("event range= "+dateRange);
+        System.out.println("event range= " + dateRange);
         actionSource.fireActionValueEvent(actionName, this);
       } // run
     }); // invokeLater */
   }
 
-    /** add ActionValueListener listener */
-  public void addActionValueListener( ActionValueListener l) { actionSource.addActionValueListener(l); }
+  /** add ActionValueListener listener */
+  public void addActionValueListener(ActionValueListener l) {
+    actionSource.addActionValueListener(l);
+  }
 
-    /** remove ActionValueListener listener */
-  public void removeActionValueListener( ActionValueListener l) { actionSource.removeActionValueListener(l); }
+  /** remove ActionValueListener listener */
+  public void removeActionValueListener(ActionValueListener l) {
+    actionSource.removeActionValueListener(l);
+  }
 
   private static class Scale {
     private double min; // secs
-    private double scale;  // pixels / secs
+    private double scale; // pixels / secs
 
-    Scale( DateRange dateRange) {
+    Scale(DateRange dateRange) {
       this.min = .001 * dateRange.getStart().getDate().getTime();
-      //this.max = .001 * dateRange.getEnd().getDate().getTime();
-      //scale = SLIDER_RESOLUTION / (this.max - this.min);
+      // this.max = .001 * dateRange.getEnd().getDate().getTime();
+      // scale = SLIDER_RESOLUTION / (this.max - this.min);
 
       scale = SLIDER_RESOLUTION / dateRange.getDuration().getValueInSeconds();
       // System.out.println("slider scale= "+scale);
@@ -429,60 +459,11 @@ public class RangeDateSelector extends JPanel implements FieldValidator {
 
     private DateType slider2world(int pval) {
       double val = pval / scale; // secs
-      //double floor = Math.floor(val / resolution);
-      //double incr = floor * resolution;
+      // double floor = Math.floor(val / resolution);
+      // double incr = floor * resolution;
       double msecs = 1000 * (min + val);
-      return new DateType(false, new java.util.Date( (long) msecs));
+      return new DateType(false, new java.util.Date((long) msecs));
     }
-  }
-
-  public static void main(String[] args) throws Exception {
-
-    JFrame frame = new JFrame("Test Date Range Selector");
-    frame.addWindowListener(new WindowAdapter() {
-      public void windowClosing(WindowEvent e) {System.exit(0);}
-    });
-
-
-    RangeDateSelector rs1 = new RangeDateSelector("Date Range", "1990-01-01T01:00:00", "1990-01-02T02:00:00",
-       null, "15 minute", true, true, "i think im fallin", false);
-//    RangeDateSelector rs2 = new RangeDateSelector("Date", "1990-01-01", "1991-01-01", null, "1 day", false, true,
-//       "i think im fallin\n in love with youuuu ", false);
-//    RangeDateSelector rs3 = new RangeDateSelector("Date", "1990-01-01", "1991-01-01", null, "10 days", true, true,
-//       null, false);
-//    RangeDateSelector rs4 = new RangeDateSelector("Date", "1990-01-01", "1991-01-01", null, "10 days", false, false,
-//       null, true);
-//    RangeDateSelector rs5 = new RangeDateSelector("Date", null, "present", "10 days", "1 day", true, false,
-//       null, false);
-
-
-    // simulate what we do in PointObsViewer
-    DateRange range = null;
-    try {
-      range = new DateRange(); // phony
-    } catch (Exception e) {
-      e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-    }
-    RangeDateSelector rs6 = new RangeDateSelector(null, range, false, true, null, false, false);
-    DateUnit start = new DateUnit("0 secs since 2005-05-02 23:00:00");
-    DateUnit end = new DateUnit("0 secs since 2005-05-02 23:59:59");
-    rs6.setDateRange( new DateRange( start.getDate(), end.getDate()));
-
-    Box main = new Box( BoxLayout.Y_AXIS);
-
-    frame.getContentPane().add(main);
-    //main.setPreferredSize(new Dimension(400, 200));
-    //main.add( new JSlider(), BorderLayout.NORTH);
-    main.add( rs1);
-    /*main.add( rs2);
-    main.add( rs3);
-    main.add( rs4);
-    main.add( rs5); */
-    main.add( rs6);
-
-    frame.pack();
-    frame.setLocation(400, 300);
-    frame.setVisible(true);
   }
 
 }

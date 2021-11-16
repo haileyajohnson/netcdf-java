@@ -9,11 +9,11 @@ import ucar.ma2.Section;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.unidata.util.test.category.NeedsCdmUnitTest;
 import ucar.unidata.util.test.TestDir;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
-/**                    `
+/**
+ * `
  * Describe
  *
  * @author caron
@@ -23,7 +23,7 @@ public class TestParsedSectionSpec extends TestCase {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testVariableSection() throws InvalidRangeException, IOException {
-    NetcdfFile ncfile = NetcdfFile.open(TestDir.cdmLocalTestDataDir + "testWrite.nc"); // TestLocalNC2.openFile("testWrite.nc")
+    NetcdfFile ncfile = NetcdfFile.open(TestDir.cdmLocalFromTestDataDir + "testWrite.nc"); // TestLocalNC2.openFile("testWrite.nc")
     Variable v = ncfile.findVariable("temperature");
     assert v != null;
 

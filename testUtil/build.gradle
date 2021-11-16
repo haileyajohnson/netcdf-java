@@ -7,10 +7,11 @@ apply from: "$rootDir/gradle/any/java.gradle"
 // testUtil is not published
 
 dependencies {
-    compile project(":cdm")
+    compile project(":cdm:cdm-core")
     compile project(":httpservices")
     
     compile libraries["junit"]
+    compile libraries["re2j"]
     compile libraries["slf4j-api"]
     testRuntime libraries["logback-classic"]
 }

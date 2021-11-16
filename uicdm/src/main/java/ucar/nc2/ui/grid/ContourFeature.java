@@ -6,9 +6,8 @@ package ucar.nc2.ui.grid;
 
 import ucar.nc2.ui.gis.AbstractGisFeature;
 import ucar.nc2.ui.gis.GisPart;
-
-import java.util.*;      // for Iterator and ArrayList
-import java.awt.geom.*;  // for Point2D.Double
+import java.util.*; // for Iterator and ArrayList
+import java.awt.geom.*; // for Point2D.Double
 
 /**
  * An AbstractGisFeature derived class for contour lines.
@@ -35,7 +34,7 @@ public class ContourFeature extends AbstractGisFeature {
     lines = new ArrayList<>(conLines);
 
     // save the single contour value for all lines here as member data
-    if (conLines.size() > 0)
+    if (!conLines.isEmpty())
       contourValue = lines.get(0).getContourLevel();
     else
       contourValue = 0.0;
@@ -49,11 +48,10 @@ public class ContourFeature extends AbstractGisFeature {
 
       // error if contour values not all the same
       if (lines.get(i).getContourLevel() != contourValue)
-        System.out.println("  Mismatch: all contour levels" +
-                " in one ContourFeature should be the same.");
+        System.out.println("  Mismatch: all contour levels" + " in one ContourFeature should be the same.");
     }
     npts = count;
-  }  // end cstr
+  } // end cstr
 
 
   /**
@@ -93,8 +91,7 @@ public class ContourFeature extends AbstractGisFeature {
     }
 
     // Rectangle2D.Double(double x, double y, double width, double height)
-    Rectangle2D.Double rect =
-            new Rectangle2D.Double(xmin, ymin, xMaxInd - xmin, yMaxInd - ymin);
+    Rectangle2D.Double rect = new Rectangle2D.Double(xmin, ymin, xMaxInd - xmin, yMaxInd - ymin);
     return rect;
   }
 

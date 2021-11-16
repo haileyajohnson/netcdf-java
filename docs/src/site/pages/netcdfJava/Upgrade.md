@@ -21,7 +21,70 @@ Java WebStart has been deprecated as of [Java 9](https://www.oracle.com/technetw
 As such, we no longer utilize WebStart.
 
 ## Quick Navigation
+* [Summary of changes for v5.2.x](#netcdf-java-api-changes-52x)
+* [Summary of changes for v5.1.x](#netcdf-java-api-changes-51x)
 * [Summary of changes for v5.0.x](#netcdf-java-api-changes-50x)
+
+## netCDF-Java API Changes (5.2.x)
+
+Point release notes:
+* [5.2.0](https://github.com/Unidata/netcdf-java/releases/tag/v5.2.0){:target="_blank"} (_2019-10-23_)
+
+### netcdf-java artifact changes
+
+The following artifacts have changed:
+* The `cdm` artifact has been split into:
+    * `cdm-core`
+    * `cdm-radial`
+    * `cdm-misc`
+* The `visadCdm` artifact has been split into:
+* `cdm-mcidas`
+* `cdm-vis5d`
+* The `clcommon` artifact has been renamed to `cdm-image`
+
+None of these moves resulted in an API break.
+This move is a stepping stone towards supporting the Java Platform Module System in future releases of netCDF-Java.
+At this very least, this change will require updating your build scripts to use `cdm-core` over `cdm`.
+For information on what is included in the new modules, please visit the [Using netCDF-Java Maven Artifacts](using_netcdf_java_artifacts.html) documentation.
+
+### Allow HTTPRandomAccessFile maximum buffer size to be set by System Property
+
+When reading a remote file over http using byte-range requests, the default buffer size [can result in the need for a large heap](https://www.unidata.ucar.edu/mailing_lists/archives/netcdf-java/2019/msg00016.html){:target="_blank"}.
+Starting with v5.2.0, users can set the maximum buffer size in bytes using the Java System Property `ucar.unidata.io.http.maxHTTPBufferSize` (default is 10 MB).
+
+## netCDF-Java API Changes (5.1.x)
+
+Point release notes:
+* [5.1.0](https://github.com/Unidata/netcdf-java/releases/tag/v5.1.0){:target="_blank"} (_2019-09-18_)
+
+### Many checked exceptions removed
+
+Many unneeded checked Exceptions were removed in 5.1.
+In some cases, you may need to change your code to remove Exception handling.
+For example, the `buildFrom*` methods from `thredds.client.catalog.builder.CatalogBuilder` no longer throw `IOException`s.
+
+### CFGridCoverageWriter2
+
+* The `writeOrTestSize` method of `CFGridCoverageWriter2` has been refactored into two new methods:
+    * Check size of file before writing:
+      ~~~java
+      ucar.nc2.util.Optional<Long> getSizeOfOutput(CoverageCollection gdsOrg, List<String> gridNames,
+                                                   SubsetParams subset, boolean tryToAddLatLon2D)
+      ~~~
+    * Write file and return size:
+      ~~~java
+      ucar.nc2.util.Optional<Long> write(CoverageCollection gdsOrg, List<String> gridNames,
+                                         SubsetParams subset, boolean tryToAddLatLon2D,
+                                         NetcdfFileWriter writer)
+      ~~~
+
+### ucar.nc2.constants.CDM.utf8Charset Removed
+
+`ucar.nc2.constants.CDM.utf8Charset` has been removed in favor of `java.nio.charset.StandardCharsets.UTF_8`
+
+### Limit use of org.joda.time
+
+Remove usages of `org.joda.time` outside of `ucar.nc2.time`.
 
 ## netCDF-Java API Changes (5.0.x)
 

@@ -34,11 +34,8 @@ import ucar.nc2.write.Nc4ChunkingStrategy;
 import ucar.util.prefs.PreferencesExt;
 import ucar.ui.prefs.BeanTable;
 import ucar.ui.prefs.Debug;
-
 import ucar.nc2.ui.StructureTable;
-
 import org.jdom2.Element;
-
 import java.awt.BorderLayout;
 import java.awt.Frame;
 import java.awt.Rectangle;
@@ -73,8 +70,8 @@ import javax.swing.JTable;
  */
 public class DatasetWriter extends JPanel {
 
-  private static final org.slf4j.Logger logger
-      = org.slf4j.LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final org.slf4j.Logger logger =
+      org.slf4j.LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private FileManager fileChooser;
 
@@ -95,29 +92,30 @@ public class DatasetWriter extends JPanel {
   private StructureTable dataTable;
   private IndependentWindow infoWindow, dataWindow, attWindow;
 
-  private Nc4Chunking chunker = Nc4ChunkingStrategy
-      .factory(Nc4Chunking.Strategy.standard, 0, false);
+  private Nc4Chunking chunker = Nc4ChunkingStrategy.factory(Nc4Chunking.Strategy.standard, 0, false);
 
-  private CompareDialog dialog = null;
+  private CompareDialog dialog;
 
   public DatasetWriter(PreferencesExt prefs, FileManager fileChooser) {
     this.prefs = prefs;
     this.fileChooser = fileChooser;
 
     // create the variable table(s)
-    dimTable = new BeanTable(DimensionBean.class, (PreferencesExt) prefs.node("DimensionBeanTable"),
-        false, "Dimensions", null, new DimensionBean());
+    dimTable = new BeanTable(DimensionBean.class, (PreferencesExt) prefs.node("DimensionBeanTable"), false,
+        "Dimensions", null, new DimensionBean());
 
     tablePanel = new JPanel(new BorderLayout());
     setNestedTable(0, null);
 
-        /* the tree view
-        datasetTree = new DatasetTreeView();
-        datasetTree.addPropertyChangeListener(new PropertyChangeListener() {
-          public void propertyChange(PropertyChangeEvent e) {
-            setSelected((Variable) e.getNewValue());
-          }
-        }); */
+    /*
+     * the tree view
+     * datasetTree = new DatasetTreeView();
+     * datasetTree.addPropertyChangeListener(new PropertyChangeListener() {
+     * public void propertyChange(PropertyChangeEvent e) {
+     * setSelected((Variable) e.getNewValue());
+     * }
+     * });
+     */
 
     outputChooser = new NetcdfOutputChooser((Frame) null);
     outputChooser.addPropertyChangeListener("OK", new PropertyChangeListener() {
@@ -142,28 +140,27 @@ public class DatasetWriter extends JPanel {
 
     // the info window
     infoTA = new TextHistoryPane();
-    infoWindow = new IndependentWindow("Variable Information", BAMutil.getImage("nj22/NetcdfUI"),
-        infoTA);
-    infoWindow.setBounds(
-        (Rectangle) prefs.getBean("InfoWindowBounds", new Rectangle(300, 300, 500, 300)));
+    infoWindow = new IndependentWindow("Variable Information", BAMutil.getImage("nj22/NetcdfUI"), infoTA);
+    infoWindow.setBounds((Rectangle) prefs.getBean("InfoWindowBounds", new Rectangle(300, 300, 500, 300)));
 
     // the data Table
     dataTable = new StructureTable((PreferencesExt) prefs.node("structTable"));
     dataWindow = new IndependentWindow("Data Table", BAMutil.getImage("nj22/NetcdfUI"), dataTable);
-    dataWindow
-        .setBounds((Rectangle) prefs.getBean("dataWindow", new Rectangle(50, 300, 1000, 600)));
+    dataWindow.setBounds((Rectangle) prefs.getBean("dataWindow", new Rectangle(50, 300, 1000, 600)));
 
-        /* the ncdump Pane
-        dumpPane = new NCdumpPane((PreferencesExt) prefs.node("dumpPane"));
-        dumpWindow = new IndependentWindow("NCDump Variable Data", BAMutil.getImage( "netcdfUI"), dumpPane);
-        dumpWindow.setBounds( (Rectangle) prefs.getBean("DumpWindowBounds", new Rectangle( 300, 300, 300, 200))); */
+    /*
+     * the ncdump Pane
+     * dumpPane = new NCdumpPane((PreferencesExt) prefs.node("dumpPane"));
+     * dumpWindow = new IndependentWindow("NCDump Variable Data", BAMutil.getImage( "netcdfUI"), dumpPane);
+     * dumpWindow.setBounds( (Rectangle) prefs.getBean("DumpWindowBounds", new Rectangle( 300, 300, 300, 200)));
+     */
   }
 
   /**
    *
    */
   public void addActions(JPanel buttPanel) {
-    final AbstractAction attAction = new AbstractAction() {
+    AbstractAction attAction = new AbstractAction() {
       @Override
       public void actionPerformed(ActionEvent e) {
         showAtts();
@@ -195,16 +192,16 @@ public class DatasetWriter extends JPanel {
    *
    */
   private void showChunking() {
-    if (nestedTableList.size() == 0) {
+    if (nestedTableList.isEmpty()) {
       return;
     }
 
-    final NestedTable t = nestedTableList.get(0);
-    final List beans = t.table.getBeans();
+    NestedTable t = nestedTableList.get(0);
+    List beans = t.table.getBeans();
 
     for (Object bean1 : beans) {
-      final VariableBean bean = (VariableBean) bean1;
-      final boolean isChunked = chunker.isChunked(bean.vs);
+      VariableBean bean = (VariableBean) bean1;
+      boolean isChunked = chunker.isChunked(bean.vs);
 
       bean.setChunked(isChunked);
 
@@ -226,15 +223,17 @@ public class DatasetWriter extends JPanel {
     }
 
     String filename = data.outputFilename.trim();
-    if (filename.length() == 0) {
+    if (filename.isEmpty()) {
       JOptionPane.showMessageDialog(this, "Filename has not been set");
       return;
     }
-        /* File f = new File(filename);
-        if (!f.canWrite())  {
-          JOptionPane.showMessageDialog(this, "Cannot write to "+filename);
-          //return;
-        } */
+    /*
+     * File f = new File(filename);
+     * if (!f.canWrite()) {
+     * JOptionPane.showMessageDialog(this, "Cannot write to "+filename);
+     * //return;
+     * }
+     */
 
     if (data.version == NetcdfFileWriter.Version.ncstream) {
       writeNcstream(data.outputFilename);
@@ -250,7 +249,7 @@ public class DatasetWriter extends JPanel {
 
     WriterTask task = new WriterTask(data);
     ProgressMonitor pm = new ProgressMonitor(task, (e) -> {
-        logger.debug("success}");
+      logger.debug("success}");
     });
     pm.start(null, "Writing " + filename, ds.getVariables().size());
   }
@@ -262,32 +261,31 @@ public class DatasetWriter extends JPanel {
 
     NetcdfOutputChooser.Data data;
 
-     WriterTask(NetcdfOutputChooser.Data data) {
+    WriterTask(NetcdfOutputChooser.Data data) {
       this.data = data;
     }
 
-     public void run() {
+    public void run() {
       try {
-        final List beans = nestedTableList.get(0).table.getBeans();
-        final BeanChunker bc = new BeanChunker(beans, data.deflate, data.shuffle);
-        final FileWriter2 writer = new FileWriter2(ds, data.outputFilename, data.version, bc);
+        List beans = nestedTableList.get(0).table.getBeans();
+        BeanChunker bc = new BeanChunker(beans, data.deflate, data.shuffle);
+        FileWriter2 writer = new FileWriter2(ds, data.outputFilename, data.version, bc);
 
-        final double start = System.nanoTime();
+        double start = System.nanoTime();
         // write() return the open file that was just written, so we just need to close it.
-        try (NetcdfFile result = writer.write( this)) {
+        try (NetcdfFile result = writer.write(this)) {
           result.close();
         }
 
         double took = (System.nanoTime() - start) / 1000 / 1000 / 1000;
 
-        final File oldFile = new File(ds.getLocation());
-        final File newFile = new File(data.outputFilename);
+        File oldFile = new File(ds.getLocation());
+        File newFile = new File(data.outputFilename);
 
         double r = (double) newFile.length() / oldFile.length();
 
-        logger.debug("Rewrite from {} {} to {} {} version = {} ratio = {} took= {} secs",
-            ds.getLocation(), oldFile.length(), data.outputFilename, newFile.length(),
-            data.version, r, took);
+        logger.debug("Rewrite from {} {} to {} {} version = {} ratio = {} took= {} secs", ds.getLocation(),
+            oldFile.length(), data.outputFilename, newFile.length(), data.version, r, took);
 
         JOptionPane.showMessageDialog(DatasetWriter.this,
             "File successfully written took=" + took + " secs ratio=" + r);
@@ -296,7 +294,7 @@ public class DatasetWriter extends JPanel {
         ioe.printStackTrace();
       } finally {
         success = !cancel && !isError();
-        done = true;    // do last!
+        done = true; // do last!
       }
     }
   }
@@ -306,7 +304,7 @@ public class DatasetWriter extends JPanel {
    */
   void writeNcstream(String filename) {
     try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(filename), 50 * 1000)) {
-      final NcStreamWriter writer = new NcStreamWriter(ds, null);
+      NcStreamWriter writer = new NcStreamWriter(ds, null);
       writer.streamAll(fos);
       JOptionPane.showMessageDialog(this, "File successfully written");
     } catch (Exception ioe) {
@@ -320,7 +318,7 @@ public class DatasetWriter extends JPanel {
    */
   void writeNcstreamHeader(String filename) {
     try (FileOutputStream fos = new FileOutputStream(filename)) {
-      final NcStreamWriter writer = new NcStreamWriter(ds, null);
+      NcStreamWriter writer = new NcStreamWriter(ds, null);
       writer.sendHeader(fos);
       JOptionPane.showMessageDialog(this, "File successfully written");
     } catch (Exception ioe) {
@@ -361,9 +359,8 @@ public class DatasetWriter extends JPanel {
     }
 
     try (NetcdfFile compareFile = NetcdfDataset.openFile(data.name, null)) {
-      final Formatter f = new Formatter();
-      final CompareNetcdf2 cn = new CompareNetcdf2(f, data.showCompare, data.showDetails,
-          data.readData);
+      Formatter f = new Formatter();
+      CompareNetcdf2 cn = new CompareNetcdf2(f, data.showCompare, data.showDetails, data.readData);
 
       if (data.howMuch == CompareDialog.HowMuch.All) {
         cn.compare(ds, compareFile);
@@ -384,7 +381,7 @@ public class DatasetWriter extends JPanel {
       infoWindow.setTitle("Compare");
       infoWindow.show();
     } catch (Throwable ioe) {
-      final StringWriter sw = new StringWriter(10000);
+      StringWriter sw = new StringWriter(10000);
       ioe.printStackTrace(new PrintWriter(sw));
       infoTA.setText(sw.toString());
       infoTA.gotoTop();
@@ -402,13 +399,12 @@ public class DatasetWriter extends JPanel {
 
     if (attTable == null) {
       // global attributes
-      attTable = new BeanTable(AttributeBean.class, (PreferencesExt) prefs.node("AttributeBeans"),
-          false);
+      attTable = new BeanTable(AttributeBean.class, (PreferencesExt) prefs.node("AttributeBeans"), false);
       PopupMenu varPopup = new PopupMenu(attTable.getJTable(), "Options");
       varPopup.addAction("Show Attribute", new AbstractAction() {
         @Override
         public void actionPerformed(ActionEvent e) {
-          final AttributeBean bean = (AttributeBean) attTable.getSelectedBean();
+          AttributeBean bean = (AttributeBean) attTable.getSelectedBean();
           if (bean != null) {
             infoTA.setText(bean.att.toString());
             infoTA.gotoTop();
@@ -416,13 +412,11 @@ public class DatasetWriter extends JPanel {
           }
         }
       });
-      attWindow = new IndependentWindow("Global Attributes", BAMutil.getImage("nj22/NetcdfUI"),
-          attTable);
-      attWindow.setBounds((Rectangle) prefs.getBean("AttWindowBounds",
-          new Rectangle(300, 100, 500, 800)));
+      attWindow = new IndependentWindow("Global Attributes", BAMutil.getImage("nj22/NetcdfUI"), attTable);
+      attWindow.setBounds((Rectangle) prefs.getBean("AttWindowBounds", new Rectangle(300, 100, 500, 800)));
     }
 
-    final List<AttributeBean> attlist = new ArrayList<>();
+    List<AttributeBean> attlist = new ArrayList<>();
     for (Attribute att : ds.getGlobalAttributes()) {
       attlist.add(new AttributeBean(att));
     }
@@ -443,7 +437,7 @@ public class DatasetWriter extends JPanel {
   public void setDataset(NetcdfFile ds) {
     this.ds = ds;
     dimTable.setBeans(makeDimensionBeans(ds));
-    final NestedTable nt = nestedTableList.get(0);
+    NestedTable nt = nestedTableList.get(0);
     nt.table.setBeans(makeVariableBeans(ds));
     hideNestedTable(1);
     showChunking();
@@ -453,7 +447,7 @@ public class DatasetWriter extends JPanel {
    *
    */
   private void setSelected(Variable v) {
-    final List<Variable> vchain = new ArrayList<>();
+    List<Variable> vchain = new ArrayList<>();
     vchain.add(v);
 
     Variable vp = v;
@@ -464,22 +458,24 @@ public class DatasetWriter extends JPanel {
 
     for (int i = 0; i < vchain.size(); i++) {
       vp = vchain.get(i);
-      final NestedTable ntable = setNestedTable(i, vp.getParentStructure());
+      NestedTable ntable = setNestedTable(i, vp.getParentStructure());
       ntable.setSelected(vp);
     }
   }
 
-  /* public void showTreeViewWindow() {
-    if (treeWindow == null) {
-      datasetTree = new DatasetTreeView();
-      treeWindow = new IndependentWindow("TreeView", datasetTree);
-      treeWindow.setIconImage(thredds.ui.BAMutil.getImage("netcdfUI"));
-      treeWindow.setBounds( (Rectangle) prefs.getBean("treeWindow", new Rectangle( 150, 100, 400, 700)));
-    }
-
-    datasetTree.setDataset( ds);
-    treeWindow.show();
-  } */
+  /*
+   * public void showTreeViewWindow() {
+   * if (treeWindow == null) {
+   * datasetTree = new DatasetTreeView();
+   * treeWindow = new IndependentWindow("TreeView", datasetTree);
+   * treeWindow.setIconImage(thredds.ui.BAMutil.getImage("netcdfUI"));
+   * treeWindow.setBounds( (Rectangle) prefs.getBean("treeWindow", new Rectangle( 150, 100, 400, 700)));
+   * }
+   * 
+   * datasetTree.setDataset( ds);
+   * treeWindow.show();
+   * }
+   */
 
   /**
    *
@@ -493,11 +489,11 @@ public class DatasetWriter extends JPanel {
     infoTA.clear();
 
     if (isNcml) {
-      final NcMLWriter ncmlWriter = new NcMLWriter();
+      NcMLWriter ncmlWriter = new NcMLWriter();
       ncmlWriter.setNamespace(null);
       ncmlWriter.getXmlFormat().setOmitDeclaration(true);
 
-      final Element varElement = ncmlWriter.makeVariableElement(v, false);
+      Element varElement = ncmlWriter.makeVariableElement(v, false);
       infoTA.appendLine(ncmlWriter.writeToString(varElement));
     } else {
       infoTA.appendLine(v.toString());
@@ -519,7 +515,7 @@ public class DatasetWriter extends JPanel {
    *
    */
   private void dataTable(BeanTable from) {
-    final VariableBean vb = (VariableBean) from.getSelectedBean();
+    VariableBean vb = (VariableBean) from.getSelectedBean();
     if (vb == null) {
       return;
     }
@@ -543,7 +539,7 @@ public class DatasetWriter extends JPanel {
    *
    */
   private Variable getCurrentVariable(BeanTable from) {
-    final VariableBean vb = (VariableBean) from.getSelectedBean();
+    VariableBean vb = (VariableBean) from.getSelectedBean();
     if (vb == null) {
       return null;
     }
@@ -555,7 +551,7 @@ public class DatasetWriter extends JPanel {
    *
    */
   private List<VariableBean> makeVariableBeans(NetcdfFile ds) {
-    final List<VariableBean> vlist = new ArrayList<>();
+    List<VariableBean> vlist = new ArrayList<>();
     for (Variable v : ds.getVariables()) {
       vlist.add(new VariableBean(v));
     }
@@ -566,7 +562,7 @@ public class DatasetWriter extends JPanel {
    *
    */
   private List<DimensionBean> makeDimensionBeans(NetcdfFile ds) {
-    final List<DimensionBean> dlist = new ArrayList<>();
+    List<DimensionBean> dlist = new ArrayList<>();
     for (Dimension d : ds.getDimensions()) {
       dlist.add(new DimensionBean(d));
     }
@@ -577,7 +573,7 @@ public class DatasetWriter extends JPanel {
    *
    */
   private List<VariableBean> getStructureVariables(Structure s) {
-    final List<VariableBean> vlist = new ArrayList<>();
+    List<VariableBean> vlist = new ArrayList<>();
     for (Variable v : s.getVariables()) {
       vlist.add(new VariableBean(v));
     }
@@ -610,7 +606,7 @@ public class DatasetWriter extends JPanel {
   private void hideNestedTable(int level) {
     int n = nestedTableList.size();
     for (int i = n - 1; i >= level; i--) {
-      final NestedTable ntable = nestedTableList.get(i);
+      NestedTable ntable = nestedTableList.get(i);
       ntable.hide();
     }
   }
@@ -624,9 +620,9 @@ public class DatasetWriter extends JPanel {
     PreferencesExt myPrefs;
 
     BeanTable table; // always the left component
-    JSplitPane split = null; // right component (if exists) is the nested dataset.
+    JSplitPane split; // right component (if exists) is the nested dataset.
     int splitPos = 100;
-    boolean isShowing = false;
+    boolean isShowing;
 
     /**
      *
@@ -635,8 +631,7 @@ public class DatasetWriter extends JPanel {
       this.level = level;
       myPrefs = (PreferencesExt) prefs.node("NestedTable" + level);
 
-      table = new BeanTable(VariableBean.class, myPrefs, false, "Variables", null,
-          new VariableBean());
+      table = new BeanTable(VariableBean.class, myPrefs, false, "Variables", null, new VariableBean());
 
       JTable jtable = table.getJTable();
       PopupMenu csPopup = new PopupMenu(jtable, "Options");
@@ -651,10 +646,12 @@ public class DatasetWriter extends JPanel {
           showDeclaration(table, true);
         }
       });
-            /* csPopup.addAction("NCdump Data", "Dump", new AbstractAction() {
-                public void actionPerformed(ActionEvent e) {
-                dumpData(table);
-             } }); */
+      /*
+       * csPopup.addAction("NCdump Data", "Dump", new AbstractAction() {
+       * public void actionPerformed(ActionEvent e) {
+       * dumpData(table);
+       * } });
+       */
 
       if (level == 0) {
         csPopup.addAction("Data Table", new AbstractAction() {
@@ -667,12 +664,12 @@ public class DatasetWriter extends JPanel {
 
       // get selected variable, see if its a structure
       table.addListSelectionListener(e -> {
-        final Variable v = getCurrentVariable(table);
+        Variable v = getCurrentVariable(table);
         if (v instanceof Structure) {
-          hideNestedTable(NestedTable.this.level + 2);
-          setNestedTable(NestedTable.this.level + 1, (Structure) v);
+          hideNestedTable(this.level + 2);
+          setNestedTable(this.level + 1, (Structure) v);
         } else {
-          hideNestedTable(NestedTable.this.level + 1);
+          hideNestedTable(this.level + 1);
         }
         // if (eventsOK) datasetTree.setSelected( v);
       });
@@ -734,7 +731,7 @@ public class DatasetWriter extends JPanel {
      *
      */
     void setSelected(Variable vs) {
-      final List beans = table.getBeans();
+      List beans = table.getBeans();
 
       for (Object bean1 : beans) {
         VariableBean bean = (VariableBean) bean1;
@@ -815,15 +812,14 @@ public class DatasetWriter extends JPanel {
   /**
    *
    */
-  public class DimensionBean {
+  public static class DimensionBean {
 
     Dimension ds;
 
     /**
      * no-arg constructor
      */
-    public DimensionBean() {
-    }
+    public DimensionBean() {}
 
     /**
      * create from a dimension
@@ -869,8 +865,7 @@ public class DatasetWriter extends JPanel {
     /**
      * no-arg constructor
      */
-    public VariableBean() {
-    }
+    public VariableBean() {}
 
     // create from a dataset
     public VariableBean(Variable vs) {
@@ -882,17 +877,17 @@ public class DatasetWriter extends JPanel {
       setDataType(vs.getDataType().toString());
 
       // collect dimensions
-      final Formatter lens = new Formatter();
-      final Formatter names = new Formatter();
+      Formatter lens = new Formatter();
+      Formatter names = new Formatter();
       lens.format("(");
-      final List<Dimension> dims = vs.getDimensions();
+      List<Dimension> dims = vs.getDimensions();
       for (int j = 0; j < dims.size(); j++) {
         Dimension dim = dims.get(j);
         if (j > 0) {
           lens.format(",");
           names.format(",");
         }
-        final String name = dim.isShared() ? dim.getShortName() : "anon";
+        String name = dim.isShared() ? dim.getShortName() : "anon";
         names.format("%s", name);
         lens.format("%d", dim.getLength());
       }
@@ -968,7 +963,7 @@ public class DatasetWriter extends JPanel {
      *
      */
     public String getSize() {
-      final Formatter f = new Formatter();
+      Formatter f = new Formatter();
       f.format("%,d", vs.getSize());
       return f.toString();
     }
@@ -1018,12 +1013,12 @@ public class DatasetWriter extends JPanel {
         return 0;
       }
 
-      final int[] shape = vs.getShape();
+      int[] shape = vs.getShape();
 
       long total = 1;
 
       for (int i = 0; i < chunked.length; i++) {
-        final int overhang = (int) (shape[i] % chunked[i]);
+        int overhang = (int) (shape[i] % chunked[i]);
         total *= overhang;
       }
       return total;
@@ -1040,10 +1035,10 @@ public class DatasetWriter extends JPanel {
         return "";
       }
 
-      final long total = getOverHang();
-      final float p = 100.0f * total / vs.getSize();
+      long total = getOverHang();
+      float p = 100.0f * total / vs.getSize();
 
-      final Formatter f = new Formatter();
+      Formatter f = new Formatter();
       f.format("%6.3f", p);
 
       return f.toString();
@@ -1057,7 +1052,7 @@ public class DatasetWriter extends JPanel {
         return "";
       }
 
-      final Formatter f = new Formatter();
+      Formatter f = new Formatter();
       f.format("(");
 
       for (int i = 0; i < chunked.length; i++) {
@@ -1074,7 +1069,7 @@ public class DatasetWriter extends JPanel {
      *
      */
     public void setChunkSize(String chunkSize) {
-      final StringTokenizer stoke = new StringTokenizer(chunkSize, "(), ");
+      StringTokenizer stoke = new StringTokenizer(chunkSize, "(), ");
       this.chunked = new long[stoke.countTokens()];
       int count = 0;
       while (stoke.hasMoreTokens()) {
@@ -1094,15 +1089,14 @@ public class DatasetWriter extends JPanel {
   /**
    *
    */
-  public class AttributeBean {
+  public static class AttributeBean {
 
     private Attribute att;
 
     /**
      * no-arg constructor
      */
-    public AttributeBean() {
-    }
+    public AttributeBean() {}
 
     /**
      * create from an attribute
@@ -1119,7 +1113,7 @@ public class DatasetWriter extends JPanel {
     }
 
     public String getValue() {
-      final Array value = att.getValues();
+      Array value = att.getValues();
       return NCdumpW.toString(value, null, null);
     }
   }

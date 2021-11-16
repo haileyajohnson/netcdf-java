@@ -28,7 +28,7 @@ tasks.register('publishAsVersionedUserGuide', PublishToRawRepoTask) {
     description = 'Publish user guide (versioned) to Nexus under /major.minor/.'
 
     publishSrc = buildJekyllSite.destinationDirectory.get()
-    destPath = "$project.docVersion/userguide/"
+    destPath = "netcdf-java/$project.docVersion/userguide/"
     dependsOn tasks.getByName('buildJekyllSite')
 }
 import edu.ucar.build.publishing.tasks.DeleteFromNexusTask

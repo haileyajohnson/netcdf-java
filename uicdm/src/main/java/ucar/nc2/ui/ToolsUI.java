@@ -43,7 +43,6 @@ import ucar.unidata.io.RandomAccessFile;
 import ucar.util.prefs.PreferencesExt;
 import ucar.util.prefs.XMLStore;
 import ucar.ui.prefs.Debug;
-
 import java.awt.*;
 import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
@@ -81,7 +80,7 @@ public class ToolsUI extends JPanel {
 
   private static String wantDataset;
 
-  private final JFrame parentFrame;   // redundant? will equal static "frame" defined just above
+  private final JFrame parentFrame; // redundant? will equal static "frame" defined just above
 
   private final FileManager fileChooser;
   private FileManager bufrFileChooser;
@@ -169,10 +168,8 @@ public class ToolsUI extends JPanel {
     this.parentFrame = parentFrame;
 
     // FileChooser is shared
-    FileFilter[] filters = new FileFilter[]{new FileManager.HDF5ExtFilter(),
-        new FileManager.NetcdfExtFilter()};
-    fileChooser = new FileManager(parentFrame, null, filters,
-        (PreferencesExt) prefs.node("FileManager"));
+    FileFilter[] filters = {new FileManager.HDF5ExtFilter(), new FileManager.NetcdfExtFilter()};
+    fileChooser = new FileManager(parentFrame, null, filters, (PreferencesExt) prefs.node("FileManager"));
 
     OpPanel.setFileChooser(fileChooser);
 
@@ -207,10 +204,10 @@ public class ToolsUI extends JPanel {
     tabbedPane.addTab("URLdump", new JLabel("URLdump"));
     tabbedPane.setSelectedIndex(0);
     tabbedPane.addChangeListener(e -> {
-      final Component c = tabbedPane.getSelectedComponent();
+      Component c = tabbedPane.getSelectedComponent();
       if (c instanceof JLabel) {
         int idx = tabbedPane.getSelectedIndex();
-        final String title = tabbedPane.getTitleAt(idx);
+        String title = tabbedPane.getTitleAt(idx);
         makeComponent(tabbedPane, title);
       }
     });
@@ -239,7 +236,7 @@ public class ToolsUI extends JPanel {
     addListeners(bufrTabPane);
 
     // nested-2 tab - grib
-    //gribTabPane.addTab("CdmIndex", new JLabel("CdmIndex"));
+    // gribTabPane.addTab("CdmIndex", new JLabel("CdmIndex"));
     gribTabPane.addTab("CdmIndex4", new JLabel("CdmIndex4"));
     gribTabPane.addTab("CdmIndexReport", new JLabel("CdmIndexReport"));
     gribTabPane.addTab("GribIndex", new JLabel("GribIndex"));
@@ -299,10 +296,10 @@ public class ToolsUI extends JPanel {
     addListeners(ncmlTabPane);
 
     // dynamic proxy for DebugFlags
-    debugFlags = (DebugFlags) Proxy.newProxyInstance(
-        DebugFlags.class.getClassLoader(), new Class[]{DebugFlags.class}, new DebugProxyHandler());
+    debugFlags = (DebugFlags) Proxy.newProxyInstance(DebugFlags.class.getClassLoader(), new Class[] {DebugFlags.class},
+        new DebugProxyHandler());
 
-    final JMenuBar mb = makeMenuBar();
+    JMenuBar mb = makeMenuBar();
     parentFrame.setJMenuBar(mb);
 
     setDebugFlags();
@@ -311,21 +308,21 @@ public class ToolsUI extends JPanel {
   /**
    *
    */
-  private void addListeners(final JTabbedPane tabPane) {
+  private void addListeners(JTabbedPane tabPane) {
     tabPane.addChangeListener(e -> {
-      final Component c = tabPane.getSelectedComponent();
+      Component c = tabPane.getSelectedComponent();
       if (c instanceof JLabel) {
-        final int idx = tabPane.getSelectedIndex();
-        final String title = tabPane.getTitleAt(idx);
+        int idx = tabPane.getSelectedIndex();
+        String title = tabPane.getTitleAt(idx);
         makeComponent(tabPane, title);
       }
     });
     tabPane.addComponentListener(new ComponentAdapter() {
-      public void componentShown(final ComponentEvent e) {
-        final Component c = tabPane.getSelectedComponent();
+      public void componentShown(ComponentEvent e) {
+        Component c = tabPane.getSelectedComponent();
         if (c instanceof JLabel) {
-          final int idx = tabPane.getSelectedIndex();
-          final String title = tabPane.getTitleAt(idx);
+          int idx = tabPane.getSelectedIndex();
+          String title = tabPane.getTitleAt(idx);
           makeComponent(tabPane, title);
         }
       }
@@ -335,7 +332,7 @@ public class ToolsUI extends JPanel {
   /**
    * deferred creation of components to minimize startup
    */
-  private void makeComponent(JTabbedPane parent, final String title) {
+  private void makeComponent(JTabbedPane parent, String title) {
     if (parent == null) {
       parent = tabbedPane;
     }
@@ -409,8 +406,7 @@ public class ToolsUI extends JPanel {
         break;
 
       case "GRIB1collection":
-        grib1CollectionPanel = new Grib1CollectionOpPanel(
-            (PreferencesExt) mainPrefs.node("grib1raw"));
+        grib1CollectionPanel = new Grib1CollectionOpPanel((PreferencesExt) mainPrefs.node("grib1raw"));
         c = grib1CollectionPanel;
         break;
 
@@ -425,8 +421,7 @@ public class ToolsUI extends JPanel {
         break;
 
       case "GRIB2collection":
-        grib2CollectionPanel = new Grib2CollectionOpPanel(
-            (PreferencesExt) mainPrefs.node("gribNew"));
+        grib2CollectionPanel = new Grib2CollectionOpPanel((PreferencesExt) mainPrefs.node("gribNew"));
         c = grib2CollectionPanel;
         break;
 
@@ -438,9 +433,11 @@ public class ToolsUI extends JPanel {
       case "BufrCdmIndex":
         bufrCdmIndexPanel = new BufrCdmIndexOpPanel((PreferencesExt) mainPrefs.node("bufrCdmIdx"));
         c = bufrCdmIndexPanel;
-        /* } else if (title.equals("CdmIndex")) {
-          gribCdmIndexPanel = new GribCdmIndexPanel((PreferencesExt) mainPrefs.node("cdmIdx"));
-          c = gribCdmIndexPanel; */
+        /*
+         * } else if (title.equals("CdmIndex")) {
+         * gribCdmIndexPanel = new GribCdmIndexPanel((PreferencesExt) mainPrefs.node("cdmIdx"));
+         * c = gribCdmIndexPanel;
+         */
         break;
 
       case "CdmIndex4":
@@ -588,8 +585,7 @@ public class ToolsUI extends JPanel {
         break;
 
       case "StationRadial":
-        stationRadialPanel = new StationRadialPanel(
-            (PreferencesExt) mainPrefs.node("stationRadar"));
+        stationRadialPanel = new StationRadialPanel((PreferencesExt) mainPrefs.node("stationRadar"));
         c = stationRadialPanel;
         break;
 
@@ -598,12 +594,11 @@ public class ToolsUI extends JPanel {
         threddsUI.addPropertyChangeListener(new PropertyChangeListener() {
           public void propertyChange(PropertyChangeEvent e) {
             if (e.getPropertyName().equals("InvAccess")) {
-              thredds.client.catalog.Access access = (thredds.client.catalog.Access) e
-                  .getNewValue();
+              thredds.client.catalog.Access access = (thredds.client.catalog.Access) e.getNewValue();
               jumptoThreddsDatatype(access);
             }
-            if (e.getPropertyName().equals("Dataset") || e.getPropertyName().equals("CoordSys") || e
-                .getPropertyName().equals("File")) {
+            if (e.getPropertyName().equals("Dataset") || e.getPropertyName().equals("CoordSys")
+                || e.getPropertyName().equals("File")) {
               thredds.client.catalog.Dataset ds = (thredds.client.catalog.Dataset) e.getNewValue();
               setThreddsDatatype(ds, e.getPropertyName());
             }
@@ -650,22 +645,22 @@ public class ToolsUI extends JPanel {
    *
    */
   private JMenuBar makeMenuBar() {
-    final JMenuBar mb = new JMenuBar();
+    JMenuBar mb = new JMenuBar();
 
     /// System menu
-    final JMenu sysMenu = new SystemMenu(ToolsUI.this);
+    JMenu sysMenu = new SystemMenu(this);
     mb.add(sysMenu);
 
     // Add modes Menu
-    final JMenu modeMenu = new ModesMenu(ToolsUI.this);
+    JMenu modeMenu = new ModesMenu(this);
     mb.add(modeMenu);
 
     // Add debug Menu
-    final JMenu debugMenu = new DebugMenu(ToolsUI.this);
+    JMenu debugMenu = new DebugMenu(this);
     mb.add(debugMenu);
 
     // Add help/about Menu
-    final JMenu helpMenu = new HelpMenu(ToolsUI.this);
+    JMenu helpMenu = new HelpMenu(this);
     mb.add(helpMenu);
 
     return mb;
@@ -700,7 +695,7 @@ public class ToolsUI extends JPanel {
   /**
    *
    */
-  public void setUseRecordStructure(final boolean use) {
+  public void setUseRecordStructure(boolean use) {
     useRecordStructure = use;
   }
 
@@ -842,7 +837,7 @@ public class ToolsUI extends JPanel {
     if (pointFeaturePanel != null) {
       pointFeaturePanel.save();
     }
-    //if (pointObsPanel    != null) pointObsPanel.save();
+    // if (pointObsPanel != null) pointObsPanel.save();
     if (radialPanel != null) {
       radialPanel.save();
     }
@@ -874,9 +869,9 @@ public class ToolsUI extends JPanel {
     }
   }
 
-///
-/// The following are hooks and shortcuts allowing OpPanel classes to interact with the UI.
-///
+  ///
+  /// The following are hooks and shortcuts allowing OpPanel classes to interact with the UI.
+  ///
 
   /**
    *
@@ -916,8 +911,7 @@ public class ToolsUI extends JPanel {
 
   private FileManager getBufrFileChooserPriv() {
     if (bufrFileChooser == null) {
-      bufrFileChooser = new FileManager(
-          parentFrame, null, null, (PreferencesExt) mainPrefs.node("bufrFileManager"));
+      bufrFileChooser = new FileManager(parentFrame, null, null, (PreferencesExt) mainPrefs.node("bufrFileManager"));
     }
 
     return bufrFileChooser;
@@ -944,28 +938,28 @@ public class ToolsUI extends JPanel {
   /**
    *
    */
-  public static Object getPrefsBean(final String key, final Object defaultVal) {
+  public static Object getPrefsBean(String key, Object defaultVal) {
     return ui.getPrefsBeanPriv(key, defaultVal);
   }
 
-  private Object getPrefsBeanPriv(final String key, final Object defaultVal) {
+  private Object getPrefsBeanPriv(String key, Object defaultVal) {
     return mainPrefs.getBean(key, defaultVal);
   }
 
   /**
    *
    */
-  public static void putPrefsBeanObject(final String key, final Object newVal) {
+  public static void putPrefsBeanObject(String key, Object newVal) {
     ui.putPrefsBeanObjectPriv(key, newVal);
   }
 
-  private void putPrefsBeanObjectPriv(final String key, final Object newVal) {
+  private void putPrefsBeanObjectPriv(String key, Object newVal) {
     mainPrefs.putBean(key, newVal);
   }
 
-///
-///
-///
+  ///
+  ///
+  ///
 
   /**
    *
@@ -1027,7 +1021,7 @@ public class ToolsUI extends JPanel {
    *
    */
   public void openGrib1Collection(String collection) {
-    makeComponent(grib1TabPane, "GRIB1collection");  // LOOK - does this aleays make component ?
+    makeComponent(grib1TabPane, "GRIB1collection"); // LOOK - does this aleays make component ?
     grib1CollectionPanel.setCollection(collection);
     tabbedPane.setSelectedComponent(iospTabPane);
     iospTabPane.setSelectedComponent(grib1TabPane);
@@ -1289,15 +1283,13 @@ public class ToolsUI extends JPanel {
       if ((null == message) && (ioe instanceof EOFException)) {
         message = "Premature End of File";
       }
-      JOptionPane
-          .showMessageDialog(null, "NetcdfDataset.open cannot open " + location + "%n" + message);
+      JOptionPane.showMessageDialog(null, "NetcdfDataset.open cannot open " + location + "%n" + message);
       if (!(ioe instanceof FileNotFoundException)) {
         ioe.printStackTrace();
       }
       ncfile = null;
     } catch (Exception e) {
-      JOptionPane.showMessageDialog(null,
-          "NetcdfDataset.open cannot open " + location + "%n" + e.getMessage());
+      JOptionPane.showMessageDialog(null, "NetcdfDataset.open cannot open " + location + "%n" + e.getMessage());
       log.error("NetcdfDataset.open cannot open " + location, e);
       e.printStackTrace();
 
@@ -1314,7 +1306,7 @@ public class ToolsUI extends JPanel {
     return ncfile;
   }
 
-  private String downloadStatus = null;
+  private String downloadStatus;
 
   private void downloadFile(String urlString) {
     int pos = urlString.lastIndexOf('/');
@@ -1328,7 +1320,7 @@ public class ToolsUI extends JPanel {
     values[1] = urlString;
 
     // put in background thread with a ProgressMonitor window
-    final GetDataRunnable runner = new GetDataRunnable() {
+    GetDataRunnable runner = new GetDataRunnable() {
       public void run(Object o) {
         String[] values = (String[]) o;
         BufferedOutputStream out;
@@ -1339,14 +1331,13 @@ public class ToolsUI extends JPanel {
           downloadStatus = values[1] + " written to " + values[0];
 
         } catch (IOException ioe) {
-          downloadStatus =
-              "Error opening " + values[0] + " and reading " + values[1] + "%n" + ioe.getMessage();
+          downloadStatus = "Error opening " + values[0] + " and reading " + values[1] + "%n" + ioe.getMessage();
         }
       }
     };
 
-    final GetDataTask task = new GetDataTask(runner, urlString, values);
-    final ProgressMonitor pm = new ProgressMonitor(task);
+    GetDataTask task = new GetDataTask(runner, urlString, values);
+    ProgressMonitor pm = new ProgressMonitor(task);
     pm.addActionListener(e -> {
       JOptionPane.showMessageDialog(null, e.getActionCommand() + "%n" + downloadStatus);
       downloadStatus = null;
@@ -1354,9 +1345,9 @@ public class ToolsUI extends JPanel {
     pm.start(this, "Download", 30);
   }
 
-///
-///////////////////////////////////////////////////////////////////////////////////////
-///
+  ///
+  ///////////////////////////////////////////////////////////////////////////////////////
+  ///
 
   /**
    *
@@ -1371,7 +1362,7 @@ public class ToolsUI extends JPanel {
    */
   private static void doSavePrefsAndUI() {
     ui.save();
-    final Rectangle bounds = frame.getBounds();
+    Rectangle bounds = frame.getBounds();
     prefs.putBeanObject(FRAME_SIZE, bounds);
     try {
       store.save();
@@ -1380,12 +1371,12 @@ public class ToolsUI extends JPanel {
     }
 
     done = true; // on some systems, still get a window close event
-    final ucar.nc2.util.cache.FileCacheIF cache = NetcdfDataset.getNetcdfFileCache();
+    ucar.nc2.util.cache.FileCacheIF cache = NetcdfDataset.getNetcdfFileCache();
     if (cache != null) {
       cache.clearCache(true);
     }
-    FileCache.shutdown();           // shutdown threads
-    DiskCache2.exit();              // shutdown threads
+    FileCache.shutdown(); // shutdown threads
+    DiskCache2.exit(); // shutdown threads
   }
 
   /**
@@ -1396,7 +1387,7 @@ public class ToolsUI extends JPanel {
     SwingUtilities.invokeLater(() -> {
       int pos = wantDataset.indexOf('#');
       if (pos > 0) {
-        final String catName = wantDataset.substring(0, pos); // {catalog}#{dataset}
+        String catName = wantDataset.substring(0, pos); // {catalog}#{dataset}
         if (catName.endsWith(".xml")) {
           ui.makeComponent(null, "THREDDS");
           ui.threddsUI.setDataset(wantDataset);
@@ -1415,8 +1406,8 @@ public class ToolsUI extends JPanel {
    */
   private static void prepareGui() {
 
-    final String osName = System.getProperty("os.name").toLowerCase();
-    final boolean isMacOs = osName.startsWith("mac os x");
+    String osName = System.getProperty("os.name").toLowerCase();
+    boolean isMacOs = osName.startsWith("mac os x");
 
     if (isMacOs) {
       System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -1445,10 +1436,11 @@ public class ToolsUI extends JPanel {
     // Setting up a font metrics object triggers one of the most time-wasting steps of GUI set up.
     // We do it now before trying to create the splash or tools interface.
     SwingUtilities.invokeLater(() -> {
-      final Toolkit tk = Toolkit.getDefaultToolkit();
-      final Font f = new Font("SansSerif", Font.PLAIN, 12);
+      Toolkit tk = Toolkit.getDefaultToolkit();
+      Font f = new Font("SansSerif", Font.PLAIN, 12);
 
-      @SuppressWarnings("deprecation") final FontMetrics fm = tk.getFontMetrics(f);
+      @SuppressWarnings("deprecation")
+      FontMetrics fm = tk.getFontMetrics(f);
     });
   }
 
@@ -1465,12 +1457,12 @@ public class ToolsUI extends JPanel {
 
     frame.addWindowListener(new WindowAdapter() {
       @Override
-      public void windowActivated(final WindowEvent e) {
+      public void windowActivated(WindowEvent e) {
         ToolsSplashScreen.getSharedInstance().setVisible(false);
       }
 
       @Override
-      public void windowClosing(final WindowEvent e) {
+      public void windowClosing(WindowEvent e) {
         if (!done) {
           exit();
         }
@@ -1479,8 +1471,8 @@ public class ToolsUI extends JPanel {
 
     frame.getContentPane().add(ui);
 
-    final Rectangle have = frame.getGraphicsConfiguration().getBounds();
-    final Rectangle def = new Rectangle(50, 50, 800, 800);
+    Rectangle have = frame.getGraphicsConfiguration().getBounds();
+    Rectangle def = new Rectangle(50, 50, 800, 800);
 
     Rectangle want = (Rectangle) prefs.getBean(FRAME_SIZE, def);
 
@@ -1500,13 +1492,10 @@ public class ToolsUI extends JPanel {
     }
   }
 
-  /**
-   *
-   */
   public static void main(String[] args) {
     if (debugListen) {
       System.out.println("Arguments:");
-      for (final String arg : args) {
+      for (String arg : args) {
         System.out.println(" " + arg);
       }
       HTTPSession.setInterceptors(true);
@@ -1516,16 +1505,16 @@ public class ToolsUI extends JPanel {
     // first, if there were command-line arguments
     if (args.length > 0) {
       // munge arguments into a single string
-      final StringBuilder sbuff = new StringBuilder();
-      for (final String arg : args) {
+      StringBuilder sbuff = new StringBuilder();
+      for (String arg : args) {
         sbuff.append(arg);
         sbuff.append(" ");
       }
-      final String arguments = sbuff.toString();
+      String arguments = sbuff.toString();
       System.out.println("ToolsUI arguments=" + arguments);
 
       // see if another version is running, if so send it the message then exit
-      final SocketMessage sm = new SocketMessage(14444, wantDataset);
+      SocketMessage sm = new SocketMessage(14444, wantDataset);
       if (sm.isAlreadyRunning()) {
         log.error("ToolsUI already running - pass argument='{}' and exit", arguments);
         System.exit(0);
@@ -1534,7 +1523,7 @@ public class ToolsUI extends JPanel {
 
     // otherwise if no command-line arguments were passed
     else {
-      final SocketMessage sm = new SocketMessage(14444, null);
+      SocketMessage sm = new SocketMessage(14444, null);
       if (sm.isAlreadyRunning()) {
         System.out.println("ToolsUI already running - start up another copy");
       } else {
@@ -1553,7 +1542,7 @@ public class ToolsUI extends JPanel {
 
     if (debugListen) {
       System.out.println("Arguments:");
-      for (final String arg : args) {
+      for (String arg : args) {
         System.out.println(" " + arg);
       }
       HTTPSession.setInterceptors(true);
@@ -1563,10 +1552,10 @@ public class ToolsUI extends JPanel {
     boolean configRead = false;
     for (int i = 0; i < args.length; i++) {
       if (args[i].equalsIgnoreCase("-nj22Config") && (i < args.length - 1)) {
-        final String runtimeConfig = args[i + 1];
+        String runtimeConfig = args[i + 1];
         i++;
-        try (final FileInputStream fis = new FileInputStream(runtimeConfig)) {
-          final StringBuilder errlog = new StringBuilder();
+        try (FileInputStream fis = new FileInputStream(runtimeConfig)) {
+          StringBuilder errlog = new StringBuilder();
           RuntimeConfigParser.read(fis, errlog);
           configRead = true;
           System.out.println(errlog);
@@ -1577,11 +1566,11 @@ public class ToolsUI extends JPanel {
     }
 
     if (!configRead) {
-      final String filename = XMLStore.makeStandardFilename(".unidata", "nj22Config.xml");
-      final File f = new File(filename);
+      String filename = XMLStore.makeStandardFilename(".unidata", "nj22Config.xml");
+      File f = new File(filename);
       if (f.exists()) {
-        try (final FileInputStream fis = new FileInputStream(filename)) {
-          final StringBuilder errlog = new StringBuilder();
+        try (FileInputStream fis = new FileInputStream(filename)) {
+          StringBuilder errlog = new StringBuilder();
           RuntimeConfigParser.read(fis, errlog);
           System.out.println(errlog);
         } catch (IOException ioe) {
@@ -1593,13 +1582,13 @@ public class ToolsUI extends JPanel {
     // prefs storage
     try {
       // 4.4
-      final String prefStore = XMLStore.makeStandardFilename(".unidata", "ToolsUI.xml");
-      final File prefs44 = new File(prefStore);
+      String prefStore = XMLStore.makeStandardFilename(".unidata", "ToolsUI.xml");
+      File prefs44 = new File(prefStore);
 
       if (!prefs44.exists()) {
         // if 4.4 doesnt exist, see if 4.3 exists
-        final String prefStoreBack = XMLStore.makeStandardFilename(".unidata", "NetcdfUI22.xml");
-        final File prefs43 = new File(prefStoreBack);
+        String prefStoreBack = XMLStore.makeStandardFilename(".unidata", "NetcdfUI22.xml");
+        File prefs43 = new File(prefStoreBack);
         if (prefs43.exists()) {
           // make a copy of it
           IO.copyFile(prefs43, prefs44);

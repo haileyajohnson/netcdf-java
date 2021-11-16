@@ -5,13 +5,12 @@
 
 package ucar.nc2.iosp.bufr.tables;
 
+import java.nio.charset.StandardCharsets;
 import ucar.unidata.util.StringUtil2;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,20 +21,23 @@ import java.util.List;
  * @since 8/22/13
  */
 public class NcepTable {
+  private static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(NcepTable.class);
 
-  static private void readNcepTable(String location) throws IOException {
+  private static void readNcepTable(String location) throws IOException {
     try (InputStream ios = BufrTables.openStream(location)) {
-      BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, Charset.forName("UTF8")));
+      BufferedReader dataIS = new BufferedReader(new InputStreamReader(ios, StandardCharsets.UTF_8));
       int count = 0;
       while (true) {
         String line = dataIS.readLine();
-        if (line == null) break;
-        if (line.startsWith("#")) continue;
+        if (line == null)
+          break;
+        if (line.startsWith("#"))
+          continue;
         count++;
 
         String[] flds = line.split(";");
         if (flds.length < 3) {
-          System.out.printf("%d BAD split == %s%n", count, line);
+          log.warn("{} BAD split == {}", count, line);
           continue;
         }
 
@@ -46,22 +48,22 @@ public class NcepTable {
           String desc = StringUtil2.remove(flds[fldidx++], '"');
           entries.add(new TableEntry(cat, subcat, desc));
         } catch (Exception e) {
-          System.out.printf("%d %d BAD line == %s%n", count, fldidx, line);
+          log.warn("{} {} BAD line == {}", count, fldidx, line);
         }
       }
     }
   }
 
-  private static List<TableEntry> entries = null;
+  private static List<TableEntry> entries;
+
   private static class TableEntry {
-     public int cat, subcat;
-     public String value;
+    public int cat, subcat;
+    public String value;
 
     public TableEntry(int cat, int subcat, String value) {
       this.cat = cat;
       this.subcat = subcat;
       this.value = value.trim();
-      //System.out.printf(" %3d %3d: %s%n", cat, subcat, value);
     }
   }
 
@@ -77,10 +79,12 @@ public class NcepTable {
 
 
   public static String getDataSubcategory(int cat, int subcat) {
-    if (entries == null) init();
+    if (entries == null)
+      init();
 
     for (TableEntry p : entries) {
-      if ((p.cat == cat) && (p.subcat == subcat)) return p.value;
+      if ((p.cat == cat) && (p.subcat == subcat))
+        return p.value;
     }
     return null;
   }

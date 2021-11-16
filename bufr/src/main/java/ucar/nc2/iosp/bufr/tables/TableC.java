@@ -6,11 +6,12 @@ package ucar.nc2.iosp.bufr.tables;
 
 /**
  * BUFR Table C - Data operators
+ * 
  * @author caron
  * @since Oct 25, 2008
  */
 public class TableC {
-  static private final String[] tableCdesc = new String[38];
+  private static final String[] tableCdesc = new String[38];
 
   static {
     tableCdesc[1] = "change data width";
@@ -30,8 +31,9 @@ public class TableC {
     tableCdesc[37] = "use/cancel data present bit-map";
   }
 
-  static public String getOperatorName(int index) {
-    if ((index < 0 ) || (index >= tableCdesc.length)) return "unknown";
+  public static String getOperatorName(int index) {
+    if ((index < 0) || (index >= tableCdesc.length))
+      return "unknown";
     return (tableCdesc[index] == null) ? "unknown" : tableCdesc[index];
   }
 

@@ -9,7 +9,6 @@ import ucar.nc2.ui.geoloc.CursorMoveEventListener;
 import ucar.nc2.ui.geoloc.PickEvent;
 import ucar.nc2.ui.geoloc.PickEventListener;
 import ucar.nc2.util.ListenerManager;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -20,7 +19,8 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 
-/* A simple version of NavigatedPanel.
+/*
+ * A simple version of NavigatedPanel.
  * Allows drawing on it in scaled (world) coordinates.
  * It doesnt do its own drawing, but allows the caller to obtain its
  * BufferedImage and draw in it itself.
@@ -35,12 +35,12 @@ public class ScaledPanel extends JPanel {
   private Point2D worldPt = new Point2D.Double();
 
   private AffineTransform transform = new AffineTransform();
-  private BufferedImage bImage = null;
+  private BufferedImage bImage;
   private MyImageObserver imageObs = new MyImageObserver();
 
   private ListenerManager lmPick, lmMove;
 
-  private boolean debugDraw = false, debugTransform = false, debugBounds = false;
+  private boolean debugDraw, debugTransform, debugBounds;
 
   public ScaledPanel() {
     setDoubleBuffered(false);
@@ -50,13 +50,15 @@ public class ScaledPanel extends JPanel {
       public void componentResized(ComponentEvent e) {
         Rectangle nb = getBounds();
         boolean sameSize = (nb.width == screenBounds.getWidth()) && (nb.height == screenBounds.getHeight());
-        if (debugBounds) System.out.println("TPanel setBounds old= " + screenBounds);
+        if (debugBounds)
+          System.out.println("TPanel setBounds old= " + screenBounds);
         screenBounds.setRect(nb);
 
         if ((bImage != null) && sameSize)
           return;
 
-        if (debugBounds) System.out.println("  newBounds = " + nb);
+        if (debugBounds)
+          System.out.println("  newBounds = " + nb);
         // create new buffer the size of the window
         if ((nb.width > 0) && (nb.height > 0)) {
           bImage = new BufferedImage(nb.width, nb.height, BufferedImage.TYPE_INT_RGB); // why RGB ?
@@ -94,15 +96,11 @@ public class ScaledPanel extends JPanel {
     });
 
     // manage Event Listener's
-    lmPick = new ListenerManager(
-            "ucar.nc2.ui.geoloc.PickEventListener",
-            "ucar.nc2.ui.geoloc.PickEvent",
-            "actionPerformed");
+    lmPick =
+        new ListenerManager("ucar.nc2.ui.geoloc.PickEventListener", "ucar.nc2.ui.geoloc.PickEvent", "actionPerformed");
 
-    lmMove = new ListenerManager(
-            "ucar.nc2.ui.geoloc.CursorMoveEventListener",
-            "ucar.nc2.ui.geoloc.CursorMoveEvent",
-            "actionPerformed");
+    lmMove = new ListenerManager("ucar.nc2.ui.geoloc.CursorMoveEventListener", "ucar.nc2.ui.geoloc.CursorMoveEvent",
+        "actionPerformed");
   }
 
   /**
@@ -133,17 +131,19 @@ public class ScaledPanel extends JPanel {
     lmPick.removeListener(l);
   }
 
-  /* set the bounds of the world coordinates.
-  * The point (world.getX(), world.getY()) is mapped to the lower left point of the screen.
-  * The point (world.getX() + world.Width(), world.getY()+world.Height()) is mapped
-  * to the upper right corner. Therefore if coords decrease as you go up, world.Height()
-  * should be negetive.
-  */
+  /*
+   * set the bounds of the world coordinates.
+   * The point (world.getX(), world.getY()) is mapped to the lower left point of the screen.
+   * The point (world.getX() + world.Width(), world.getY()+world.Height()) is mapped
+   * to the upper right corner. Therefore if coords decrease as you go up, world.Height()
+   * should be negetive.
+   */
 
   public void setWorldBounds(ScaledPanel.Bounds world) {
     worldBounds.set(world);
     transform = null;
-    if (debugBounds) System.out.println("  setWorldBounds = " + worldBounds);
+    if (debugBounds)
+      System.out.println("  setWorldBounds = " + worldBounds);
   }
 
   public ScaledPanel.Bounds getWorldBounds() {
@@ -162,7 +162,7 @@ public class ScaledPanel extends JPanel {
     if (transform == null)
       transform = calcTransform(screenBounds, worldBounds);
     g2.setTransform(transform);
-    g2.setStroke(new BasicStroke(0.0f));      // default stroke size is one pixel
+    g2.setStroke(new BasicStroke(0.0f)); // default stroke size is one pixel
     g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
     g2.setBackground(backColor);
     g2.setClip(worldBounds.getRect());
@@ -189,7 +189,7 @@ public class ScaledPanel extends JPanel {
   /**
    * map world coords to screen coords.
    *
-   * @param world  world coordinate rectangle
+   * @param world world coordinate rectangle
    * @param screen screen coordinate rectangle
    * @return AffineTransform for converting world to screen.
    */
@@ -276,42 +276,16 @@ public class ScaledPanel extends JPanel {
     }
 
     public Rectangle2D getRect() {
-      return new Rectangle2D.Double(Math.min(left, right), Math.min(lower, upper),
-              Math.abs(right - left), Math.abs(lower - upper));
-      //return new Rectangle2D.Double(Math.min(left,right), Math.min(lower,upper),
-      //  Math.abs(right-left), Math.abs(lower-upper));
+      return new Rectangle2D.Double(Math.min(left, right), Math.min(lower, upper), Math.abs(right - left),
+          Math.abs(lower - upper));
+      // return new Rectangle2D.Double(Math.min(left,right), Math.min(lower,upper),
+      // Math.abs(right-left), Math.abs(lower-upper));
     }
 
     public String toString() {
       return "left: " + left + " right: " + right + " upper: " + upper + " lower: " + lower;
     }
 
-  }
-
-  public static void main(String[] argv) {
-
-    Rectangle2D w = new Rectangle2D.Double(1.0, 1.0, 10.0, 10.0);
-    Rectangle2D s = new Rectangle2D.Double(0.0, 0.0, 200, 100);
-
-    double xs = s.getWidth() / w.getWidth();
-    double ys = s.getHeight() / w.getHeight();
-
-    AffineTransform cat = new AffineTransform();
-    cat.setToScale(xs, -ys);
-    cat.translate(-w.getX(), -w.getY() - w.getHeight());
-
-    Point2D src = new Point2D.Double(1.0, 1.0);
-    Point2D dst = new Point2D.Double(0.0, 0.0);
-
-    System.out.println("  screen = " + s);
-    System.out.println("  world = " + w);
-
-    System.out.println("  pt = " + src);
-    System.out.println("  transform = " + cat.transform(src, dst));
-
-    src = new Point2D.Double(11.0, 11.0);
-    System.out.println("  pt = " + src);
-    System.out.println("  transform = " + cat.transform(src, dst));
   }
 
 }

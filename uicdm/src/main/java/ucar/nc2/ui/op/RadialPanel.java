@@ -12,7 +12,6 @@ import ucar.nc2.ft.FeatureDatasetFactoryManager;
 import ucar.nc2.ui.OpPanel;
 import ucar.ui.widget.BAMutil;
 import ucar.util.prefs.PreferencesExt;
-
 import java.awt.BorderLayout;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -28,7 +27,8 @@ import javax.swing.JSplitPane;
  *
  */
 public class RadialPanel extends OpPanel {
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final org.slf4j.Logger logger =
+      org.slf4j.LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private RadialDatasetTable dsTable;
   private JSplitPane split;
@@ -43,10 +43,10 @@ public class RadialPanel extends OpPanel {
     dsTable = new RadialDatasetTable(prefs);
     add(dsTable, BorderLayout.CENTER);
 
-    final AbstractButton infoButton = BAMutil.makeButtcon("Information", "Parse Info", false);
+    AbstractButton infoButton = BAMutil.makeButtcon("Information", "Parse Info", false);
     infoButton.addActionListener(e -> {
       try (RadialDatasetSweep radialDataset = dsTable.getRadialDataset()) {
-        final Formatter info = new Formatter();
+        Formatter info = new Formatter();
         radialDataset.getDetailInfo(info);
         detailTA.setText(info.toString());
         detailTA.gotoTop();
@@ -75,23 +75,21 @@ public class RadialPanel extends OpPanel {
       }
 
       Formatter errlog = new Formatter();
-      RadialDatasetSweep rds = (RadialDatasetSweep) FeatureDatasetFactoryManager.wrap(
-          FeatureType.RADIAL, newds, null, errlog);
+      RadialDatasetSweep rds =
+          (RadialDatasetSweep) FeatureDatasetFactoryManager.wrap(FeatureType.RADIAL, newds, null, errlog);
       if (rds == null) {
         JOptionPane.showMessageDialog(null,
-            "FeatureDatasetFactoryManager cannot open " + command + "as RADIAL dataset\n" + errlog
-                .toString());
+            "FeatureDatasetFactoryManager cannot open " + command + "as RADIAL dataset\n" + errlog);
         err = true;
       } else {
         setDataset(rds);
       }
     } catch (FileNotFoundException ioe) {
-      JOptionPane.showMessageDialog(null,
-          "NetcdfDataset.open cannot open " + command + "\n" + ioe.getMessage());
+      JOptionPane.showMessageDialog(null, "NetcdfDataset.open cannot open " + command + "\n" + ioe.getMessage());
       ioe.printStackTrace();
       err = true;
     } catch (IOException ioe) {
-      final StringWriter sw = new StringWriter(5000);
+      StringWriter sw = new StringWriter(5000);
       ioe.printStackTrace(new PrintWriter(sw));
       detailTA.setText(sw.toString());
       detailWindow.show();

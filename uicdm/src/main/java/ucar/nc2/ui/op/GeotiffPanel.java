@@ -13,7 +13,6 @@ import ucar.nc2.geotiff.GeotiffWriter;
 import ucar.nc2.ui.OpPanel;
 import ucar.ui.widget.TextHistoryPane;
 import ucar.util.prefs.PreferencesExt;
-
 import java.awt.BorderLayout;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -22,7 +21,8 @@ import javax.swing.JButton;
 import javax.swing.JOptionPane;
 
 public class GeotiffPanel extends OpPanel {
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final org.slf4j.Logger logger =
+      org.slf4j.LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private TextHistoryPane ta;
 
   public GeotiffPanel(PreferencesExt p) {
@@ -31,11 +31,11 @@ public class GeotiffPanel extends OpPanel {
     ta = new TextHistoryPane(true);
     add(ta, BorderLayout.CENTER);
 
-    final JButton readButton = new JButton("read geotiff");
+    JButton readButton = new JButton("read geotiff");
     readButton.addActionListener(e -> {
       if (cb.getSelectedItem() != null) {
-        final String item = cb.getSelectedItem().toString();
-        final String fname = item.trim();
+        String item = cb.getSelectedItem().toString();
+        String fname = item.trim();
         read(fname);
       }
     });
@@ -47,16 +47,16 @@ public class GeotiffPanel extends OpPanel {
     String filename = (String) o;
 
     try (GridDataset gridDs = GridDataset.open(filename)) {
-      final List grids = gridDs.getGrids();
-      if (grids.size() == 0) {
+      List grids = gridDs.getGrids();
+      if (grids.isEmpty()) {
         logger.warn("No grids found.");
         return false;
       }
 
-      final GridDatatype grid = (GridDatatype) grids.get(0);
-      final Array data = grid.readDataSlice(0, 0, -1, -1); // first time, level
+      GridDatatype grid = (GridDatatype) grids.get(0);
+      Array data = grid.readDataSlice(0, 0, -1, -1); // first time, level
 
-      final String fileOut = fileChooser.chooseFilenameToSave(filename + ".tif");
+      String fileOut = fileChooser.chooseFilenameToSave(filename + ".tif");
       if (fileOut == null) {
         return false;
       }

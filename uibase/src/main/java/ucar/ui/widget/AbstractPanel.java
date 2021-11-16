@@ -7,7 +7,6 @@ package ucar.ui.widget;
 
 import ucar.util.prefs.PreferencesExt;
 import ucar.ui.prefs.ComboBox;
-
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -28,7 +27,8 @@ import javax.swing.JScrollPane;
  */
 public abstract class AbstractPanel extends JPanel {
   private static final String FRAME_SIZE = "FrameSize";
-  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final org.slf4j.Logger logger =
+      org.slf4j.LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected PreferencesExt prefs;
   protected ComboBox cb;
@@ -51,8 +51,7 @@ public abstract class AbstractPanel extends JPanel {
     this(prefs, command, true, true);
   }
 
-  protected AbstractPanel(PreferencesExt prefs, String command, boolean addFileButton,
-      boolean addCoordButton) {
+  protected AbstractPanel(PreferencesExt prefs, String command, boolean addFileButton, boolean addCoordButton) {
     this(prefs, command, true, addFileButton, addCoordButton);
   }
 
@@ -63,8 +62,8 @@ public abstract class AbstractPanel extends JPanel {
 
     cb = new ComboBox(prefs);
     cb.addActionListener(e -> {
-      logger.debug(" doit {} cmd={} when={} class={}", cb.getSelectedItem(),
-          e.getActionCommand(), e.getWhen(), getClass().getName());
+      logger.debug(" doit {} cmd={} when={} class={}", cb.getSelectedItem(), e.getActionCommand(), e.getWhen(),
+          getClass().getName());
 
       // eliminate multiple events from same selection by ignoring events occurring within 100ms of last one.
       if (eventOK && (e.getWhen() > lastEvent + 100)) {
@@ -73,7 +72,7 @@ public abstract class AbstractPanel extends JPanel {
       }
     });
 
-    final AbstractAction closeAction = new AbstractAction() {
+    AbstractAction closeAction = new AbstractAction() {
       @Override
       public void actionPerformed(ActionEvent e) {
         try {
@@ -97,23 +96,22 @@ public abstract class AbstractPanel extends JPanel {
           cb.setSelectedItem(filename);
         }
       };
-      BAMutil
-          .setActionProperties(fileAction, "FileChooser", "open Local dataset...", false, 'L', -1);
+      BAMutil.setActionProperties(fileAction, "FileChooser", "open Local dataset...", false, 'L', -1);
       BAMutil.addActionToContainer(buttPanel, fileAction);
     }
 
     if (addCoordButton) {
-      final AbstractAction coordAction = new AbstractAction() {
+      AbstractAction coordAction = new AbstractAction() {
         @Override
         public void actionPerformed(ActionEvent e) {
           addCoords = (Boolean) getValue(BAMutil.STATE);
           String tooltip = addCoords ? "add Coordinates is ON" : "add Coordinates is OFF";
           coordButt.setToolTipText(tooltip);
-          //doit( cb.getSelectedItem()); // called from cb action listener
+          // doit( cb.getSelectedItem()); // called from cb action listener
         }
       };
       addCoords = prefs.getBoolean("coordState", false);
-      final String tooltip2 = addCoords ? "add Coordinates is ON" : "add Coordinates is OFF";
+      String tooltip2 = addCoords ? "add Coordinates is ON" : "add Coordinates is OFF";
       BAMutil.setActionProperties(coordAction, "addCoords", tooltip2, true, 'C', -1);
       coordAction.putValue(BAMutil.STATE, addCoords);
       coordButt = BAMutil.addActionToContainer(buttPanel, coordAction);
@@ -133,8 +131,7 @@ public abstract class AbstractPanel extends JPanel {
 
     detailTA = new TextHistoryPane();
     detailTA.setFont(new Font("Monospaced", Font.PLAIN, 12));
-    detailWindow = new IndependentWindow("Details", BAMutil.getImage("app"),
-        new JScrollPane(detailTA));
+    detailWindow = new IndependentWindow("Details", BAMutil.getImage("app"), new JScrollPane(detailTA));
     Rectangle bounds = (Rectangle) prefs.getBean(FRAME_SIZE, new Rectangle(200, 50, 500, 700));
     detailWindow.setBounds(bounds);
   }
@@ -160,8 +157,7 @@ public abstract class AbstractPanel extends JPanel {
 
   public abstract boolean process(Object command);
 
-  public void closeOpenFiles() throws IOException {
-  }
+  public void closeOpenFiles() throws IOException {}
 
   public void save() {
     cb.save();

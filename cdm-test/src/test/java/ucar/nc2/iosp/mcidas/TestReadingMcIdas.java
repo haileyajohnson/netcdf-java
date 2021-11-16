@@ -5,8 +5,8 @@
 
 package ucar.nc2.iosp.mcidas;
 
-import edu.wisc.ssec.mcidas.AreaFile;
-import edu.wisc.ssec.mcidas.AreaFileException;
+import ucar.mcidas.AreaFile;
+import ucar.mcidas.AreaFileException;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -19,7 +19,6 @@ import ucar.unidata.geoloc.LatLonPointImpl;
 import ucar.unidata.geoloc.ProjectionPoint;
 import ucar.unidata.util.test.category.NeedsCdmUnitTest;
 import ucar.unidata.util.test.TestDir;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
@@ -80,7 +79,7 @@ public class TestReadingMcIdas {
     llp = proj.projToLatLon(pp);
     System.out.println("reverse llp = " + llp);
 
-    double[][] latlons = new double[][]{{45}, {-105}};
+    double[][] latlons = new double[][] {{45}, {-105}};
     double[][] linele = proj.latLonToProj(latlons);
     assert linele != null;
     double[][] outll = proj.projToLatLon(linele);

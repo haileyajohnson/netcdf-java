@@ -17,12 +17,12 @@ import ucar.ma2.InvalidRangeException;
 import ucar.ma2.ArrayStructure;
 import ucar.unidata.util.test.Assert2;
 import ucar.unidata.util.test.TestDir;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 /**
  * Test that nested structures get enhanced.
+ * 
  * @author caron
  * @since Jul 5, 2008
  */
@@ -32,7 +32,7 @@ public class TestNestedStructuresEnhancement {
   @Ignore("cant deal with BUFR at the moment")
   @Test
   public void testNestedTable() throws IOException, InvalidRangeException {
-    String filename = TestDir.cdmLocalTestDataDir + "dataset/nestedTable.bufr";
+    String filename = TestDir.cdmLocalFromTestDataDir + "dataset/nestedTable.bufr";
     try (NetcdfFile ncfile = ucar.nc2.dataset.NetcdfDataset.openFile(filename, null)) {
       logger.debug("Open {}", ncfile.getLocation());
       Sequence outer = (Sequence) ncfile.findVariable(BufrIosp2.obsRecord);
@@ -57,7 +57,7 @@ public class TestNestedStructuresEnhancement {
   @Ignore("cant deal with BUFR at the moment")
   @Test
   public void testNestedTableEnhanced() throws IOException, InvalidRangeException {
-    String filename = TestDir.cdmLocalTestDataDir + "dataset/nestedTable.bufr";
+    String filename = TestDir.cdmLocalFromTestDataDir + "dataset/nestedTable.bufr";
     try (NetcdfFile ncfile = ucar.nc2.dataset.NetcdfDataset.openDataset(filename)) {
       logger.debug("Open {}", ncfile.getLocation());
       SequenceDS outer = (SequenceDS) ncfile.findVariable(BufrIosp2.obsRecord);

@@ -14,23 +14,23 @@ package thredds.catalog;
 public final class MetadataType {
   private static java.util.List<MetadataType> members = new java.util.ArrayList<MetadataType>(20);
 
-  public final static MetadataType NONE = new MetadataType("");
+  public static final MetadataType NONE = new MetadataType("");
 
-  public final static MetadataType THREDDS = new MetadataType("THREDDS");
-  public final static MetadataType ADN = new MetadataType("ADN");
-  public final static MetadataType AGGREGATION = new MetadataType("Aggregation");
-  public final static MetadataType CATALOG_GEN_CONFIG = new MetadataType("CatalogGenConfig");
-  public final static MetadataType DUBLIN_CORE = new MetadataType("DublinCore");
-  public final static MetadataType DIF = new MetadataType("DIF");
-  public final static MetadataType FGDC = new MetadataType("FGDC");
-  public final static MetadataType LAS = new MetadataType("LAS");
-  public final static MetadataType ESG = new MetadataType("ESG");
+  public static final MetadataType THREDDS = new MetadataType("THREDDS");
+  public static final MetadataType ADN = new MetadataType("ADN");
+  public static final MetadataType AGGREGATION = new MetadataType("Aggregation");
+  public static final MetadataType CATALOG_GEN_CONFIG = new MetadataType("CatalogGenConfig");
+  public static final MetadataType DUBLIN_CORE = new MetadataType("DublinCore");
+  public static final MetadataType DIF = new MetadataType("DIF");
+  public static final MetadataType FGDC = new MetadataType("FGDC");
+  public static final MetadataType LAS = new MetadataType("LAS");
+  public static final MetadataType ESG = new MetadataType("ESG");
 
   // not 1.0 : is anyone using?
-  public final static MetadataType NETCDF = new MetadataType("NetCDF");
-  public final static MetadataType NcML = new MetadataType("NcML");
-  public final static MetadataType THREDDS_DLEntry = new MetadataType("THREDDS_DLEntry");
-  public final static MetadataType THREDDS_DLCollection = new MetadataType("THREDDS_DLCollection");
+  public static final MetadataType NETCDF = new MetadataType("NetCDF");
+  public static final MetadataType NcML = new MetadataType("NcML");
+  public static final MetadataType THREDDS_DLEntry = new MetadataType("THREDDS_DLEntry");
+  public static final MetadataType THREDDS_DLCollection = new MetadataType("THREDDS_DLCollection");
 
   private String name;
 
@@ -45,6 +45,7 @@ public final class MetadataType {
 
   /**
    * Get all MetadataType objects
+   * 
    * @return all MetadataType objects
    */
   public static java.util.Collection<MetadataType> getAllTypes() {
@@ -59,7 +60,8 @@ public final class MetadataType {
    * @return MetadataType or null if no match.
    */
   public static MetadataType findType(String name) {
-    if (name == null) return null;
+    if (name == null)
+      return null;
     for (MetadataType m : members) {
       if (m.name.equalsIgnoreCase(name))
         return m;
@@ -75,9 +77,10 @@ public final class MetadataType {
    * @return the named MetadataType or null if given name is null.
    */
   public static MetadataType getType(String name) {
-    if (name == null) return null;
-    MetadataType type = findType( name );
-    return type != null ? type : new MetadataType( name, false );
+    if (name == null)
+      return null;
+    MetadataType type = findType(name);
+    return type != null ? type : new MetadataType(name, false);
   }
 
   /**
@@ -98,8 +101,10 @@ public final class MetadataType {
    * MetaDataType with same name are equal.
    */
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof MetadataType)) return false;
+    if (this == o)
+      return true;
+    if (!(o instanceof MetadataType))
+      return false;
     return o.hashCode() == this.hashCode();
   }
 }
