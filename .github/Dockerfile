@@ -1,4 +1,4 @@
 # Container image that runs your code
-FROM docker.unidata.ucar.edu/thredds-test-environment:latest
+FROM hajohns/thredds-test:latest
 USER root
 ENV GITHUB_ACTIONS="YEP"
