@@ -1,0 +1,24 @@
+# action.yml
+name: 'THREDDS Test Action'
+description: 'An action to run tests for the various THREDDS projects'
+inputs:
+  java-vendor:
+    description: 'Vendor of java to use when running the tests (temurin or zulu)'
+    iequired: true
+  java-version:
+    description: 'Version of java to use when running the tests (8, 11, or 14)'
+    required: true
+  build-tool:
+    description: 'name of build tool used to run the tests (gradlew or mvn)'
+    required: true
+  test-command:
+    description: 'command used in conjunction with the build tool to run the tests'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.java-vendor}}
+    - ${{ inputs.java-version }}
+    - ${{ inputs.build-tool }}
+    - ${{ inputs.test-command }}
