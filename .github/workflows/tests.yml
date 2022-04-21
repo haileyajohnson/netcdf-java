@@ -13,10 +13,8 @@ jobs:
         java-vendor: [ 'temurin' ]
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: 5f7754bf63537fb9e5eccef6dc4fb741c35aed4f
       - name: Build and test with Gradle (${{ matrix.java-vendor }} ${{ matrix.java-version }})
-        uses: ./.github/thredds-test-action
+        uses: ./.github
         with:
           java-vendor: ${{ matrix.java-vendor }}
           java-version: ${{ matrix.java-version }}
