@@ -7,17 +7,19 @@ jobs:
     strategy:
       matrix:
         # test against latest 8, 11, 14 of zulu and temurin java
-        java-version: [ 8, 11, 14 ]
-        java-vendor: [ 'zulu', 'temurin' ]
+#        java-version: [ 8, 11, 14 ]
+#        java-vendor: [ 'zulu', 'temurin' ]
+        java-version: [ 8]
+        java-vendor: [ 'zulu' ]
     steps:
       - uses: actions/checkout@v2
       - name: Build and test with Gradle (${{ matrix.java-vendor }} ${{ matrix.java-version }})
-        uses: Unidata/thredds-test-action@v1
+        uses: ./.github
         with:
           java-vendor: ${{ matrix.java-vendor }}
           java-version: ${{ matrix.java-version }}
           build-tool: 'gradlew'
-          test-command: '--info --stacktrace testAll'
+          test-command: '--info --stacktrace :cdm:cdm-core:test'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
