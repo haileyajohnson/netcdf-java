@@ -1,1 +1,2 @@
 ucar.nc2.iosp.zarr.ZarrIosp
+ucar.nc2.iosp.ferret.FerretIOServiceProvider
