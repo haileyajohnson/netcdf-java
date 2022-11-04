@@ -7,5 +7,5 @@ public class ZarrTestsCommon {
   public static final String S3_FRAGMENT = "delimiter=/";
 
   // Local stores
-  public static final String LOCAL_TEST_DATA_PATH = "src/test/shared-data/";
+  public static final String LOCAL_TEST_DATA_PATH = "src/test/shared-data/zarr";
 }
