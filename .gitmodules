@@ -1,0 +1,3 @@
+[submodule "cdm/zarr/src/test/shared-data"]
+	path = cdm/zarr/src/test/shared-data
+	url = https://github.com/haileyajohnson/shared-data
