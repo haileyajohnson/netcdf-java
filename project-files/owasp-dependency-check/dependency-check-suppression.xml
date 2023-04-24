@@ -23,7 +23,7 @@
        file name: eccodes-2.12.0-Source.tar.gz: eccodes-2.12.0-Source.tar: jquery.js
        reason: not using jquery in netcdf-java
     ]]></notes>
-    <gav regex="true">eccodes-2\.12\.0-Source\.tar\.gz: eccodes-2\.12\.0-Source\.tar: jquery\.js</gav>
+    <gav regex="true">**/*/jquery\.js</gav>
     <vulnerabilityName regex="true"></vulnerabilityName>
   </suppress>
 </suppressions>
