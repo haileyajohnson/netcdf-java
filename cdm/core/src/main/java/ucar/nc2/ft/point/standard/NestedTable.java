@@ -10,20 +10,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Formatter;
 import java.util.List;
-import ucar.ma2.StructureData;
-import ucar.ma2.StructureDataFactory;
-import ucar.ma2.StructureDataIterator;
-import ucar.ma2.StructureDataIteratorLimited;
-import ucar.ma2.StructureMembers;
+
+import ucar.ma2.*;
 import ucar.nc2.Variable;
 import ucar.nc2.VariableSimpleIF;
+import ucar.nc2.constants.CF;
 import ucar.nc2.constants.FeatureType;
 import ucar.nc2.dataset.CoordinateAxis;
+import ucar.nc2.dataset.CoordinateAxis1DTime;
 import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.dataset.VariableDS;
 import ucar.nc2.ft.FeatureDatasetFactoryManager;
-import ucar.nc2.ft.point.StationFeature;
-import ucar.nc2.ft.point.StationFeatureImpl;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateFormatter;
 import ucar.nc2.time.CalendarDateUnit;
@@ -479,6 +477,22 @@ public class NestedTable {
     }
   }
 
+  public CollectionTInfo getTInfo() {
+    CalendarDateUnit timeUnit;
+    try {
+      timeUnit = getTimeUnit();
+    } catch (Exception e) {
+      if (null != errlog)
+        errlog.format("%s%n", e.getMessage());
+      timeUnit = CalendarDateUnit.unixDateUnit;
+    }
+    String timeName = timeVE.axisName;
+    String longName =
+        timeVE instanceof CoordVarExtractorVariable ? ((CoordVarExtractorVariable) timeVE).coordVar.getDescription()
+            : null;
+    return new CollectionTInfo(timeName, timeUnit, longName);
+  }
+
   public String getAltName() {
     if (altVE != null)
       return altVE.axisName;
@@ -493,6 +507,31 @@ public class NestedTable {
     if (stnAltVE != null)
       return stnAltVE.getUnitsString();
     return null;
+  }
+
+  public CollectionZInfo getZInfo() {
+    if (altVE != null && altVE instanceof CoordVarExtractorVariable) {
+      VariableDS var = ((CoordVarExtractorVariable) altVE).coordVar;
+      return new CollectionZInfo(getAltName(), getAltUnits(), var.getDescription(),
+          var.findAttributeString(CF.POSITIVE, null), var.findAttributeString(CF.AXIS, null), var.getDataType());
+    }
+    if (stnAltVE != null && stnAltVE instanceof CoordVarExtractorVariable) {
+      VariableDS var = ((CoordVarExtractorVariable) stnAltVE).coordVar;
+      return new CollectionZInfo(getAltName(), getAltUnits(), var.getDescription(),
+          var.findAttributeString(CF.POSITIVE, CF.POSITIVE_UP), var.findAttributeString(CF.AXIS, null),
+          var.getDataType());
+    }
+    return new CollectionZInfo(null, null, null, null, null, null);
+  }
+
+  public CollectionLatLonInfo getLatLonInfo() {
+    if (latVE instanceof CoordVarExtractorVariable && lonVE instanceof CoordVarExtractorVariable) {
+      VariableDS lat = ((CoordVarExtractorVariable) latVE).coordVar;
+      VariableDS lon = ((CoordVarExtractorVariable) lonVE).coordVar;
+      return new CollectionLatLonInfo(lat.getShortName(), lat.getUnitsString(), lat.getDescription(), lat.getDataType(),
+          lon.getShortName(), lon.getUnitsString(), lon.getDescription(), lon.getDataType());
+    }
+    return new CollectionLatLonInfo(null, null, null, null, null, null, null, null);
   }
 
   public List<VariableSimpleIF> getDataVariables() {

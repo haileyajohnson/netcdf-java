@@ -18,8 +18,7 @@ import ucar.nc2.*;
 import ucar.nc2.constants.*;
 import ucar.nc2.dataset.CoordinateAxis;
 import ucar.nc2.ft.*;
-import ucar.nc2.ft.point.StationFeature;
-import ucar.nc2.ft.point.StationPointFeature;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateFormatter;
 import ucar.nc2.time.CalendarDateUnit;
@@ -28,6 +27,8 @@ import ucar.nc2.write.Nc4Chunking;
 import ucar.nc2.write.Nc4ChunkingStrategy;
 import ucar.unidata.geoloc.LatLonPoint;
 import ucar.unidata.geoloc.LatLonRect;
+
+import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -45,12 +46,18 @@ import java.util.*;
 public abstract class CFPointWriter implements Closeable {
   private static final Logger logger = LoggerFactory.getLogger(CFPointWriter.class);
 
-  public static final String recordName = "obs";
-  public static final String recordDimName = "obs";
-  public static final String latName = "latitude";
-  public static final String lonName = "longitude";
+  // TODO: look at which names can be hardcoded or need to come from the featureCollection; set defaults in shared class
+
+  public static String recordName = "obs";
+  public static String recordDimName = "obs";
+  public static String latName = "latitude";
+  public static String lonName = "longitude";
   public static String altName = "altitude";
   public static String timeName = "time";
+
+  protected CollectionTInfo tInfo;
+  protected CollectionZInfo zInfo;
+  protected CollectionLatLonInfo latLonInfo;
 
   public static final String stationStructName = "station";
   public static final String stationDimName = "station";
@@ -71,7 +78,6 @@ public abstract class CFPointWriter implements Closeable {
   public static final String trajIdName = "trajectoryId";
 
   public static final int idMissingValue = -9999;
-  private static boolean debug;
 
   public static int writeFeatureCollection(FeatureDatasetPoint fdpoint, String fileOut,
       NetcdfFileWriter.Version version) throws IOException {
@@ -120,7 +126,7 @@ public abstract class CFPointWriter implements Closeable {
       String fileOut, CFPointWriterConfig config) throws IOException {
 
     try (WriterCFPointCollection pointWriter = new WriterCFPointCollection(fileOut, fdpoint.getGlobalAttributes(),
-        fdpoint.getDataVariables(), pfc.getTimeUnit(), pfc.getAltUnits(), config)) {
+        fdpoint.getDataVariables(), pfc.getTInfo(), pfc.getZInfo(), pfc.getLatLonInfo(), config)) {
 
       pointWriter.setExtraVariables(pfc.getExtraVariables());
 
@@ -129,10 +135,6 @@ public abstract class CFPointWriter implements Closeable {
       for (PointFeature pf : pfc) {
         pointWriter.writeRecord(pf, pf.getFeatureData());
         count++;
-        if (debug && count % 100 == 0)
-          logger.debug(String.format("%d ", count));
-        if (debug && count % 1000 == 0)
-          logger.debug(String.format("%n "));
       }
 
       pointWriter.finish();
@@ -145,7 +147,7 @@ public abstract class CFPointWriter implements Closeable {
     int count = 0;
 
     try (WriterCFStationCollection cfWriter = new WriterCFStationCollection(fileOut, dataset.getGlobalAttributes(),
-        dataset.getDataVariables(), fc.getTimeUnit(), fc.getAltUnits(), config)) {
+        dataset.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
 
       List<StationFeature> flattenFeatures = new ArrayList<>();
       List<Variable> extraVariables = new ArrayList<>();
@@ -164,10 +166,6 @@ public abstract class CFPointWriter implements Closeable {
 
             cfWriter.writeRecord(((StationPointFeature) pf).getStation(), pf, pf.getFeatureData());
             count++;
-            if (debug && count % 100 == 0)
-              logger.debug(String.format("%d ", count));
-            if (debug && count % 1000 == 0)
-              logger.debug(String.format("%n "));
           }
         }
       }
@@ -180,7 +178,7 @@ public abstract class CFPointWriter implements Closeable {
       String fileOut, CFPointWriterConfig config) throws IOException {
 
     try (WriterCFProfileCollection cfWriter = new WriterCFProfileCollection(fileOut, fdpoint.getGlobalAttributes(),
-        fdpoint.getDataVariables(), fc.getTimeUnit(), fc.getAltUnits(), config)) {
+        fdpoint.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
       List<Variable> extraVariables = new ArrayList<>();
       List<ProfileFeature> flattenFeatures = new ArrayList<>();
 
@@ -206,10 +204,6 @@ public abstract class CFPointWriter implements Closeable {
       count = 0;
       for (ProfileFeature profile : fc) {
         count += cfWriter.writeProfile(profile);
-        if (debug && count % 10 == 0)
-          logger.debug(String.format("%d ", count));
-        if (debug && count % 100 == 0)
-          logger.debug(String.format("%n "));
       }
 
       cfWriter.finish();
@@ -221,7 +215,7 @@ public abstract class CFPointWriter implements Closeable {
       String fileOut, CFPointWriterConfig config) throws IOException {
 
     try (WriterCFTrajectoryCollection cfWriter = new WriterCFTrajectoryCollection(fileOut,
-        fdpoint.getGlobalAttributes(), fdpoint.getDataVariables(), fc.getTimeUnit(), fc.getAltUnits(), config)) {
+        fdpoint.getGlobalAttributes(), fdpoint.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
       List<Variable> extraVariables = new ArrayList<>();
       List<TrajectoryFeature> flattenFeatures = new ArrayList<>();
 
@@ -243,10 +237,6 @@ public abstract class CFPointWriter implements Closeable {
       for (DsgFeatureCollection featureCollection : fdpoint.getPointFeatureCollectionList()) {
         for (TrajectoryFeature trajectory : (TrajectoryFeatureCollection) featureCollection) {
           count += cfWriter.writeTrajectory(trajectory);
-          if (debug && count % 10 == 0)
-            logger.debug(String.format("%d ", count));
-          if (debug && count % 100 == 0)
-            logger.debug(String.format("%n "));
         }
       }
 
@@ -259,7 +249,7 @@ public abstract class CFPointWriter implements Closeable {
       StationProfileFeatureCollection fc, String fileOut, CFPointWriterConfig config) throws IOException {
 
     try (WriterCFStationProfileCollection cfWriter = new WriterCFStationProfileCollection(fileOut,
-        dataset.getGlobalAttributes(), dataset.getDataVariables(), fc.getTimeUnit(), fc.getAltUnits(), config)) {
+        dataset.getGlobalAttributes(), dataset.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
 
       List<Variable> extraVariables = new ArrayList<>();
       List<StationFeature> flattenFeatures = new ArrayList<>();
@@ -284,10 +274,6 @@ public abstract class CFPointWriter implements Closeable {
             if (pf.getTime() == null)
               continue; // assume this means its an "incomplete multidimensional"
             count += cfWriter.writeProfile(spf, pf);
-            if (debug && count % 100 == 0)
-              logger.debug(String.format("%d ", count));
-            if (debug && count % 1000 == 0)
-              logger.debug(String.format("%n "));
           }
         }
       }
@@ -301,7 +287,7 @@ public abstract class CFPointWriter implements Closeable {
       TrajectoryProfileFeatureCollection fc, String fileOut, CFPointWriterConfig config) throws IOException {
 
     try (WriterCFTrajectoryProfileCollection cfWriter = new WriterCFTrajectoryProfileCollection(fileOut,
-        dataset.getGlobalAttributes(), dataset.getDataVariables(), fc.getTimeUnit(), fc.getAltUnits(), config)) {
+        dataset.getGlobalAttributes(), dataset.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
       List<Variable> extraVariables = new ArrayList<>();
       List<TrajectoryProfileFeature> flattenFeatures = new ArrayList<>();
 
@@ -338,10 +324,6 @@ public abstract class CFPointWriter implements Closeable {
               continue; // assume this means its a "incomplete multidimensional"
 
             count += cfWriter.writeProfile(spf, profile);
-            if (debug && count % 100 == 0)
-              logger.debug(String.format("%d ", count));
-            if (debug && count % 1000 == 0)
-              logger.debug(String.format("%n "));
           }
         }
       }
@@ -388,11 +370,6 @@ public abstract class CFPointWriter implements Closeable {
   protected CalendarDate minDate;
   protected CalendarDate maxDate;
 
-  // LOOK doesnt work
-  protected CFPointWriter(String fileOut, List<Attribute> atts, NetcdfFileWriter.Version version) throws IOException {
-    this(fileOut, atts, null, null, null, new CFPointWriterConfig(version));
-  }
-
   /**
    * Ctor
    * 
@@ -401,11 +378,15 @@ public abstract class CFPointWriter implements Closeable {
    * @param config configure
    */
   protected CFPointWriter(String fileOut, List<Attribute> atts, List<VariableSimpleIF> dataVars,
-      CalendarDateUnit timeUnit, String altUnits, CFPointWriterConfig config) throws IOException {
+      @Nonnull CollectionTInfo tInfo, @Nonnull CollectionZInfo zInfo, @Nonnull CollectionLatLonInfo latLonInfo,
+      CFPointWriterConfig config) throws IOException {
     createWriter(fileOut, config);
     this.dataVars = dataVars;
-    this.timeUnit = timeUnit != null ? timeUnit : CalendarDateUnit.unixDateUnit;
-    this.altUnits = altUnits;
+    this.tInfo = tInfo;
+    this.timeUnit = tInfo.getUnits();
+    this.zInfo = zInfo;
+    this.altUnits = zInfo.getUnits();
+    this.latLonInfo = latLonInfo;
     this.config = config;
     this.noTimeCoverage = config.noTimeCoverage;
     this.noUnlimitedDimension =
@@ -415,7 +396,6 @@ public abstract class CFPointWriter implements Closeable {
     addGlobalAtts(atts);
     addNetcdf3UnknownAtts(noTimeCoverage);
   }
-
 
   public void setFeatureAuxInfo(int nfeatures, int id_strlen) {
     this.nfeatures = nfeatures;
@@ -503,10 +483,10 @@ public abstract class CFPointWriter implements Closeable {
 
         PointFeature pointFeat = iter.peek();
 
-        Formatter coordNames = new Formatter().format("%s %s %s", stnFeature.getTimeName(), latName, lonName);
+        Formatter coordNames =
+            new Formatter().format("%s %s %s", tInfo.getName(), latLonInfo.getLatName(), latLonInfo.getLonName());
         if (!Double.isNaN(pointFeat.getLocation().getAltitude())) {
-          altitudeCoordinateName = stnFeature.getAltName();
-          coordNames.format(" %s", altitudeCoordinateName);
+          coordNames.format(" %s", zInfo.getName());
         }
 
         if (writer.getVersion().isExtendedModel()) {

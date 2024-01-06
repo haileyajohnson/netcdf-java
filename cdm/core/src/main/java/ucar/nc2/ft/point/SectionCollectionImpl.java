@@ -26,6 +26,11 @@ public abstract class SectionCollectionImpl extends PointFeatureCCCImpl implemen
     super(name, timeName, timeUnit, altName, altUnits, FeatureType.TRAJECTORY_PROFILE);
   }
 
+  protected SectionCollectionImpl(String name, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(name, time, alt, latLonInfo, FeatureType.TRAJECTORY_PROFILE);
+  }
+
   /////////////////////////////////////////////////////////////////////////////////////
   // deprecated
   protected PointFeatureCCIterator localIterator;

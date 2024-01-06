@@ -149,7 +149,7 @@ public class BufrFeatureDatasetFactory implements FeatureDatasetFactory {
       StandardFields.StandardFieldsFromStructure extract;
 
       private BufrStationCollection(String name) {
-        super(name, null, null);
+        super(name, (CalendarDateUnit) null, (String) null);
 
         // need the center id to match the standard fields
         Attribute centerAtt = netcdfDataset.findGlobalAttribute(BufrIosp2.centerId);

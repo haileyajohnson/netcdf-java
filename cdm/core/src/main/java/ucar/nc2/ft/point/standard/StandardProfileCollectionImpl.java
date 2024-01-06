@@ -17,11 +17,7 @@ import ucar.nc2.ft.PointFeatureCollectionIterator;
 import ucar.nc2.ft.PointFeatureIterator;
 import ucar.nc2.ft.ProfileFeature;
 import ucar.nc2.ft.ProfileFeatureCollection;
-import ucar.nc2.ft.point.CollectionInfo;
-import ucar.nc2.ft.point.CollectionIteratorAdapter;
-import ucar.nc2.ft.point.PointCollectionIteratorFiltered;
-import ucar.nc2.ft.point.PointFeatureCCImpl;
-import ucar.nc2.ft.point.ProfileFeatureImpl;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.nc2.time.CalendarDateUnit;
@@ -44,6 +40,13 @@ public class StandardProfileCollectionImpl extends PointFeatureCCImpl implements
 
   StandardProfileCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) {
     super(ft.getName(), ft.getTimeName(), timeUnit, ft.getAltName(), altUnits, FeatureType.PROFILE);
+    this.ft = ft;
+    this.extras = ft.getExtras();
+  }
+
+  StandardProfileCollectionImpl(NestedTable ft, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(ft.getName(), time, alt, latLonInfo, FeatureType.PROFILE);
     this.ft = ft;
     this.extras = ft.getExtras();
   }

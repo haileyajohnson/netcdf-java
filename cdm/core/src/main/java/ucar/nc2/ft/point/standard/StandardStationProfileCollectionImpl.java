@@ -11,6 +11,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import ucar.ma2.StructureData;
 import ucar.ma2.StructureDataIterator;
+import ucar.nc2.constants.FeatureType;
 import ucar.nc2.ft.PointFeature;
 import ucar.nc2.ft.PointFeatureCC;
 import ucar.nc2.ft.PointFeatureCCIterator;
@@ -19,13 +20,7 @@ import ucar.nc2.ft.PointFeatureCollectionIterator;
 import ucar.nc2.ft.PointFeatureIterator;
 import ucar.nc2.ft.ProfileFeature;
 import ucar.nc2.ft.StationProfileFeature;
-import ucar.nc2.ft.point.CollectionInfo;
-import ucar.nc2.ft.point.DsgCollectionImpl;
-import ucar.nc2.ft.point.ProfileFeatureImpl;
-import ucar.nc2.ft.point.StationFeature;
-import ucar.nc2.ft.point.StationHelper;
-import ucar.nc2.ft.point.StationProfileCollectionImpl;
-import ucar.nc2.ft.point.StationProfileFeatureImpl;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateUnit;
 import ucar.nc2.util.IOIterator;
@@ -49,6 +44,13 @@ public class StandardStationProfileCollectionImpl extends StationProfileCollecti
   StandardStationProfileCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) {
     super(ft.getName(), ft.getTimeName(), timeUnit, ft.getAltName(), altUnits);
     this.ft = ft;
+  }
+
+  StandardStationProfileCollectionImpl(NestedTable ft, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(ft.getName(), time, alt, latLonInfo);
+    this.ft = ft;
+    this.extras = ft.getExtras();
   }
 
   @Override

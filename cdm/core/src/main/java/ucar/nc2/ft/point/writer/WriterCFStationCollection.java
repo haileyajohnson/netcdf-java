@@ -11,8 +11,7 @@ import ucar.nc2.*;
 import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.CF;
 import ucar.nc2.ft.*;
-import ucar.nc2.ft.point.StationFeature;
-import ucar.nc2.ft.point.StationPointFeature;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateUnit;
 import ucar.unidata.geoloc.Station;
@@ -55,7 +54,15 @@ public class WriterCFStationCollection extends CFPointWriter {
 
   public WriterCFStationCollection(String fileOut, List<Attribute> atts, List<VariableSimpleIF> dataVars,
       CalendarDateUnit timeUnit, String altUnits, CFPointWriterConfig config) throws IOException {
-    super(fileOut, atts, dataVars, timeUnit, altUnits, config);
+    this(fileOut, atts, dataVars, new CollectionTInfo(null, timeUnit, null),
+        new CollectionZInfo(null, altUnits, null, null, null, null),
+        new CollectionLatLonInfo(null, null, null, null, null, null, null, null), config);
+  }
+
+  public WriterCFStationCollection(String fileOut, List<Attribute> atts, List<VariableSimpleIF> dataVars,
+      CollectionTInfo tInfo, CollectionZInfo zInfo, CollectionLatLonInfo latLonInfo, CFPointWriterConfig config)
+      throws IOException {
+    super(fileOut, atts, dataVars, tInfo, zInfo, latLonInfo, config);
     writer.addGroupAttribute(null, new Attribute(CF.FEATURE_TYPE, CF.FeatureType.timeSeries.name()));
     writer.addGroupAttribute(null, new Attribute(CF.DSG_REPRESENTATION,
         "Timeseries of station data in the indexed ragged array representation, H.2.5"));
@@ -77,6 +84,7 @@ public class WriterCFStationCollection extends CFPointWriter {
       flattenStations.add((PointFeatureCollection) stn);
       stationData.add(stn.getFeatureData());
       useAlt = !Double.isNaN(stn.getAltitude());
+      altitudeCoordinateName = ((PointFeatureCollection) stn).getAltName();
       if ((stn.getWmoId() != null) && (!stn.getWmoId().trim().isEmpty()))
         useWmoId = true;
       if ((stn.getDescription() != null) && (!stn.getDescription().trim().isEmpty()))

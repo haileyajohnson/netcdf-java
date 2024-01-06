@@ -31,6 +31,12 @@ public abstract class PointFeatureCCCImpl extends DsgCollectionImpl implements P
     this.collectionFeatureType = collectionFeatureType;
   }
 
+  protected PointFeatureCCCImpl(String name, CollectionTInfo time, CollectionZInfo alt, CollectionLatLonInfo latLonInfo,
+      FeatureType collectionFeatureType) {
+    super(name, time, alt, latLonInfo);
+    this.collectionFeatureType = collectionFeatureType;
+  }
+
   // All features in this collection have this feature type
   @Nonnull
   @Override

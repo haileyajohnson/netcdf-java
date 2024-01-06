@@ -9,12 +9,10 @@ import java.io.IOException;
 import javax.annotation.Nonnull;
 import ucar.ma2.StructureData;
 import ucar.ma2.StructureDataIterator;
+import ucar.nc2.constants.FeatureType;
 import ucar.nc2.ft.PointFeatureIterator;
 import ucar.nc2.ft.StationTimeSeriesFeature;
-import ucar.nc2.ft.point.StationFeature;
-import ucar.nc2.ft.point.StationHelper;
-import ucar.nc2.ft.point.StationTimeSeriesCollectionImpl;
-import ucar.nc2.ft.point.StationTimeSeriesFeatureImpl;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDateUnit;
 
 /**
@@ -33,6 +31,13 @@ public class StandardStationCollectionImpl extends StationTimeSeriesCollectionIm
 
   StandardStationCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) {
     super(ft.getName(), ft.getTimeName(), timeUnit, ft.getAltName(), altUnits);
+    this.ft = ft;
+    this.extras = ft.getExtras();
+  }
+
+  StandardStationCollectionImpl(NestedTable ft, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(ft.getName(), time, alt, latLonInfo);
     this.ft = ft;
     this.extras = ft.getExtras();
   }

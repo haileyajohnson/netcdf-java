@@ -15,6 +15,9 @@ import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.CF;
 import ucar.nc2.dataset.conv.CF1Convention;
 import ucar.nc2.ft.*;
+import ucar.nc2.ft.point.CollectionLatLonInfo;
+import ucar.nc2.ft.point.CollectionTInfo;
+import ucar.nc2.ft.point.CollectionZInfo;
 import ucar.nc2.ft.point.StationFeature;
 import ucar.nc2.time.CalendarDateUnit;
 import java.io.IOException;
@@ -51,7 +54,15 @@ public class WriterCFStationProfileCollection extends CFPointWriter {
 
   public WriterCFStationProfileCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
       CalendarDateUnit timeUnit, String altUnits, CFPointWriterConfig config) throws IOException {
-    super(fileOut, globalAtts, dataVars, timeUnit, altUnits, config);
+    this(fileOut, globalAtts, dataVars, new CollectionTInfo(null, timeUnit, null),
+        new CollectionZInfo(null, altUnits, null, null, null, null),
+        new CollectionLatLonInfo(null, null, null, null, null, null, null, null), config);
+  }
+
+  public WriterCFStationProfileCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
+      CollectionTInfo tInfo, CollectionZInfo zInfo, CollectionLatLonInfo latLonInfo, CFPointWriterConfig config)
+      throws IOException {
+    super(fileOut, globalAtts, dataVars, tInfo, zInfo, latLonInfo, config);
     writer.addGroupAttribute(null, new Attribute(CF.FEATURE_TYPE, CF.FeatureType.timeSeriesProfile.name()));
     writer.addGroupAttribute(null,
         new Attribute(CF.DSG_REPRESENTATION, "Ragged array representation of time series profiles, H.5.3"));

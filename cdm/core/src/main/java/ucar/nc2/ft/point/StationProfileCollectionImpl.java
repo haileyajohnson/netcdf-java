@@ -39,6 +39,11 @@ public abstract class StationProfileCollectionImpl extends PointFeatureCCCImpl
     super(name, timeName, timeUnit, altName, altUnits, FeatureType.STATION_PROFILE);
   }
 
+  public StationProfileCollectionImpl(String name, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(name, time, alt, latLonInfo, FeatureType.STATION_PROFILE);
+  }
+
   // Double-check idiom for lazy initialization of instance fields. See Effective Java 2nd Ed, p. 283.
   protected StationHelper getStationHelper() {
     if (stationHelper == null) {

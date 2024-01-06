@@ -4,7 +4,10 @@
  */
 package ucar.nc2.ft.point;
 
+import org.checkerframework.checker.units.qual.C;
+import ucar.ma2.DataType;
 import ucar.nc2.Variable;
+import ucar.nc2.constants.CF;
 import ucar.nc2.ft.DsgFeatureCollection;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.nc2.time.CalendarDateUnit;
@@ -27,21 +30,32 @@ public abstract class DsgCollectionImpl implements DsgFeatureCollection {
   protected String altName = "altitude";
   protected String altUnits;
   protected CollectionInfo info;
+  protected CollectionZInfo zInfo;
+  protected CollectionTInfo tInfo;
+  protected CollectionLatLonInfo latLonInfo;
   protected List<Variable> extras; // variables needed to make CF/DSG writing work
 
   protected DsgCollectionImpl(String name, CalendarDateUnit timeUnit, String altUnits) {
-    this.name = name;
-    this.timeUnit = timeUnit;
-    this.altUnits = altUnits;
+    this(name, CF.TIME, timeUnit, null, altUnits);
   }
 
   protected DsgCollectionImpl(String name, String timeName, CalendarDateUnit timeUnit, String altName,
       String altUnits) {
+    this(name, new CollectionTInfo(timeName, timeUnit, null),
+        new CollectionZInfo(altName, altUnits, null, null, "Z", null),
+        new CollectionLatLonInfo(null, null, null, null,
+                null, null, null, null));
+  }
+
+  protected DsgCollectionImpl(String name, CollectionTInfo time, CollectionZInfo alt, CollectionLatLonInfo latLonInfo) {
     this.name = name;
-    this.timeName = timeName;
-    this.timeUnit = timeUnit;
-    this.altName = altName;
-    this.altUnits = altUnits;
+    this.tInfo = time;
+    this.zInfo = alt;
+    this.timeName = tInfo.name;
+    this.timeUnit = tInfo.units;
+    this.altName = zInfo.name;
+    this.altUnits = zInfo.units;
+    this.latLonInfo = latLonInfo;
   }
 
   @Nonnull
@@ -72,6 +86,21 @@ public abstract class DsgCollectionImpl implements DsgFeatureCollection {
   @Override
   public String getAltUnits() {
     return altUnits;
+  }
+
+  @Override
+  public CollectionTInfo getTInfo() {
+    return tInfo;
+  }
+
+  @Override
+  public CollectionZInfo getZInfo() {
+    return zInfo;
+  }
+
+  @Override
+  public CollectionLatLonInfo getLatLonInfo() {
+    return latLonInfo;
   }
 
   @Nonnull

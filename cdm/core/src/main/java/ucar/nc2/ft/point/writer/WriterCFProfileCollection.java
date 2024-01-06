@@ -15,6 +15,9 @@ import ucar.nc2.constants.CF;
 import ucar.nc2.dataset.conv.CF1Convention;
 import ucar.nc2.ft.PointFeature;
 import ucar.nc2.ft.ProfileFeature;
+import ucar.nc2.ft.point.CollectionLatLonInfo;
+import ucar.nc2.ft.point.CollectionTInfo;
+import ucar.nc2.ft.point.CollectionZInfo;
 import ucar.nc2.time.CalendarDateUnit;
 
 /**
@@ -42,7 +45,15 @@ public class WriterCFProfileCollection extends CFPointWriter {
 
   public WriterCFProfileCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
       CalendarDateUnit timeUnit, String altUnits, CFPointWriterConfig config) throws IOException {
-    super(fileOut, globalAtts, dataVars, timeUnit, altUnits, config);
+    this(fileOut, globalAtts, dataVars, new CollectionTInfo(null, timeUnit, null),
+        new CollectionZInfo(null, altUnits, null, null, null, null),
+        new CollectionLatLonInfo(null, null, null, null, null, null, null, null), config);
+  }
+
+  public WriterCFProfileCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
+      CollectionTInfo tInfo, CollectionZInfo zInfo, CollectionLatLonInfo latLonInfo, CFPointWriterConfig config)
+      throws IOException {
+    super(fileOut, globalAtts, dataVars, tInfo, zInfo, latLonInfo, config);
     writer.addGroupAttribute(null,
         new Attribute(CF.DSG_REPRESENTATION, "Contiguous ragged array representation of profiles, H.3.4"));
     writer.addGroupAttribute(null, new Attribute(CF.FEATURE_TYPE, CF.FeatureType.profile.name()));
@@ -67,15 +78,18 @@ public class WriterCFProfileCollection extends CFPointWriter {
 
     for (ProfileFeature profile : profiles) {
       profileData.add(profile.getFeatureData());
+      tInfo = profile.getTInfo();
       coords.add(VariableSimpleBuilder
-          .makeScalar(profile.getTimeName(), "time of measurement", profile.getTimeUnit().getUdUnit(), DataType.DOUBLE)
-          .addAttribute(CF.CALENDAR, profile.getTimeUnit().getCalendar().toString()).build());
+          .makeScalar(tInfo.getName(), tInfo.getLongName(), tInfo.getUnits().getUdUnit(), DataType.DOUBLE)
+          .addAttribute(CF.CALENDAR, tInfo.getUnits().getCalendar().toString()).build());
 
       if (useAlt) {
         altitudeCoordinateName = profile.getAltName();
-        coords.add(VariableSimpleBuilder.makeScalar(altitudeCoordinateName, "obs altitude", altUnits, DataType.DOUBLE)
-            .addAttribute(CF.STANDARD_NAME, "altitude")
-            .addAttribute(CF.POSITIVE, CF1Convention.getZisPositive(altitudeCoordinateName, altUnits)).build());
+        zInfo = profile.getZInfo();
+        coords.add(VariableSimpleBuilder
+            .makeScalar(zInfo.getName(), zInfo.getLongName(), zInfo.getUnits(), zInfo.getDataType())
+            .addAttribute(CF.STANDARD_NAME, "altitude") // TODO: get from feature
+            .addAttribute(CF.POSITIVE, zInfo.getUnits()).addAttribute(CF.AXIS, zInfo.getAxis()).build());
       }
     }
 
@@ -91,10 +105,14 @@ public class WriterCFProfileCollection extends CFPointWriter {
 
     // add the profile Variables using the profile dimension
     List<VariableSimpleIF> profileVars = new ArrayList<>();
-    profileVars
-        .add(VariableSimpleBuilder.makeScalar(latName, "profile latitude", CDM.LAT_UNITS, DataType.DOUBLE).build());
-    profileVars
-        .add(VariableSimpleBuilder.makeScalar(lonName, "profile longitude", CDM.LON_UNITS, DataType.DOUBLE).build());
+    latName = latLonInfo.getLatName();
+    lonName = latLonInfo.getLonName();
+    profileVars.add(VariableSimpleBuilder
+        .makeScalar(latName, latLonInfo.getLatLongName(), latLonInfo.getLatUnits(), latLonInfo.getLatDataType())
+        .build());
+    profileVars.add(VariableSimpleBuilder
+        .makeScalar(lonName, latLonInfo.getLonLongName(), latLonInfo.getLonUnits(), latLonInfo.getLonDataType())
+        .build());
     profileVars.add(VariableSimpleBuilder.makeString(profileIdName, "profile identifier", null, id_strlen)
         .addAttribute(CF.CF_ROLE, CF.PROFILE_ID).build()); // profileId:cf_role = "profile_id";
 
@@ -129,6 +147,8 @@ public class WriterCFProfileCollection extends CFPointWriter {
     trackBB(profile.getLatLon(), profile.getTime());
 
     StructureMembers.Builder smb = StructureMembers.builder().setName("Coords");
+    latName = latLonInfo.getLatName();
+    lonName = latLonInfo.getLonName();
     smb.addMemberScalar(latName, null, null, DataType.DOUBLE, profile.getLatLon().getLatitude());
     smb.addMemberScalar(lonName, null, null, DataType.DOUBLE, profile.getLatLon().getLongitude());
     if (profile.getTime() != null) {// LOOK time not always part of profile

@@ -16,7 +16,7 @@ import ucar.nc2.dataset.NetcdfDataset;
 import ucar.nc2.ft.DsgFeatureCollection;
 import ucar.nc2.ft.FeatureDataset;
 import ucar.nc2.ft.FeatureDatasetFactory;
-import ucar.nc2.ft.point.PointDatasetImpl;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDateUnit;
 
 /**
@@ -126,39 +126,31 @@ public class PointDatasetStandardFactory implements FeatureDatasetFactory {
 
       List<DsgFeatureCollection> featureCollections = new ArrayList<>();
       for (NestedTable flatTable : analyser.getFlatTables()) { // each flat table becomes a "feature collection"
-
-        CalendarDateUnit timeUnit;
-        try {
-          timeUnit = flatTable.getTimeUnit();
-        } catch (Exception e) {
-          if (null != errlog)
-            errlog.format("%s%n", e.getMessage());
-          timeUnit = CalendarDateUnit.unixDateUnit;
-        }
-
-        String altUnits = flatTable.getAltUnits();
+        CollectionTInfo tInfo = flatTable.getTInfo();
+        CollectionZInfo zInfo = flatTable.getZInfo();
+        CollectionLatLonInfo latLonInfo = flatTable.getLatLonInfo();
 
         // create member variables
         dataVariables = new ArrayList<>(flatTable.getDataVariables());
 
         featureType = flatTable.getFeatureType(); // hope they're all the same
         if (flatTable.getFeatureType() == FeatureType.POINT)
-          featureCollections.add(new StandardPointCollectionImpl(flatTable, timeUnit, altUnits));
+          featureCollections.add(new StandardPointCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
 
         else if (flatTable.getFeatureType() == FeatureType.PROFILE)
-          featureCollections.add(new StandardProfileCollectionImpl(flatTable, timeUnit, altUnits));
+          featureCollections.add(new StandardProfileCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
 
         else if (flatTable.getFeatureType() == FeatureType.STATION)
-          featureCollections.add(new StandardStationCollectionImpl(flatTable, timeUnit, altUnits));
+          featureCollections.add(new StandardStationCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
 
         else if (flatTable.getFeatureType() == FeatureType.STATION_PROFILE)
-          featureCollections.add(new StandardStationProfileCollectionImpl(flatTable, timeUnit, altUnits));
+          featureCollections.add(new StandardStationProfileCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
 
         else if (flatTable.getFeatureType() == FeatureType.TRAJECTORY_PROFILE)
-          featureCollections.add(new StandardSectionCollectionImpl(flatTable, timeUnit, altUnits));
+          featureCollections.add(new StandardSectionCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
 
         else if (flatTable.getFeatureType() == FeatureType.TRAJECTORY)
-          featureCollections.add(new StandardTrajectoryCollectionImpl(flatTable, timeUnit, altUnits));
+          featureCollections.add(new StandardTrajectoryCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
       }
 
       if (featureCollections.isEmpty())

@@ -40,6 +40,11 @@ public abstract class StationTimeSeriesCollectionImpl extends PointFeatureCCImpl
     super(name, timeName, timeUnit, altName, altUnits, FeatureType.STATION);
   }
 
+  public StationTimeSeriesCollectionImpl(String name, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(name, time, alt, latLonInfo, FeatureType.STATION);
+  }
+
   // Double-check idiom for lazy initialization of instance fields. See Effective Java 2nd Ed, p. 283.
   protected StationHelper getStationHelper() {
     if (stationHelper == null) {

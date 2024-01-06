@@ -33,6 +33,13 @@ public abstract class PointCollectionImpl extends DsgCollectionImpl implements P
     super(name, timeName, timeUnit, altName, altUnits);
   }
 
+  protected PointCollectionImpl(String name, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(name, time, alt, latLonInfo);
+  }
+
+
+
   @Nonnull
   @Override
   public FeatureType getCollectionFeatureType() {

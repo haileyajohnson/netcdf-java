@@ -17,12 +17,7 @@ import ucar.nc2.ft.PointFeatureCollection;
 import ucar.nc2.ft.PointFeatureCollectionIterator;
 import ucar.nc2.ft.PointFeatureIterator;
 import ucar.nc2.ft.TrajectoryProfileFeature;
-import ucar.nc2.ft.point.CollectionInfo;
-import ucar.nc2.ft.point.DsgCollectionImpl;
-import ucar.nc2.ft.point.NestedCollectionIteratorAdapter;
-import ucar.nc2.ft.point.ProfileFeatureImpl;
-import ucar.nc2.ft.point.SectionCollectionImpl;
-import ucar.nc2.ft.point.SectionFeatureImpl;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDate;
 import ucar.nc2.time.CalendarDateUnit;
 import ucar.nc2.util.IOIterator;
@@ -41,6 +36,13 @@ public class StandardSectionCollectionImpl extends SectionCollectionImpl {
 
   StandardSectionCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) {
     super(ft.getName(), ft.getTimeName(), timeUnit, ft.getAltName(), altUnits);
+    this.ft = ft;
+    this.extras = ft.getExtras();
+  }
+
+  StandardSectionCollectionImpl(NestedTable ft, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(ft.getName(), time, alt, latLonInfo);
     this.ft = ft;
     this.extras = ft.getExtras();
   }

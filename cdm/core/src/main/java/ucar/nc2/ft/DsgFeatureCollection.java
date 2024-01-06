@@ -7,6 +7,9 @@ package ucar.nc2.ft;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import ucar.nc2.Variable;
+import ucar.nc2.ft.point.CollectionLatLonInfo;
+import ucar.nc2.ft.point.CollectionTInfo;
+import ucar.nc2.ft.point.CollectionZInfo;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.nc2.time.CalendarDateUnit;
 import java.util.List;
@@ -67,6 +70,15 @@ public interface DsgFeatureCollection {
    */
   @Nullable
   String getAltUnits();
+
+  @Nullable
+  CollectionTInfo getTInfo();
+
+  @Nullable
+  CollectionZInfo getZInfo();
+
+  @Nonnull
+  CollectionLatLonInfo getLatLonInfo();
 
   /*
    * Other variables needed for completeness, eg joined coordinate variables

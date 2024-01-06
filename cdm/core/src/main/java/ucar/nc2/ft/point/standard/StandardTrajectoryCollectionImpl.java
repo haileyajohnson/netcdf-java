@@ -17,11 +17,7 @@ import ucar.nc2.ft.PointFeatureIterator;
 import ucar.nc2.ft.ProfileFeature;
 import ucar.nc2.ft.TrajectoryFeature;
 import ucar.nc2.ft.TrajectoryFeatureCollection;
-import ucar.nc2.ft.point.CollectionInfo;
-import ucar.nc2.ft.point.CollectionIteratorAdapter;
-import ucar.nc2.ft.point.PointCollectionIteratorFiltered;
-import ucar.nc2.ft.point.PointFeatureCCImpl;
-import ucar.nc2.ft.point.TrajectoryFeatureImpl;
+import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDateUnit;
 import ucar.nc2.util.IOIterator;
 import ucar.unidata.geoloc.LatLonRect;
@@ -41,6 +37,13 @@ public class StandardTrajectoryCollectionImpl extends PointFeatureCCImpl impleme
 
   StandardTrajectoryCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) {
     super(ft.getName(), ft.getTimeName(), timeUnit, ft.getAltName(), altUnits, FeatureType.TRAJECTORY);
+    this.ft = ft;
+    this.extras = ft.getExtras();
+  }
+
+  StandardTrajectoryCollectionImpl(NestedTable ft, CollectionTInfo time, CollectionZInfo alt,
+      CollectionLatLonInfo latLonInfo) {
+    super(ft.getName(), time, alt, latLonInfo, FeatureType.TRAJECTORY);
     this.ft = ft;
     this.extras = ft.getExtras();
   }
