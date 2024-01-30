@@ -214,8 +214,9 @@ public abstract class CFPointWriter implements Closeable {
   private static int writeTrajectoryFeatureCollection(FeatureDatasetPoint fdpoint, TrajectoryFeatureCollection fc,
       String fileOut, CFPointWriterConfig config) throws IOException {
 
-    try (WriterCFTrajectoryCollection cfWriter = new WriterCFTrajectoryCollection(fileOut,
-        fdpoint.getGlobalAttributes(), fdpoint.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
+    try (
+        WriterCFTrajectoryCollection cfWriter = new WriterCFTrajectoryCollection(fileOut, fdpoint.getGlobalAttributes(),
+            fdpoint.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
       List<Variable> extraVariables = new ArrayList<>();
       List<TrajectoryFeature> flattenFeatures = new ArrayList<>();
 
@@ -248,8 +249,9 @@ public abstract class CFPointWriter implements Closeable {
   private static int writeStationProfileFeatureCollection(FeatureDatasetPoint dataset,
       StationProfileFeatureCollection fc, String fileOut, CFPointWriterConfig config) throws IOException {
 
-    try (WriterCFStationProfileCollection cfWriter = new WriterCFStationProfileCollection(fileOut,
-        dataset.getGlobalAttributes(), dataset.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
+    try (WriterCFStationProfileCollection cfWriter =
+        new WriterCFStationProfileCollection(fileOut, dataset.getGlobalAttributes(), dataset.getDataVariables(),
+            fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
 
       List<Variable> extraVariables = new ArrayList<>();
       List<StationFeature> flattenFeatures = new ArrayList<>();
@@ -286,8 +288,9 @@ public abstract class CFPointWriter implements Closeable {
   private static int writeTrajectoryProfileFeatureCollection(FeatureDatasetPoint dataset,
       TrajectoryProfileFeatureCollection fc, String fileOut, CFPointWriterConfig config) throws IOException {
 
-    try (WriterCFTrajectoryProfileCollection cfWriter = new WriterCFTrajectoryProfileCollection(fileOut,
-        dataset.getGlobalAttributes(), dataset.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
+    try (WriterCFTrajectoryProfileCollection cfWriter =
+        new WriterCFTrajectoryProfileCollection(fileOut, dataset.getGlobalAttributes(), dataset.getDataVariables(),
+            fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
       List<Variable> extraVariables = new ArrayList<>();
       List<TrajectoryProfileFeature> flattenFeatures = new ArrayList<>();
 

@@ -43,8 +43,7 @@ public abstract class DsgCollectionImpl implements DsgFeatureCollection {
       String altUnits) {
     this(name, new CollectionTInfo(timeName, timeUnit, null),
         new CollectionZInfo(altName, altUnits, null, null, "Z", null),
-        new CollectionLatLonInfo(null, null, null, null,
-                null, null, null, null));
+        new CollectionLatLonInfo(null, null, null, null, null, null, null, null));
   }
 
   protected DsgCollectionImpl(String name, CollectionTInfo time, CollectionZInfo alt, CollectionLatLonInfo latLonInfo) {

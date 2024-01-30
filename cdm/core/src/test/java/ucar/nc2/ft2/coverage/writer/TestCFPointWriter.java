@@ -34,19 +34,18 @@ public class TestCFPointWriter {
   @Parameterized.Parameters(name = "{0}/{1}")
   public static List<Object[]> getTestParameters() {
     return Arrays.asList(new Object[][] {
-       // Point
-       {FeatureType.POINT, "point.ncml"},
-       // Two points features with different time dimensions
-       {FeatureType.POINT, "multiPoint.ncml"},
+        // Point
+        {FeatureType.POINT, "point.ncml"},
+        // Two points features with different time dimensions
+        {FeatureType.POINT, "multiPoint.ncml"},
         // Profile
         {FeatureType.PROFILE, "profileSingle.ncml"},
-         // Station
-         {FeatureType.STATION, "stationSingle.ncml"},
-         // Station profile
-         {FeatureType.STATION_PROFILE, "stationProfileSingle.ncml"},
-         // Trajectory
-         {FeatureType.TRAJECTORY, "trajSingle.ncml"}
-    });
+        // Station
+        {FeatureType.STATION, "stationSingle.ncml"},
+        // Station profile
+        {FeatureType.STATION_PROFILE, "stationProfileSingle.ncml"},
+        // Trajectory
+        {FeatureType.TRAJECTORY, "trajSingle.ncml"}});
   }
 
   private final FeatureType wantedType;
