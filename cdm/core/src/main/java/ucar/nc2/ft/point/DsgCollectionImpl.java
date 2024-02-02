@@ -4,8 +4,6 @@
  */
 package ucar.nc2.ft.point;
 
-import org.checkerframework.checker.units.qual.C;
-import ucar.ma2.DataType;
 import ucar.nc2.Variable;
 import ucar.nc2.constants.CF;
 import ucar.nc2.ft.DsgFeatureCollection;

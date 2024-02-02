@@ -37,9 +37,7 @@ public abstract class PointCollectionImpl extends DsgCollectionImpl implements P
       CollectionLatLonInfo latLonInfo) {
     super(name, time, alt, latLonInfo);
   }
-
-
-
+  
   @Nonnull
   @Override
   public FeatureType getCollectionFeatureType() {
