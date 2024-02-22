@@ -45,8 +45,8 @@ import java.util.*;
 @Deprecated
 public abstract class CFPointWriter implements Closeable {
   private static final Logger logger = LoggerFactory.getLogger(CFPointWriter.class);
-  public static final String recordName = "obs";
-  public static final String recordDimName = "obs";
+//  public static final String recordName = "obs";
+//  public static final String recordDimName = "obs";
   public static String latName = "latitude";
   public static String lonName = "longitude";
   public static String altName = "altitude";
@@ -462,7 +462,7 @@ public abstract class CFPointWriter implements Closeable {
   protected void writeHeader(List<VariableSimpleIF> obsCoords, List<? extends PointFeatureCollection> stationFeatures,
       List<StructureData> featureDataStructs, List<StructureData> middleDataStructs) throws IOException {
 
-    this.recordDim = writer.addUnlimitedDimension(recordDimName);
+//    this.recordDim = writer.addUnlimitedDimension(recordDimName);
     addExtraVariables();
     if (writer.getVersion().isExtendedModel()) {
       record = (Structure) writer.addVariable(null, recordName, DataType.STRUCTURE, recordDimName);

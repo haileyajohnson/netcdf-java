@@ -44,7 +44,7 @@ public class NetcdfFormatWriter implements Closeable {
   private static Set<DataType> validN3types =
       EnumSet.of(DataType.BYTE, DataType.CHAR, DataType.SHORT, DataType.INT, DataType.DOUBLE, DataType.FLOAT);
 
-  /**
+  /**g
    * Open an existing Netcdf file for writing data.
    * Cannot add new objects, you can only read/write data to existing Variables.
    *
