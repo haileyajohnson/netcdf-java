@@ -45,8 +45,8 @@ import java.util.*;
 @Deprecated
 public abstract class CFPointWriter implements Closeable {
   private static final Logger logger = LoggerFactory.getLogger(CFPointWriter.class);
-  public static final String recordName = "obs";
-  public static final String recordDimName = "obs";
+//  public static final String recordName = "obs";
+//  public static final String recordDimName = "obs";
   public static String latName = "latitude";
   public static String lonName = "longitude";
   public static String altName = "altitude";
