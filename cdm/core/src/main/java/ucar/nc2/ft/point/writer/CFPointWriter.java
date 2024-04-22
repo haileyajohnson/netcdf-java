@@ -35,18 +35,19 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Write Point Feature Collections into netcdf3/4 files in CF 1.6 point obs conventions.
+ * Write Point Feature Collections into netcdf3/4 files in CF 1.9 point obs conventions.
  * <ul>
  * <li>netcdf3: use indexed ragged array representation</li>
  * </ul>
- * 
- * @deprecated use writer2
+ *
  */
 @Deprecated
 public abstract class CFPointWriter implements Closeable {
   private static final Logger logger = LoggerFactory.getLogger(CFPointWriter.class);
-//  public static final String recordName = "obs";
-//  public static final String recordDimName = "obs";
+  private static final String CF_VERSION = "CF-1.9";
+
+  public static final String recordName = "obs";
+  public static final String recordDimName = "obs";
   public static String latName = "latitude";
   public static String lonName = "longitude";
   public static String altName = "altitude";
@@ -145,7 +146,6 @@ public abstract class CFPointWriter implements Closeable {
 
     try (WriterCFStationCollection cfWriter = new WriterCFStationCollection(fileOut, dataset.getGlobalAttributes(),
         dataset.getDataVariables(), fc.getTInfo(), fc.getZInfo(), fc.getLatLonInfo(), config)) {
-
       List<StationFeature> flattenFeatures = new ArrayList<>();
       List<Variable> extraVariables = new ArrayList<>();
       for (DsgFeatureCollection station : dataset.getPointFeatureCollectionList()) {
@@ -350,8 +350,6 @@ public abstract class CFPointWriter implements Closeable {
   protected CalendarDateUnit timeUnit;
   protected String altUnits;
   protected String altitudeCoordinateName = altName;
-
-  protected final boolean noTimeCoverage;
   protected final boolean noUnlimitedDimension; // experimental , netcdf-3
   protected final boolean isExtendedModel;
   protected boolean useAlt = true;
@@ -359,7 +357,7 @@ public abstract class CFPointWriter implements Closeable {
 
   private Map<String, Dimension> dimMap = new HashMap<>();
   protected Structure record; // used for netcdf3 and netcdf4 extended
-  protected Dimension recordDim;
+  protected Dimension recordDim; // actually just outside dim
   protected Map<String, Variable> dataMap = new HashMap<>();
   protected List<VariableSimpleIF> dataVars;
 
@@ -372,14 +370,14 @@ public abstract class CFPointWriter implements Closeable {
 
   /**
    * Ctor
-   * 
+   *
    * @param fileOut name of the output file
    * @param atts global attributes to be added
    * @param config configure
    */
   protected CFPointWriter(String fileOut, List<Attribute> atts, List<VariableSimpleIF> dataVars,
       @Nonnull CollectionTInfo tInfo, @Nonnull CollectionZInfo zInfo, @Nonnull CollectionLatLonInfo latLonInfo,
-      CFPointWriterConfig config) throws IOException {
+      CFPointWriterConfig config, List<CoordinateAxis> coords) throws IOException {
     createWriter(fileOut, config);
     this.dataVars = dataVars;
     this.tInfo = tInfo;
@@ -388,13 +386,17 @@ public abstract class CFPointWriter implements Closeable {
     this.altUnits = zInfo.getUnits();
     this.latLonInfo = latLonInfo;
     this.config = config;
-    this.noTimeCoverage = config.noTimeCoverage;
-    this.noUnlimitedDimension =
-        (writer.getVersion() == NetcdfFileWriter.Version.netcdf3) && config.recDimensionLength >= 0; // LOOK NOT USED
+    this.noUnlimitedDimension = false;
     this.isExtendedModel = writer.getVersion().isExtendedModel();
 
+    List<CoordinateAxis> axesSorted = new ArrayList<>(coords);
+    axesSorted.sort(new CoordinateAxis.AxisComparator());
+    for (CoordinateAxis coord : coords) {
+      coord.getCoordinateSystems()
+    }
+
     addGlobalAtts(atts);
-    addNetcdf3UnknownAtts(noTimeCoverage);
+    addNetcdf3UnknownAtts();
   }
 
   public void setFeatureAuxInfo(int nfeatures, int id_strlen) {
@@ -415,7 +417,7 @@ public abstract class CFPointWriter implements Closeable {
   }
 
   private void addGlobalAtts(List<Attribute> atts) {
-    writer.addGroupAttribute(null, new Attribute(CDM.CONVENTIONS, isExtendedModel ? CDM.CF_EXTENDED : "CF-1.6"));
+    writer.addGroupAttribute(null, new Attribute(CDM.CONVENTIONS, isExtendedModel ? CDM.CF_EXTENDED : CF_VERSION));
     writer.addGroupAttribute(null, new Attribute(CDM.HISTORY, "Written by CFPointWriter"));
     for (Attribute att : atts) {
       if (!reservedGlobalAtts.contains(att.getShortName()))
@@ -425,13 +427,11 @@ public abstract class CFPointWriter implements Closeable {
 
   // netcdf3 has to add attributes up front, but we dont know values until the end.
   // so we have this updateAttribute hack; values set in finish()
-  private void addNetcdf3UnknownAtts(boolean noTimeCoverage) {
+  private void addNetcdf3UnknownAtts() {
     // dummy values, update in finish()
-    if (!noTimeCoverage) {
-      CalendarDate now = CalendarDate.of(new Date());
-      writer.addGroupAttribute(null, new Attribute(ACDD.TIME_START, CalendarDateFormatter.toDateTimeStringISO(now)));
-      writer.addGroupAttribute(null, new Attribute(ACDD.TIME_END, CalendarDateFormatter.toDateTimeStringISO(now)));
-    }
+    CalendarDate now = CalendarDate.of(new Date());
+    writer.addGroupAttribute(null, new Attribute(ACDD.TIME_START, CalendarDateFormatter.toDateTimeStringISO(now)));
+    writer.addGroupAttribute(null, new Attribute(ACDD.TIME_END, CalendarDateFormatter.toDateTimeStringISO(now)));
     writer.addGroupAttribute(null, new Attribute(ACDD.LAT_MIN, 0.0));
     writer.addGroupAttribute(null, new Attribute(ACDD.LAT_MAX, 0.0));
     writer.addGroupAttribute(null, new Attribute(ACDD.LON_MIN, 0.0));
@@ -462,8 +462,10 @@ public abstract class CFPointWriter implements Closeable {
   protected void writeHeader(List<VariableSimpleIF> obsCoords, List<? extends PointFeatureCollection> stationFeatures,
       List<StructureData> featureDataStructs, List<StructureData> middleDataStructs) throws IOException {
 
-//    this.recordDim = writer.addUnlimitedDimension(recordDimName);
+    // TODO: is this because we don't know how many..?
+    this.recordDim = writer.addDimension(recordName, 3);// writer.addUnlimitedDimension(recordDimName);
     addExtraVariables();
+    // TODO: this is where obs is added, not necessarily record dim, just outside dim
     if (writer.getVersion().isExtendedModel()) {
       record = (Structure) writer.addVariable(null, recordName, DataType.STRUCTURE, recordDimName);
       addCoordinatesExtended(record, obsCoords);
@@ -830,15 +832,14 @@ public abstract class CFPointWriter implements Closeable {
       writer.updateAttribute(null, new Attribute(ACDD.LON_MAX, llbb.getUpperRightPoint().getLongitude()));
     }
 
-    if (!noTimeCoverage) {
-      if (minDate == null)
-        minDate = CalendarDate.present();
-      if (maxDate == null)
-        maxDate = CalendarDate.present();
-      writer.updateAttribute(null, new Attribute(ACDD.TIME_START, CalendarDateFormatter.toDateTimeStringISO(minDate)));
-      writer.updateAttribute(null, new Attribute(ACDD.TIME_END, CalendarDateFormatter.toDateTimeStringISO(maxDate)));
+    if (minDate == null) {
+      minDate = CalendarDate.present();
     }
-
+    if (maxDate == null) {
+      maxDate = CalendarDate.present();
+    }
+    writer.updateAttribute(null, new Attribute(ACDD.TIME_START, CalendarDateFormatter.toDateTimeStringISO(minDate)));
+    writer.updateAttribute(null, new Attribute(ACDD.TIME_END, CalendarDateFormatter.toDateTimeStringISO(maxDate)));
     writer.close();
   }
 

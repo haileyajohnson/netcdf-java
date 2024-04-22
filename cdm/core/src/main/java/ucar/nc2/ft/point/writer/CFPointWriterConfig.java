@@ -5,9 +5,14 @@
 
 package ucar.nc2.ft.point.writer;
 
+import com.google.common.collect.ImmutableList;
 import ucar.nc2.NetcdfFileWriter;
+import ucar.nc2.VariableSimpleIF;
 import ucar.nc2.write.Nc4Chunking;
 import ucar.nc2.write.Nc4ChunkingDefault;
+import ucar.nc2.write.Nc4ChunkingStrategy;
+
+import java.util.List;
 
 /**
  * Configuration for CFPointWriter
@@ -16,11 +21,10 @@ import ucar.nc2.write.Nc4ChunkingDefault;
  * @since 6/23/2014
  */
 public class CFPointWriterConfig {
-  public NetcdfFileWriter.Version version; // netcdf file version
-  public Nc4Chunking chunking; // for netcdf-4
-  public boolean noTimeCoverage; // does not have a time dimension
-  public int recDimensionLength = -1; // do use unlimited dimension (for netcdf3), use fixed dimension of this length
-                                      // NOT USED
+  public final NetcdfFileWriter.Version version; // netcdf file version
+  public final Nc4Chunking chunking; // for netcdf-4
+
+//  public final ImmutableList<VariableSimpleIF> coords;
 
   public CFPointWriterConfig(NetcdfFileWriter.Version version) {
     this(version, new Nc4ChunkingDefault()); // The default chunker used in Nc4Iosp.
@@ -31,8 +35,5 @@ public class CFPointWriterConfig {
     this.chunking = chunking;
   }
 
-  public CFPointWriterConfig setNoTimeCoverage(boolean noTimeCoverage) {
-    this.noTimeCoverage = noTimeCoverage;
-    return this;
-  }
+//  public CFPointWriterConfig(NetcdfFileWriter.Version version, Nc4ChunkingStrategy chunking, List<VariableSimpleIF> co)
 }

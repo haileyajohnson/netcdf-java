@@ -124,6 +124,7 @@ public class PointDatasetStandardFactory implements FeatureDatasetFactory {
       parseInfo.format(" PointFeatureDatasetImpl=%s%n", getClass().getName());
       this.analyser = analyser;
 
+      // THIS IS WHERE WE NEED TO COLLECT ALL DIMENSION AND COORDINATE INFO
       List<DsgFeatureCollection> featureCollections = new ArrayList<>();
       for (NestedTable flatTable : analyser.getFlatTables()) { // each flat table becomes a "feature collection"
         CollectionTInfo tInfo = flatTable.getTInfo();

@@ -87,19 +87,6 @@ public class NestedTable {
     if (featureType == null)
       featureType = FeatureDatasetFactoryManager.findFeatureType(ds);
 
-    /*
-     * find joins with extra variables
-     * t = leaf;
-     * while (t != null) {
-     * if (t.extraJoins != null) {
-     * for (Join j : t.extraJoins) {
-     * addExtraVariable(j.getExtraVariable());
-     * }
-     * }
-     * t = t.parent; // recurse upwards
-     * }
-     */
-
     // will find the first one, starting at the leaf and going up
     timeVE = findCoordinateAxis(Table.CoordName.Time, leaf, 0);
     latVE = findCoordinateAxis(Table.CoordName.Lat, leaf, 0);

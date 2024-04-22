@@ -13,7 +13,6 @@ import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.ft.FeatureDataset;
 import ucar.nc2.ft.FeatureDatasetFactoryManager;
 import ucar.nc2.ft.FeatureDatasetPoint;
-import ucar.nc2.ft.point.writer.CFPointWriter;
 import ucar.nc2.util.CompareNetcdf2;
 
 import java.io.*;
@@ -24,7 +23,8 @@ import static com.google.common.truth.Truth.*;
 @RunWith(Parameterized.class)
 public class TestCFPointWriter {
 
-  private static final String testPath = "src/test/data/cfPoints/";
+  private static final String testPathTemp = "src/test/data/cfPoints/";
+  private static final String testPath = "src/test/data/point";
 
   @Rule
   public final TemporaryFolder tempFolder = new TemporaryFolder();
@@ -52,7 +52,7 @@ public class TestCFPointWriter {
 
   public TestCFPointWriter(FeatureType wantedType, String datasetName) {
     this.wantedType = wantedType;
-    this.datasetName = testPath + datasetName;
+    this.datasetName = testPathTemp + datasetName;
   }
 
   @Test
