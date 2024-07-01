@@ -10,6 +10,7 @@ import ucar.ma2.*;
 import ucar.nc2.*;
 import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.CF;
+import ucar.nc2.dataset.CoordinateAxis;
 import ucar.nc2.ft.*;
 import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDate;
@@ -52,20 +53,21 @@ public class WriterCFStationCollection extends CFPointWriter {
   private int desc_strlen = 1, wmo_strlen = 1;
   private Map<String, Variable> featureVarMap = new HashMap<>();
 
-  public WriterCFStationCollection(String fileOut, List<Attribute> atts, List<VariableSimpleIF> dataVars,
+  public WriterCFStationCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
       CalendarDateUnit timeUnit, String altUnits, CFPointWriterConfig config) throws IOException {
-    this(fileOut, atts, dataVars, new CollectionTInfo(null, timeUnit, null),
-        new CollectionZInfo(null, altUnits, null, null, null, null),
-        new CollectionLatLonInfo(null, null, null, null, null, null, null, null), config);
+    this(fileOut, globalAtts, dataVars, new ArrayList<>(), config);
   }
 
-  public WriterCFStationCollection(String fileOut, List<Attribute> atts, List<VariableSimpleIF> dataVars,
-      CollectionTInfo tInfo, CollectionZInfo zInfo, CollectionLatLonInfo latLonInfo, CFPointWriterConfig config)
-      throws IOException {
-    super(fileOut, atts, dataVars, tInfo, zInfo, latLonInfo, config);
+  public WriterCFStationCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
+                                   List<CoordinateAxis> coordVars, CFPointWriterConfig config) throws IOException {
+    super(fileOut, globalAtts, dataVars, config, coordVars);
     writer.addGroupAttribute(null, new Attribute(CF.FEATURE_TYPE, CF.FeatureType.timeSeries.name()));
     writer.addGroupAttribute(null, new Attribute(CF.DSG_REPRESENTATION,
         "Timeseries of station data in the indexed ragged array representation, H.2.5"));
+  }
+
+  protected void setDimensions() {
+
   }
 
   public void writeHeader(StationTimeSeriesFeatureCollection stations) throws IOException {
@@ -163,7 +165,7 @@ public class WriterCFStationCollection extends CFPointWriter {
       stationStruct = (Structure) writer.addVariable(null, stationStructName, DataType.STRUCTURE, stationDimName);
       addCoordinatesExtended(stationStruct, stnVars);
     } else {
-      addCoordinatesClassic(stationDim, stnVars, featureVarMap);
+      addCoordinatesClassic(stationDim,  stnVars, featureVarMap);
     }
 
   }

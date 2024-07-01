@@ -14,11 +14,12 @@ import javax.annotation.Nonnull;
  * @author caron
  * @since 10/5/2015.
  */
+@Deprecated
 public class SimpleDsgCollection extends DsgCollectionImpl {
   FeatureType ftype;
 
   protected SimpleDsgCollection(String name, CalendarDateUnit timeUnit, String altUnits, FeatureType ftype) {
-    super(name, timeUnit, altUnits);
+    super(name, null);
     this.ftype = ftype;
   }
 

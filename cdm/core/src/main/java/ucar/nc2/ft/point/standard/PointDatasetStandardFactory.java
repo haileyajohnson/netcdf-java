@@ -124,34 +124,31 @@ public class PointDatasetStandardFactory implements FeatureDatasetFactory {
       parseInfo.format(" PointFeatureDatasetImpl=%s%n", getClass().getName());
       this.analyser = analyser;
 
-      // THIS IS WHERE WE NEED TO COLLECT ALL DIMENSION AND COORDINATE INFO
+      // TODO: start with coords here, then move to per table
       List<DsgFeatureCollection> featureCollections = new ArrayList<>();
       for (NestedTable flatTable : analyser.getFlatTables()) { // each flat table becomes a "feature collection"
-        CollectionTInfo tInfo = flatTable.getTInfo();
-        CollectionZInfo zInfo = flatTable.getZInfo();
-        CollectionLatLonInfo latLonInfo = flatTable.getLatLonInfo();
 
         // create member variables
         dataVariables = new ArrayList<>(flatTable.getDataVariables());
 
         featureType = flatTable.getFeatureType(); // hope they're all the same
         if (flatTable.getFeatureType() == FeatureType.POINT)
-          featureCollections.add(new StandardPointCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
+          featureCollections.add(new StandardPointCollectionImpl(flatTable, ds.getCoordinateAxes()));
 
         else if (flatTable.getFeatureType() == FeatureType.PROFILE)
-          featureCollections.add(new StandardProfileCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
+          featureCollections.add(new StandardProfileCollectionImpl(flatTable, ds.getCoordinateAxes()));
 
         else if (flatTable.getFeatureType() == FeatureType.STATION)
-          featureCollections.add(new StandardStationCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
+          featureCollections.add(new StandardStationCollectionImpl(flatTable, ds.getCoordinateAxes()));
 
         else if (flatTable.getFeatureType() == FeatureType.STATION_PROFILE)
-          featureCollections.add(new StandardStationProfileCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
+          featureCollections.add(new StandardStationProfileCollectionImpl(flatTable, ds.getCoordinateAxes()));
 
         else if (flatTable.getFeatureType() == FeatureType.TRAJECTORY_PROFILE)
-          featureCollections.add(new StandardSectionCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
+          featureCollections.add(new StandardSectionCollectionImpl(flatTable, ds.getCoordinateAxes()));
 
         else if (flatTable.getFeatureType() == FeatureType.TRAJECTORY)
-          featureCollections.add(new StandardTrajectoryCollectionImpl(flatTable, tInfo, zInfo, latLonInfo));
+          featureCollections.add(new StandardTrajectoryCollectionImpl(flatTable, ds.getCoordinateAxes()));
       }
 
       if (featureCollections.isEmpty())

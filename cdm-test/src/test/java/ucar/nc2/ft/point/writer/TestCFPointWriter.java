@@ -16,6 +16,7 @@ import ucar.nc2.ft.FeatureDatasetPoint;
 import ucar.nc2.util.CompareNetcdf2;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static com.google.common.truth.Truth.*;
@@ -23,45 +24,73 @@ import static com.google.common.truth.Truth.*;
 @RunWith(Parameterized.class)
 public class TestCFPointWriter {
 
-  private static final String testPathTemp = "src/test/data/cfPoints/";
-  private static final String testPath = "src/test/data/point";
-
   @Rule
   public final TemporaryFolder tempFolder = new TemporaryFolder();
+  private static final String COLLECTION_STRING = "Collection";
+  private static final String EXT = ".ncml";
 
-  @Parameterized.Parameters(name = "{0}/{1}")
+
+  @Parameterized.Parameters(name = "{0}/{1}/{2}")
   public static List<Object[]> getTestParameters() {
-    return Arrays.asList(new Object[][] {
-        // Point
-        {FeatureType.POINT, "point.ncml"},
-//        // Two points features with different time dimensions
-//        {FeatureType.POINT, "multiPoint.ncml"},
-        // Profile
-//        {FeatureType.PROFILE, "profileSingle.ncml"},
-//        // Station
-//        {FeatureType.STATION, "stationSingle.ncml"},
-//        // Station profile
-//        {FeatureType.STATION_PROFILE, "stationProfileSingle.ncml"},
-//        // Trajectory
-//        {FeatureType.TRAJECTORY, "trajSingle.ncml"}
-        });
+    List<Object[]> paramMatrix = new ArrayList<>();
+
+    // 6 feature types: point, profile, station, station profile, trajectory, trajectory profile
+    Object[][] featureTypes = new Object[][] {
+//            {FeatureType.POINT, "point"},
+            {FeatureType.PROFILE, "profile"},
+//        {FeatureType.STATION, "station"},
+//        {FeatureType.STATION_PROFILE, "stationProfile"},
+//        {FeatureType.TRAJECTORY, "traj"},
+//            {FeatureType.TRAJECTORY_PROFILE, "trajProfile"}
+    };
+
+    // 4 ncml variations: single collection, multiple collections, unlimited dimension, extended model features
+    String[] ncmlVars = new String[] {
+            "",
+//            "Record",
+//            "Multiple",
+//            "Ext"
+    };
+
+    // 3 file versions: nc3, nc4, nc4ext
+    NetcdfFileWriter.Version[] versions = new NetcdfFileWriter.Version[] {
+            NetcdfFileWriter.Version.netcdf3,
+            NetcdfFileWriter.Version.netcdf4_classic,
+//            NetcdfFileWriter.Version.netcdf4
+    };
+
+    for (int ft = 0; ft < featureTypes.length; ft++) {
+      for (int var = 0; var < ncmlVars.length; var++) {
+        for (int v = 0; v < versions.length; v++) {
+          paramMatrix.add(new Object[]{
+                  featureTypes[ft][0],
+                  featureTypes[ft][1] + COLLECTION_STRING + ncmlVars[var] + EXT,
+                  versions[v]
+          });
+        }
+      }
+    }
+
+    return paramMatrix;
   }
 
   private final FeatureType wantedType;
-  private final String datasetName;
-
-  public TestCFPointWriter(FeatureType wantedType, String datasetName) {
+  private final String filePath;
+  private final NetcdfFileWriter.Version version;
+  public TestCFPointWriter(FeatureType wantedType, String filePath, NetcdfFileWriter.Version version) {
     this.wantedType = wantedType;
-    this.datasetName = testPathTemp + datasetName;
+    this.filePath =  filePath;
+    this.version = version;
   }
 
   @Test
-  public void testWritePointFeatures() throws IOException {
-    File datasetFile = new File(datasetName);
-    File outFile = File.createTempFile("testfile", null);//tempFolder.newFile();
+  public void testWritePointFeatureType() throws IOException, URISyntaxException {
+    File datasetFile = new File(this.getClass().getResource("input/" + filePath).toURI());
+    File outFile = File.createTempFile("pointWriter", null);//tempFolder.newFile();
     FeatureDatasetPoint fdPoint = openPointDataset(wantedType, datasetFile);
-    CFPointWriter.writeFeatureCollection(fdPoint, outFile.getAbsolutePath(), NetcdfFileWriter.Version.netcdf3);
-    assertThat(compareNetCDF(datasetFile, outFile)).isTrue();
+    CFPointWriter.writeFeatureCollection(fdPoint, outFile.getAbsolutePath(), version);
+    File expected = datasetFile; //new File(this.getClass().getResource("output/" + filePath).toURI());
+    assertThat(compareNetCDF(expected, outFile)).isTrue();
   }
 
   private static FeatureDatasetPoint openPointDataset(FeatureType wantedType, File datasetFile) throws IOException {
@@ -96,6 +125,8 @@ public class TestCFPointWriter {
       global.add("geospatial_lat_max");
       global.add("geospatial_lon_max");
       global.add("DSG_representation");
+      global.add("_NCProperties");
+      global.add("Conventions");
       ignore.put("global", global);
       ArrayList time = new ArrayList();
       time.add("calendar");
@@ -108,4 +139,18 @@ public class TestCFPointWriter {
       return ignore.getOrDefault(name, new ArrayList<>()).stream().noneMatch(s -> s.equals(att.getShortName()));
     }
   }
+//
+//  private class VarKey {
+//
+//    static final String global
+//    private final String name;
+//
+//    VarKey(String name) {
+//      this.name = name;
+//    }
+//
+//    boolean matches(String other) {
+//      if (this.name = )
+//    }
+
 }

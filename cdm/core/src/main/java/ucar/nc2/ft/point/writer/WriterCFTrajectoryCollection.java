@@ -10,11 +10,9 @@ import ucar.ma2.*;
 import ucar.nc2.*;
 import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.CF;
+import ucar.nc2.dataset.CoordinateAxis;
 import ucar.nc2.dataset.conv.CF1Convention;
 import ucar.nc2.ft.*;
-import ucar.nc2.ft.point.CollectionLatLonInfo;
-import ucar.nc2.ft.point.CollectionTInfo;
-import ucar.nc2.ft.point.CollectionZInfo;
 import ucar.nc2.time.CalendarDateUnit;
 import ucar.unidata.geoloc.EarthLocation;
 import java.io.IOException;
@@ -35,18 +33,19 @@ public class WriterCFTrajectoryCollection extends CFPointWriter {
 
   public WriterCFTrajectoryCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
       CalendarDateUnit timeUnit, String altUnits, CFPointWriterConfig config) throws IOException {
-    this(fileOut, globalAtts, dataVars, new CollectionTInfo(null, timeUnit, null),
-        new CollectionZInfo(null, altUnits, null, null, null, null),
-        new CollectionLatLonInfo(null, null, null, null, null, null, null, null), config);
+    this(fileOut, globalAtts, dataVars, new ArrayList<>(), config);
   }
 
   public WriterCFTrajectoryCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
-      CollectionTInfo tInfo, CollectionZInfo zInfo, CollectionLatLonInfo latLonInfo, CFPointWriterConfig config)
-      throws IOException {
-    super(fileOut, globalAtts, dataVars, tInfo, zInfo, latLonInfo, config);
+                                      List<CoordinateAxis> coordVars, CFPointWriterConfig config) throws IOException {
+    super(fileOut, globalAtts, dataVars, config, coordVars);
     writer.addGroupAttribute(null, new Attribute(CF.FEATURE_TYPE, CF.FeatureType.trajectory.name()));
     writer.addGroupAttribute(null,
         new Attribute(CF.DSG_REPRESENTATION, "Contiguous ragged array representation of trajectories, H.4.3"));
+  }
+
+  protected void setDimensions() {
+
   }
 
   public int writeTrajectory(TrajectoryFeature traj) throws IOException {
@@ -98,7 +97,7 @@ public class WriterCFTrajectoryCollection extends CFPointWriter {
 
     featureVars
         .add(VariableSimpleBuilder.makeScalar(numberOfObsName, "number of obs for this profile", null, DataType.INT)
-            .addAttribute(CF.SAMPLE_DIMENSION, recordDimName).build());
+            .addAttribute(CF.SAMPLE_DIMENSION, outsideDim.getShortName()).build());
 
     for (StructureData featureData : featureDataStructs) {
       for (StructureMembers.Member m : featureData.getMembers()) {

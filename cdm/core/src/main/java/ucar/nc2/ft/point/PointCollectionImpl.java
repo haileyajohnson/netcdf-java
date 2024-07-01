@@ -6,8 +6,10 @@ package ucar.nc2.ft.point;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import javax.annotation.Nonnull;
 import ucar.nc2.constants.FeatureType;
+import ucar.nc2.dataset.CoordinateAxis;
 import ucar.nc2.ft.PointFeature;
 import ucar.nc2.ft.PointFeatureCollection;
 import ucar.nc2.ft.PointFeatureIterator;
@@ -24,18 +26,11 @@ import ucar.unidata.geoloc.LatLonRect;
  */
 public abstract class PointCollectionImpl extends DsgCollectionImpl implements PointFeatureCollection {
 
-  protected PointCollectionImpl(String name, CalendarDateUnit timeUnit, String altUnits) {
-    super(name, timeUnit, altUnits);
+  protected PointCollectionImpl(String name, CalendarDateUnit timeUnit, String altUnit) {
+    super(name, timeUnit, altUnit);
   }
-
-  protected PointCollectionImpl(String name, String timeName, CalendarDateUnit timeUnit, String altName,
-      String altUnits) {
-    super(name, timeName, timeUnit, altName, altUnits);
-  }
-
-  protected PointCollectionImpl(String name, CollectionTInfo time, CollectionZInfo alt,
-      CollectionLatLonInfo latLonInfo) {
-    super(name, time, alt, latLonInfo);
+  protected PointCollectionImpl(String name, List<CoordinateAxis> coordVars) {
+    super(name, coordVars);
   }
   
   @Nonnull
@@ -66,7 +61,7 @@ public abstract class PointCollectionImpl extends DsgCollectionImpl implements P
     protected CalendarDateRange filter_date;
 
     public PointCollectionSubset(PointCollectionImpl from, LatLonRect filter_bb, CalendarDateRange filter_date) {
-      super(from.name, from.getTimeName(), from.getTimeUnit(), from.getAltName(), from.getAltUnits());
+      super(from.name, from.coordVars);
       this.from = from;
       this.filter_bb = filter_bb;
       this.filter_date = filter_date;

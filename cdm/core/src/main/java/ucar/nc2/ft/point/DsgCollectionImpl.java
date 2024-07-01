@@ -6,6 +6,8 @@ package ucar.nc2.ft.point;
 
 import ucar.nc2.Variable;
 import ucar.nc2.constants.CF;
+import ucar.nc2.dataset.CoordinateAxis;
+import ucar.nc2.dataset.CoordinateAxis1D;
 import ucar.nc2.ft.DsgFeatureCollection;
 import ucar.nc2.time.CalendarDateRange;
 import ucar.nc2.time.CalendarDateUnit;
@@ -23,36 +25,35 @@ import java.util.List;
 public abstract class DsgCollectionImpl implements DsgFeatureCollection {
 
   protected String name;
-  protected String timeName = "time";
-  protected CalendarDateUnit timeUnit;
-  protected String altName = "altitude";
-  protected String altUnits;
   protected CollectionInfo info;
-  protected CollectionZInfo zInfo;
-  protected CollectionTInfo tInfo;
-  protected CollectionLatLonInfo latLonInfo;
+
+  protected CalendarDateUnit timeUnit;
+  private CoordinateAxis timeAxis;
+  protected String altUnits;
+  private CoordinateAxis altAxis;
+
+  protected List<CoordinateAxis> coordVars;
   protected List<Variable> extras; // variables needed to make CF/DSG writing work
 
   protected DsgCollectionImpl(String name, CalendarDateUnit timeUnit, String altUnits) {
-    this(name, CF.TIME, timeUnit, null, altUnits);
-  }
-
-  protected DsgCollectionImpl(String name, String timeName, CalendarDateUnit timeUnit, String altName,
-      String altUnits) {
-    this(name, new CollectionTInfo(timeName, timeUnit, null),
-        new CollectionZInfo(altName, altUnits, null, null, "Z", null),
-        new CollectionLatLonInfo(null, null, null, null, null, null, null, null));
-  }
-
-  protected DsgCollectionImpl(String name, CollectionTInfo time, CollectionZInfo alt, CollectionLatLonInfo latLonInfo) {
     this.name = name;
-    this.tInfo = time;
-    this.zInfo = alt;
-    this.timeName = tInfo.name;
-    this.timeUnit = tInfo.units;
-    this.altName = zInfo.name;
-    this.altUnits = zInfo.units;
-    this.latLonInfo = latLonInfo;
+    this.timeUnit = timeUnit;
+    this.altUnits = altUnits;
+  }
+
+  protected DsgCollectionImpl(String name, List<CoordinateAxis> coordVars) {
+    this.name = name;
+    this.coordVars = coordVars;
+
+    for (CoordinateAxis coord : coordVars) {
+      if (coord.getAxisType().isTime()) {
+        this.timeAxis = coord;
+        this.timeUnit = CalendarDateUnit.of(null, coord.getUnitsString());
+      } else if (coord.getAxisType().isVert()) {
+        this.altAxis = coord;
+        this.altUnits = coord.getUnitsString();
+      }
+    }
   }
 
   @Nonnull
@@ -61,43 +62,34 @@ public abstract class DsgCollectionImpl implements DsgFeatureCollection {
     return name;
   }
 
-  @Nonnull
+  @Nullable
   @Override
   public String getTimeName() {
-    return timeName;
+    return this.timeAxis == null ? null : this.timeAxis.getShortName();
   }
 
-  @Nonnull
+  @Nullable
   @Override
   public CalendarDateUnit getTimeUnit() {
-    return timeUnit;
+    return this.timeUnit;
   }
 
   @Nullable
   @Override
   public String getAltName() {
-    return altName;
+    return this.altAxis == null ? null : this.altAxis.getShortName();
   }
 
   @Nullable
   @Override
   public String getAltUnits() {
-    return altUnits;
+    return this.altUnits;
   }
 
+  @Nonnull
   @Override
-  public CollectionTInfo getTInfo() {
-    return tInfo;
-  }
-
-  @Override
-  public CollectionZInfo getZInfo() {
-    return zInfo;
-  }
-
-  @Override
-  public CollectionLatLonInfo getLatLonInfo() {
-    return latLonInfo;
+  public List<CoordinateAxis> getCoordinateVariables() {
+    return this.coordVars;
   }
 
   @Nonnull
@@ -117,7 +109,7 @@ public abstract class DsgCollectionImpl implements DsgFeatureCollection {
   @Nullable
   @Override
   public CalendarDateRange getCalendarDateRange() {
-    return (info == null) ? null : info.getCalendarDateRange(timeUnit);
+    return (info == null) ? null : info.getCalendarDateRange(getTimeUnit());
   }
 
   @Nullable

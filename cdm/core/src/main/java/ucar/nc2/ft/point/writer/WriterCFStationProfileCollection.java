@@ -13,11 +13,9 @@ import ucar.ma2.*;
 import ucar.nc2.*;
 import ucar.nc2.constants.CDM;
 import ucar.nc2.constants.CF;
+import ucar.nc2.dataset.CoordinateAxis;
 import ucar.nc2.dataset.conv.CF1Convention;
 import ucar.nc2.ft.*;
-import ucar.nc2.ft.point.CollectionLatLonInfo;
-import ucar.nc2.ft.point.CollectionTInfo;
-import ucar.nc2.ft.point.CollectionZInfo;
 import ucar.nc2.ft.point.StationFeature;
 import ucar.nc2.time.CalendarDateUnit;
 import java.io.IOException;
@@ -46,26 +44,24 @@ public class WriterCFStationProfileCollection extends CFPointWriter {
 
   private int desc_strlen = 1, wmo_strlen = 1;
   private Map<String, Variable> stationVarMap = new HashMap<>();
-
-  ///////////////////////////////////////////////////
-  // private Formatter coordNames = new Formatter();
   private Structure profileStruct; // used for netcdf4 extended
   private Map<String, Variable> profileVarMap = new HashMap<>();
 
   public WriterCFStationProfileCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
       CalendarDateUnit timeUnit, String altUnits, CFPointWriterConfig config) throws IOException {
-    this(fileOut, globalAtts, dataVars, new CollectionTInfo(null, timeUnit, null),
-        new CollectionZInfo(null, altUnits, null, null, null, null),
-        new CollectionLatLonInfo(null, null, null, null, null, null, null, null), config);
+    this(fileOut, globalAtts, dataVars, new ArrayList<>(), config);
   }
 
   public WriterCFStationProfileCollection(String fileOut, List<Attribute> globalAtts, List<VariableSimpleIF> dataVars,
-      CollectionTInfo tInfo, CollectionZInfo zInfo, CollectionLatLonInfo latLonInfo, CFPointWriterConfig config)
-      throws IOException {
-    super(fileOut, globalAtts, dataVars, tInfo, zInfo, latLonInfo, config);
+                                          List<CoordinateAxis> coordVars, CFPointWriterConfig config) throws IOException {
+    super(fileOut, globalAtts, dataVars, config, coordVars);
     writer.addGroupAttribute(null, new Attribute(CF.FEATURE_TYPE, CF.FeatureType.timeSeriesProfile.name()));
     writer.addGroupAttribute(null,
         new Attribute(CF.DSG_REPRESENTATION, "Ragged array representation of time series profiles, H.5.3"));
+  }
+
+  protected void setDimensions() {
+
   }
 
   public void setStations(List<StationFeature> stns) {
@@ -229,7 +225,7 @@ public class WriterCFStationProfileCollection extends CFPointWriter {
 
   @Override
   protected void makeMiddleVariables(List<StructureData> profileDataStructs, boolean isExtended) {
-    Dimension profileDim = writer.addDimension(null, profileDimName, nfeatures);
+    Dimension profileDim = writer.addDimension(null, insideDim.getName(), nfeatures);
 
     // add the profile Variables using the profile dimension
     List<VariableSimpleIF> profileVars = new ArrayList<>();
@@ -239,7 +235,7 @@ public class WriterCFStationProfileCollection extends CFPointWriter {
 
     profileVars
         .add(VariableSimpleBuilder.makeScalar(numberOfObsName, "number of obs for this profile", null, DataType.INT)
-            .addAttribute(CF.SAMPLE_DIMENSION, recordDimName).build()); // rowSize:sample_dimension = "obs"
+            .addAttribute(CF.SAMPLE_DIMENSION, outsideDim.getShortName()).build()); // rowSize:sample_dimension = "obs"
 
     profileVars.add(VariableSimpleBuilder
         .makeScalar(profileTimeName, "nominal time of profile", timeUnit.getUdUnit(), DataType.DOUBLE)
@@ -258,7 +254,7 @@ public class WriterCFStationProfileCollection extends CFPointWriter {
     }
 
     if (isExtended) {
-      profileStruct = (Structure) writer.addVariable(null, profileStructName, DataType.STRUCTURE, profileDimName);
+      profileStruct = (Structure) writer.addVariable(null, insideStructName, DataType.STRUCTURE, insideDim.getName());
       addCoordinatesExtended(profileStruct, profileVars);
     } else {
       addCoordinatesClassic(profileDim, profileVars, profileVarMap);

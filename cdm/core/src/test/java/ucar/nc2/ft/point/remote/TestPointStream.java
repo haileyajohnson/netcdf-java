@@ -34,7 +34,7 @@ public class TestPointStream {
     List<Object[]> result = new ArrayList<>();
 
     result.add(new Object[] {cfDocDsgExamplesDir + "H.1.1.ncml"});
-    result.add(new Object[] {pointDir + "point.ncml"});
+    result.add(new Object[] {pointDir + "pointCollection.ncml"});
     result.add(new Object[] {pointDir + "pointMissing.ncml"});
     result.add(new Object[] {pointDir + "pointUnlimited.nc"});
 

@@ -6,6 +6,10 @@
 package ucar.nc2.ft.point.standard;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import ucar.nc2.dataset.CoordinateAxis;
 import ucar.nc2.ft.PointFeatureIterator;
 import ucar.nc2.ft.point.*;
 import ucar.nc2.time.CalendarDateUnit;
@@ -20,14 +24,13 @@ public class StandardPointCollectionImpl extends PointCollectionImpl {
   private NestedTable ft;
 
   StandardPointCollectionImpl(NestedTable ft, CalendarDateUnit timeUnit, String altUnits) {
-    super(ft.getName(), ft.getTimeName(), timeUnit, ft.getAltName(), altUnits);
+    super(ft.getName(), new ArrayList<CoordinateAxis>());
     this.ft = ft;
     this.extras = ft.getExtras();
   }
 
-  StandardPointCollectionImpl(NestedTable ft, CollectionTInfo time, CollectionZInfo alt,
-      CollectionLatLonInfo latLonInfo) {
-    super(ft.getName(), time, alt, latLonInfo);
+  StandardPointCollectionImpl(NestedTable ft, List<CoordinateAxis> coordVars) {
+    super(ft.getName(), coordVars);
     this.ft = ft;
     this.extras = ft.getExtras();
   }
@@ -37,7 +40,7 @@ public class StandardPointCollectionImpl extends PointCollectionImpl {
     // only one Cursor object needed - it will be used for each iteration with different structData's
     Cursor tableData = new Cursor(ft.getNumberOfLevels());
 
-    return new StandardPointFeatureIterator(this, ft, timeUnit, ft.getObsDataIterator(tableData), tableData);
+    return new StandardPointFeatureIterator(this, ft, ft.getTimeUnit(), ft.getObsDataIterator(tableData), tableData);
   }
 
 }

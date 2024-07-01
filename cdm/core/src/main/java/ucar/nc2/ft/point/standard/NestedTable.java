@@ -63,6 +63,8 @@ public class NestedTable {
 
   private CoordVarExtractor timeVE, nomTimeVE, latVE, lonVE, altVE;
   private CoordVarExtractor stnVE, stnDescVE, wmoVE, stnAltVE, idVE, missingVE;
+
+  private List<Variable> allCoordVars;
   private List<Variable> extras;
 
   private int nlevels;
@@ -88,6 +90,7 @@ public class NestedTable {
       featureType = FeatureDatasetFactoryManager.findFeatureType(ds);
 
     // will find the first one, starting at the leaf and going up
+    this.allCoordVars = new ArrayList<>();
     timeVE = findCoordinateAxis(Table.CoordName.Time, leaf, 0);
     latVE = findCoordinateAxis(Table.CoordName.Lat, leaf, 0);
     lonVE = findCoordinateAxis(Table.CoordName.Lon, leaf, 0);
@@ -114,7 +117,7 @@ public class NestedTable {
     }
 
     // find coordinates that are not part of the extras
-    for (CoordinateAxis axis : ds.getCoordinateAxes()) {
+    for (Variable axis : allCoordVars) {
       if (!isCoordinate(axis) && !isExtra(axis) && axis.getDimensionsAll().size() <= 1) // Only permit 0-D and 1-D axes
                                                                                         // as extra variables.
         addExtraVariable(axis);
@@ -172,8 +175,8 @@ public class NestedTable {
       return false;
     String name = v.getShortName();
     return (latVE != null && latVE.axisName.equals(name)) || (lonVE != null && lonVE.axisName.equals(name))
-        || (altVE != null && altVE.axisName.equals(name)) || (stnAltVE != null && stnAltVE.axisName.equals(name))
-        || (timeVE != null && timeVE.axisName.equals(name)) || (nomTimeVE != null && nomTimeVE.axisName.equals(name));
+            || (altVE != null && altVE.axisName.equals(name)) || (stnAltVE != null && stnAltVE.axisName.equals(name))
+            || (timeVE != null && timeVE.axisName.equals(name)) || (nomTimeVE != null && nomTimeVE.axisName.equals(name));
   }
 
   // find a coord axis of the given type in the table and its parents
@@ -185,14 +188,18 @@ public class NestedTable {
 
     if (axisName != null) {
       VariableDS v = t.findVariable(axisName);
-      if (v != null)
+      if (v != null) {
+        this.allCoordVars.add(v);
         return new CoordVarExtractorVariable(v, axisName, nestingLevel);
+      }
 
       if (t.extraJoins != null) {
         for (Join j : t.extraJoins) {
           v = j.findVariable(axisName);
-          if (v != null)
+          if (v != null) {
+            this.allCoordVars.add(v);
             return new CoordVarExtractorVariable(v, axisName, nestingLevel);
+          }
         }
       }
 
@@ -206,10 +213,13 @@ public class NestedTable {
       if (t instanceof Table.TableTop) {
         v = (VariableDS) ds.findVariable(axisName);
 
-        if (v != null)
+        if (v != null) {
+          this.allCoordVars.add(v);
           return new CoordVarTop(v);
-        else
+        }
+        else {
           return new CoordVarConstant(coordName.toString(), "", axisName); // assume its the actual value
+        }
       }
 
       errlog.format("NestedTable: cant find variable '%s' for coordinate type %s %n", axisName, coordName);
@@ -452,10 +462,6 @@ public class NestedTable {
     return (timeVE != null) && (latVE != null) && (lonVE != null);
   }
 
-  public String getTimeName() {
-    return timeVE.axisName;
-  }
-
   public CalendarDateUnit getTimeUnit() {
     try {
       return CalendarDateUnit.of(null, timeVE.getUnitsString()); // LOOK dont know the calendar
@@ -464,61 +470,12 @@ public class NestedTable {
     }
   }
 
-  public CollectionTInfo getTInfo() {
-    CalendarDateUnit timeUnit;
-    try {
-      timeUnit = getTimeUnit();
-    } catch (Exception e) {
-      if (null != errlog)
-        errlog.format("%s%n", e.getMessage());
-      timeUnit = CalendarDateUnit.unixDateUnit;
-    }
-    String timeName = timeVE.axisName;
-    String longName =
-        timeVE instanceof CoordVarExtractorVariable ? ((CoordVarExtractorVariable) timeVE).coordVar.getDescription()
-            : null;
-    return new CollectionTInfo(timeName, timeUnit, longName);
-  }
-
-  public String getAltName() {
-    if (altVE != null)
-      return altVE.axisName;
-    if (stnAltVE != null)
-      return stnAltVE.axisName;
-    return null;
-  }
-
   public String getAltUnits() {
     if (altVE != null)
       return altVE.getUnitsString(); // fishy
     if (stnAltVE != null)
       return stnAltVE.getUnitsString();
     return null;
-  }
-
-  public CollectionZInfo getZInfo() {
-    if (altVE != null && altVE instanceof CoordVarExtractorVariable) {
-      VariableDS var = ((CoordVarExtractorVariable) altVE).coordVar;
-      return new CollectionZInfo(getAltName(), getAltUnits(), var.getDescription(),
-          var.findAttributeString(CF.POSITIVE, null), var.findAttributeString(CF.AXIS, null), var.getDataType());
-    }
-    if (stnAltVE != null && stnAltVE instanceof CoordVarExtractorVariable) {
-      VariableDS var = ((CoordVarExtractorVariable) stnAltVE).coordVar;
-      return new CollectionZInfo(getAltName(), getAltUnits(), var.getDescription(),
-          var.findAttributeString(CF.POSITIVE, CF.POSITIVE_UP), var.findAttributeString(CF.AXIS, null),
-          var.getDataType());
-    }
-    return new CollectionZInfo(null, null, null, null, null, null);
-  }
-
-  public CollectionLatLonInfo getLatLonInfo() {
-    if (latVE instanceof CoordVarExtractorVariable && lonVE instanceof CoordVarExtractorVariable) {
-      VariableDS lat = ((CoordVarExtractorVariable) latVE).coordVar;
-      VariableDS lon = ((CoordVarExtractorVariable) lonVE).coordVar;
-      return new CollectionLatLonInfo(lat.getShortName(), lat.getUnitsString(), lat.getDescription(), lat.getDataType(),
-          lon.getShortName(), lon.getUnitsString(), lon.getDescription(), lon.getDataType());
-    }
-    return new CollectionLatLonInfo(null, null, null, null, null, null, null, null);
   }
 
   public List<VariableSimpleIF> getDataVariables() {
